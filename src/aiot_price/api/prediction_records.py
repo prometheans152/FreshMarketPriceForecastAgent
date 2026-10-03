@@ -27,26 +27,49 @@ def save_prediction(response: dict, request: dict, out_dir: str | Path = DEFAULT
         "saved_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "request": request,
         "response": response,
+        # S05：模擬來源沿全流程保留（請求帶 simulated 或回應含 simulated 都標記）
+        "simulated": bool(response.get("simulated") or request.get("simulated")),
     }
     path = out_dir / f"prediction_{ts}.json"
     path.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
     return path, record["saved_at"]
 
 
-def load_records(out_dir: str | Path = DEFAULT_DIR) -> list[dict]:
-    """讀回全部預測紀錄（供到期核對／T16 配對）；每筆附 record_id（檔名衍生）。"""
+def _record_structure_ok(rec) -> bool:
+    """S05：合法 JSON 但壞結構（如 results=[null]）須受控跳過，不拖垮清單。"""
+    resp = rec.get("response")
+    if not isinstance(resp, dict):
+        return False
+    results = resp.get("results")
+    if not isinstance(results, list):
+        return False
+    for r in results:
+        if not isinstance(r, dict):
+            return False
+    return True
+
+
+def load_records(out_dir: str | Path = DEFAULT_DIR, include_skipped_info: bool = False):
+    """讀回預測紀錄；壞 JSON／壞結構跳過但保留原檔（可追查、不無聲刪除）。
+
+    include_skipped_info=True 時回 (records, skipped_count)。
+    """
     out_dir = Path(out_dir)
     if not out_dir.exists():
-        return []
-    records = []
+        return ([], 0) if include_skipped_info else []
+    records, skipped = [], 0
     for p in sorted(out_dir.glob("prediction_*.json")):
         try:
             rec = json.loads(p.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
-            continue  # 壞檔跳過但保留原檔，不靜默刪除
+            skipped += 1
+            continue
+        if not _record_structure_ok(rec):
+            skipped += 1
+            continue
         rec["record_id"] = p.stem.replace("prediction_", "")
         records.append(rec)
-    return records
+    return (records, skipped) if include_skipped_info else records
 
 
 def delete_record(record_id: str, out_dir: str | Path = DEFAULT_DIR) -> bool:
@@ -70,6 +93,7 @@ def export_anonymous_summary(out_path: str | Path, out_dir: str | Path = DEFAULT
         rows.append(
             {
                 "saved_at": rec["saved_at"],
+                "simulated": bool(rec.get("simulated")),
                 "crop_id": resp.get("crop_id"),
                 "market_id": resp.get("market_id"),
                 "mode_executed": resp.get("mode_executed"),

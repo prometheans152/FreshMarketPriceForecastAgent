@@ -316,7 +316,7 @@
 
 ### T26 實作代理人工具與呼叫流程
 
-**狀態：DOING（2026-10-04 第四輪：R01–R08 已修；真 tool-calling 迴圈＋官方 Hermes 0.19.0＋GLM/Qwen 可切換完成離線驗證——真 GLM 待金鑰、真 Qwen 待 SERVER）｜依賴：本機契約與整合依 T20 及共用缺陷修復；真 GLM 請求依本案 API 設定；只有 SERVER Qwen 子項依 T24/T25｜產出：** `src/aiot_price/agent/tools.py`、`src/aiot_price/agent/service.py`、`configs/agent_prompt.md`、`tests/agent/` 及實際 Hermes 整合設定／工具追蹤。
+**狀態：DOING（2026-10-04 第五輪：S01–S09 修堅——Hermes 真介面（handler JSON 字串/真 callback 追蹤/無事後補算）、TrustedContext 輸入忠實、隔離 import 前生效；227 測試＋乾淨環境同數；真 GLM 待金鑰、真 Qwen 待 SERVER）｜依賴：本機契約與整合依 T20 及共用缺陷修復；真 GLM 請求依本案 API 設定；只有 SERVER Qwen 子項依 T24/T25｜產出：** `src/aiot_price/agent/tools.py`、`src/aiot_price/agent/service.py`、`configs/agent_prompt.md`、`tests/agent/` 及實際 Hermes 整合設定／工具追蹤。
 
 - [ ] **T26 本機／GLM 子項（D41）：** 先修第三輪 R01–R05 共用防線；建立供應商無關的工具契約，按 Hermes 官方介面查驗整合（框架暫定），只暴露本案有限工具。真正模型 tool_calls、工具參數驗證、執行及結果回送需有證據，不能只有 GLM 文字改寫。
 - [ ] **T26 切換子項（D41）：** provider／model／Base URL／key_env 集中配置，GLM API 與本機 Qwen3.8-27B 共用工具及前端；如實標示實際 provider／model／降級，模型切換不改菜價工件、封存評估或可信保存。未明確允許時不做本機→雲端自動 fallback。

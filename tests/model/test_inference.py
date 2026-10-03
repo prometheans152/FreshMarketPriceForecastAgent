@@ -26,10 +26,14 @@ class TestFixtures:
     def test_fixtures_reproduce(self, engine):
         fixtures = json.loads((RELEASE / "fixtures.json").read_text(encoding="utf-8"))
         assert fixtures.get("expected"), "fixtures 缺 expected"
+        volatile = {"request_id"}  # S05 起伺服器生成（時間性）；客戶端ID→client_ref 對照
         for case in fixtures["expected"]:
             req = next(r for r in fixtures["requests"] if r["request_id"] == case["request_id"])
             got = engine.forecast(req)
-            assert got == case["response"], f"fixture {case['request_id']} 不一致"
+            a = {k: v for k, v in got.items() if k not in volatile}
+            b = {k: v for k, v in case["response"].items() if k not in volatile}
+            assert a == b, f"fixture {case['request_id']} 不一致"
+            assert got.get("client_ref") == case["request_id"]  # 客戶端 ID 保留於 client_ref
 
     def test_manifest_hashes_verified_on_load(self, engine):
         # ForecastEngine 建構時已驗模型檔 hash；再確認 manifest 記錄存在

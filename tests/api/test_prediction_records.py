@@ -62,13 +62,13 @@ def test_simulated_rejected(tmp_path):
     assert load_records(tmp_path) == []
 
 
-def test_bad_results_structure_rejected_before_save(tmp_path):
-    """R04：results=[null] 等壞結構由 API 層驗證擋下；底層保存仍可防禦非 dict 結果。"""
+def test_bad_results_structure_skipped_on_load(tmp_path):
+    """S05（第五輪更嚴格）：results=[null] 的壞結構保存後讀回受控跳過、原檔保留。"""
     bad = {**RESP, "results": [None]}
-    # 底層不做深驗證（API 層職責），但保存後讀回必須不讓清單崩潰
     path, _ = save_prediction(bad, REQ, out_dir=tmp_path)
-    recs = load_records(tmp_path)
-    assert len(recs) == 1
+    recs, skipped = load_records(tmp_path, include_skipped_info=True)
+    assert recs == [] and skipped == 1
+    assert path.exists()  # 不無聲刪除
 
 
 def test_export_anonymous(tmp_path):

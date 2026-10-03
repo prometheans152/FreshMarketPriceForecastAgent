@@ -220,10 +220,16 @@ async def agent_query(request: Request) -> JSONResponse:
     profile, prof_reason = resolve_active_profile()
     if profile is None or prof_reason:
         # 配置不完整（未知 profile／缺金鑰）：明確 503，不靜默降級成別的後端冒充執行
-        hint = "金鑰未設" if "api_key_missing" in prof_reason else "設定無效"
+        hints = {
+            "api_key_missing": "金鑰未設：請設定對應環境變數（如 AIOT_GLM_API_KEY）",
+            "profile_model_missing": "model ID 未設：請在 configs/agent_model.yaml 的對應 profile 填入 model",
+            "profile_base_url_missing": "base_url 未設：請檢查 configs/agent_model.yaml",
+            "unknown_profile": "無此 profile：可用 rule／glm_zai／glm_bigmodel／qwen_local",
+        }
+        hint = next((v for k, v in hints.items() if k in prof_reason), "設定無效")
         return JSONResponse(
             status_code=503,
-            content={"error": {"code": "bad_request", "message": f"代理人後端配置不完整（{prof_reason}；{hint}）。請設定環境變數或改用 AIOT_AGENT_PROFILE=rule。"}},
+            content={"error": {"code": "bad_request", "message": f"代理人後端配置不完整（{prof_reason}；{hint}）。請補齊設定或改用 AIOT_AGENT_PROFILE=rule。"}},
         )
     framework = os.environ.get("AIOT_AGENT_FRAMEWORK", "direct")  # direct | hermes
     if profile.kind == "openai_compat" and framework == "hermes":
@@ -238,8 +244,19 @@ async def agent_query(request: Request) -> JSONResponse:
         result = await run_in_threadpool(handle_agent_query, engine, query, store_id, backend)
     fc = result.get("forecast")
     if isinstance(fc, dict) and not fc.get("error"):
-        # R06：代理人產生的預測同樣註冊，供「保存本次結果」以 request_id 綁定
-        register_recent_forecast(fc, {"query": query, "store_id": store_id})
+        # S05：代理人預測註冊時附「實際執行的標準化輸入＋後端中繼資料」
+        register_recent_forecast(
+            fc,
+            {
+                "query": query,
+                "store_id": store_id,
+                "normalized_request": result.get("parsed"),
+                "provider": result.get("provider"),
+                "backend_used": result.get("backend_used"),
+                "runtime": result.get("runtime"),
+                "framework": result.get("framework"),
+            },
+        )
     return JSONResponse(status_code=200, content=result)
 
 
@@ -248,6 +265,34 @@ async def agent_query(request: Request) -> JSONResponse:
 import time as _time
 
 _RECENT_FORECASTS: dict = {}  # request_id -> {"response":..., "request":..., "created_at":...}
+
+
+def _load_private_env(env_path: Path | None = None) -> dict:
+    """S09：載入 private/.env（僅 AIOT_ 前綴鍵；既有環境變數優先；不載其他前綴）。
+
+    回傳本函式新載入的鍵值；檔不存在回空 dict。
+    """
+    import re as _re
+
+    path = env_path or (Path(__file__).resolve().parents[3] / "private" / ".env")
+    if not path.exists():
+        return {}
+    loaded = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        m = _re.match(r"^(AIOT_[A-Z0-9_]+)=(.*)$", line)
+        if not m:
+            continue
+        key, val = m.group(1), m.group(2).strip().strip('"').strip("'")
+        if not os.environ.get(key):  # 既有環境變數優先
+            os.environ[key] = val
+            loaded[key] = val
+    return loaded
+
+
+_load_private_env()  # 服務啟動時載入一次（冪等：只補缺）
 _RECENT_CAP = 500
 
 
@@ -327,6 +372,9 @@ async def save_record(request: Request) -> JSONResponse:
     resp_obj, req_obj = entry["response"], entry["request"]
     if not _valid_forecast_structure(resp_obj):
         return JSONResponse(status_code=422, content={"error": {"code": "bad_request", "message": "預測結構無效，無法保存。"}})
+    # S05：simulated 沿全流程（請求或回應任一帶 simulated 即保存為模擬紀錄）
+    if req_obj.get("simulated") or resp_obj.get("simulated"):
+        resp_obj = {**resp_obj, "simulated": True}
     try:
         path, saved_at = await run_in_threadpool(save_prediction, resp_obj, req_obj)
     except ValueError as e:
@@ -337,14 +385,20 @@ async def save_record(request: Request) -> JSONResponse:
 @app.get("/records")
 async def list_records() -> JSONResponse:
     """已保存預測的匿名摘要清單（供到期核對）。"""
-    records = await run_in_threadpool(load_records)
+    records, skipped = await run_in_threadpool(lambda: load_records(include_skipped_info=True))
     items = []
     for rec in records:
         resp = rec.get("response") or {}
+        req_meta = rec.get("request") or {}
         items.append(
             {
                 "record_id": rec.get("record_id"),
                 "saved_at": rec.get("saved_at"),
+                "simulated": bool(rec.get("simulated")),
+                "provider": req_meta.get("provider"),
+                "backend_used": req_meta.get("backend_used"),
+                "runtime": req_meta.get("runtime"),
+                "normalized_request": req_meta.get("normalized_request"),
                 "crop_id": resp.get("crop_id"),
                 "market_id": resp.get("market_id"),
                 "mode_executed": resp.get("mode_executed"),
@@ -355,7 +409,7 @@ async def list_records() -> JSONResponse:
                 ],
             }
         )
-    return JSONResponse(status_code=200, content={"records": items})
+    return JSONResponse(status_code=200, content={"records": items, "skipped_bad_records": skipped})
 
 
 @app.get("/records/export")

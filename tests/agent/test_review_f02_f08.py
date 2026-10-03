@@ -64,7 +64,7 @@ class TestF02OutputValidator:
 
     def test_unverified_percentage_rejected(self):
         ok, why = validate_qwen_answer("7 天後上漲 55%。", TOOLS_OK)
-        assert ok is False and "unverified_percentage" in why
+        assert ok is False and "unverified_pct" in why  # 第五輪起格式 unverified_pct_h{h}（更精確）
 
     def test_unverified_date_rejected(self):
         ok, why = validate_qwen_answer("7 天後（2026-12-25）大致持平。", TOOLS_OK)
@@ -287,7 +287,8 @@ class TestF08RecordsEndpoints:
             lambda resp, req, out_dir=None: pr.save_prediction(resp, req, out_dir=tmp_path),
         )
         monkeypatch.setattr(
-            app_module, "load_records", lambda out_dir=None: pr.load_records(tmp_path)
+            app_module, "load_records",
+            lambda out_dir=None, include_skipped_info=False: pr.load_records(tmp_path, include_skipped_info=include_skipped_info),
         )
         monkeypatch.setattr(
             app_module, "delete_record", lambda rid, out_dir=None: pr.delete_record(rid, tmp_path)

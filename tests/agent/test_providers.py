@@ -110,7 +110,8 @@ class TestProfileResolution:
         monkeypatch.setenv("AIOT_AGENT_PROFILE", "glm_zai")
         prof, reason = resolve_active_profile()
         assert prof is not None and prof.name == "glm_zai"
-        assert "api_key_missing" in reason
+        # 配置不完整被如實報告（model 空→profile_model_missing；補 model 後→api_key_missing）
+        assert reason and ("api_key_missing" in reason or "profile_model_missing" in reason or "profile_base_url_missing" in reason)
 
     def test_unknown_profile(self, monkeypatch):
         monkeypatch.setenv("AIOT_AGENT_PROFILE", "nope")
@@ -122,23 +123,33 @@ class TestProfileResolution:
         assert ps["qwen_local"].cloud_fallback is False
 
 
+def _CTX(**kw):
+    from aiot_price.agent.providers import TrustedContext
+    ctx = TrustedContext(crop_id="cabbage", market_id="中義市場", current_price_jin=32.0,
+                         price_unit="NTD_per_taiwan_jin", observed_date="2026-10-04",
+                         allowed_modes=("without_last_week",))
+    for k, v in kw.items():
+        setattr(ctx, k, v)
+    return ctx
+
+
 class TestToolContract:
     def test_whitelist_only_two_tools(self):
         assert TOOL_NAMES == {"get_market_quote", "post_forecast"}
 
     def test_unknown_tool_rejected(self, engine):
         tools = AgentTools(engine)
-        r = _execute_tool(tools, "run_shell", {"cmd": "dir"})
+        r = _execute_tool(tools, "run_shell", {"cmd": "dir"}, _CTX())
         assert r["ok"] is False and "unknown_tool" in r["error"]
 
     def test_extra_argument_keys_rejected(self, engine):
         tools = AgentTools(engine)
-        r = _execute_tool(tools, "post_forecast", {"crop_id": "cabbage", "__import": True})
+        r = _execute_tool(tools, "post_forecast", {"crop_id": "cabbage", "__import": True}, _CTX())
         assert r["ok"] is False and "invalid_argument_keys" in r["error"]
 
     def test_invalid_json_arguments_rejected(self, engine):
         tools = AgentTools(engine)
-        r = _execute_tool(tools, "post_forecast", None)
+        r = _execute_tool(tools, "post_forecast", None, _CTX())
         assert r["ok"] is False and "invalid_arguments" in r["error"]
 
     def test_real_tool_executes_via_engine_semantics(self, engine):
@@ -147,7 +158,7 @@ class TestToolContract:
             "crop_id": "cabbage", "market_id": "中義市場", "current_price": 32.0,
             "price_unit": "NTD_per_taiwan_jin", "observed_at": "2026-10-04T10:00:00+08:00",
             "mode": "without_last_week",
-        })
+        }, _CTX())
         assert not r.get("error")
         assert {x["horizon_days"] for x in r["results"]} == {7, 14}
 
@@ -281,4 +292,5 @@ class TestEndpointWithProfiles:
         client = TestClient(app)
         r = client.post("/agent/query", json={"query": "高麗菜今天一斤32元"})
         assert r.status_code == 503
-        assert "金鑰" in r.json()["error"]["message"] or "api_key" in r.json()["error"]["message"]
+        msg = r.json()["error"]["message"]
+        assert "配置不完整" in msg and any(k in msg for k in ("api_key_missing", "profile_model_missing", "profile_base_url_missing"))

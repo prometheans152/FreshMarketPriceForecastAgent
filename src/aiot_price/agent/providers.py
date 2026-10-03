@@ -1,23 +1,18 @@
-"""供應商無關的代理人後端（第四輪 D41：GLM API 先行、可切換本機 Qwen3.8-27B）。
+"""供應商無關的代理人後端（第五輪重寫：S03/S06/S07）。
 
-分層（docs/AGENT_RUNTIME_DIRECTION.md §2）：
-- 語言模型供應端：OpenAICompatProvider——GLM（Z.AI/BigModel）與自架 Qwen 推論端點
-  共用同一 OpenAI 相容 /chat/completions 協定；差異只在 base_url/model/key_env。
-- 代理人執行框架：run_agent_loop()——LLM 生成 tool_calls → 白名單＋參數驗證 →
-  真菜價工具執行 → 結果回送 → 受保護的最終回答（validate_qwen_answer）。
-- 菜價模型：AgentTools（與 HTTP API 同一 ForecastEngine），本層不含任何菜價計算。
-
-安全邊界：
-- 工具白名單只有 get_market_quote 與 post_forecast；未知工具回錯誤訊息給模型，不執行。
-- 參數鍵白名單＋語意驗證走 ForecastEngine._validate（與 API 共用）。
-- 對話輪數／工具呼叫次數／超時／重試有上限；金鑰只從環境變數讀，絕不進錯誤訊息或追蹤。
-- 本機（qwen_local）模式失敗時不自動切換雲端（cloud_fallback 預設關閉）。
+分層不變（AGENT_RUNTIME_DIRECTION §2）；本輪強化：
+- S03 TrustedContext：LLM 提出的工具參數必須忠於「可信規則解析的使用者輸入」；
+  價格/日期/品項/市場/模式不可改寫，上週價不可無中生有，店號由呼叫端決定。
+- S06 遮罩：上游錯誤 body 不進例外/回答/追蹤；對外只用穩定錯誤碼。
+- S07 真上限：工具總數/輪數/總時間實際生效；每個宣告的 tool_call_id 都有
+  匹配回覆（超預算者回 budget_exceeded），不留懸空 ID。
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -31,7 +26,7 @@ from .tools import AgentTools, parse_query
 
 DEFAULT_CONFIG = Path(__file__).resolve().parents[3] / "configs" / "agent_model.yaml"
 
-# ---------- 工具白名單契約（供 LLM function calling；與 Hermes MCP 共用語意） ----------
+# ---------- 工具白名單契約 ----------
 
 TOOL_SCHEMAS = [
     {
@@ -42,9 +37,8 @@ TOOL_SCHEMAS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "crop_id": {"type": "string", "enum": ["cabbage", "bok_choy", "sponge_gourd"],
-                                 "description": "cabbage=甘藍（高麗菜）, bok_choy=青江白菜, sponge_gourd=絲瓜"},
-                    "market_id": {"type": "string", "description": "臺中市場名稱，如 中義市場"},
+                    "crop_id": {"type": "string", "enum": ["cabbage", "bok_choy", "sponge_gourd"]},
+                    "market_id": {"type": "string"},
                 },
                 "required": ["crop_id", "market_id"],
             },
@@ -54,19 +48,19 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "post_forecast",
-            "description": "菜價 7/14 天預測（A/B 兩模式）。需要今天價格與單位；上週價可選。",
+            "description": "菜價 7/14 天預測。價格/日期/品項必須與使用者輸入一致，不得自行修改。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "crop_id": {"type": "string", "enum": ["cabbage", "bok_choy", "sponge_gourd"]},
                     "market_id": {"type": "string"},
-                    "current_price": {"type": "number", "description": "今天價格（正數）"},
+                    "current_price": {"type": "number"},
                     "price_unit": {"type": "string", "enum": ["NTD_per_taiwan_jin", "NTD_per_kg"]},
-                    "observed_at": {"type": "string", "description": "ISO8601 含時區，如 2026-10-04T10:00:00+08:00"},
+                    "observed_at": {"type": "string"},
                     "mode": {"type": "string", "enum": ["without_last_week", "with_last_week", "both"]},
-                    "previous_price": {"type": "number", "description": "上週同店同規格價（選填）"},
+                    "previous_price": {"type": "number"},
                     "previous_price_unit": {"type": "string", "enum": ["NTD_per_taiwan_jin", "NTD_per_kg"]},
-                    "previous_observed_at": {"type": "string", "description": "上週實際日期（選填）"},
+                    "previous_observed_at": {"type": "string"},
                 },
                 "required": ["crop_id", "market_id", "current_price", "price_unit", "observed_at", "mode"],
             },
@@ -74,15 +68,27 @@ TOOL_SCHEMAS = [
     },
 ]
 TOOL_NAMES = {t["function"]["name"] for t in TOOL_SCHEMAS}
-# 參數鍵白名單（拒絕多餘鍵，避免注入）
 ALLOWED_ARG_KEYS = {
     "get_market_quote": {"crop_id", "market_id"},
     "post_forecast": {
         "crop_id", "market_id", "current_price", "price_unit", "observed_at", "mode",
-        "previous_price", "previous_price_unit", "previous_observed_at", "store_id",
-        "specification", "previous_specification",
+        "previous_price", "previous_price_unit", "previous_observed_at",
     },
 }
+
+# ---------- S06：秘密遮罩（不能只截短） ----------
+
+_SECRET_PATTERNS = [
+    re.compile(r"sk-[A-Za-z0-9_\-]{6,}"),
+    re.compile(r"(?:Bearer|bearer)\s+[A-Za-z0-9_\-\.]{6,}"),
+    re.compile(r"(?:api[_-]?key|token|secret)[\"':=]\s*[\"']?[A-Za-z0-9_\-\.]{6,}", re.IGNORECASE),
+]
+
+
+def mask_secrets(text: str) -> str:
+    for pat in _SECRET_PATTERNS:
+        text = pat.sub("***", text)
+    return text
 
 
 # ---------- Provider 設定 ----------
@@ -100,40 +106,57 @@ class ProviderProfile:
     max_tool_calls: int = 4
     max_turns: int = 4
     max_retries: int = 2
-    cloud_fallback: bool = False  # 本機模式預設關閉；未明確啟用不得偷切雲端
+    total_timeout: float = 90.0
+    cloud_fallback: bool = False
+    description: str = ""
 
 
 def load_profiles(config_path: str | Path = DEFAULT_CONFIG) -> dict[str, ProviderProfile]:
     cfg = yaml.safe_load(Path(config_path).read_text(encoding="utf-8"))
     out = {}
     for name, p in (cfg.get("runtime", {}).get("profiles", {}) or {}).items():
-        out[name] = ProviderProfile(name=name, **{k: v for k, v in p.items() if k in ProviderProfile.__dataclass_fields__ and k != "name"})
+        out[name] = ProviderProfile(
+            name=name,
+            **{k: v for k, v in p.items() if k in ProviderProfile.__dataclass_fields__ and k != "name"},
+        )
     return out
 
 
+def _profile_complete(prof: ProviderProfile) -> str:
+    """完整配置驗證（S09）：回空字串=完整；否則回缺項原因碼。"""
+    if prof.kind == "rule":
+        return ""
+    if not prof.base_url:
+        return f"profile_base_url_missing:{prof.name}"
+    if not prof.model:
+        return f"profile_model_missing:{prof.name}"
+    if prof.api_key_env and not os.environ.get(prof.api_key_env):
+        return f"api_key_missing:{prof.api_key_env}"
+    return ""
+
+
 def resolve_active_profile(config_path: str | Path = DEFAULT_CONFIG) -> tuple[ProviderProfile | None, str]:
-    """依 AIOT_AGENT_PROFILE 環境變數選 profile；預設 rule（無 LLM，安全）。"""
+    """依 AIOT_AGENT_PROFILE 選 profile；配置不完整回原因（呼叫端須 503，不靜默降級）。"""
     profiles = load_profiles(config_path)
     want = os.environ.get("AIOT_AGENT_PROFILE", "rule")
     prof = profiles.get(want)
     if prof is None:
         return None, f"unknown_profile:{want}"
-    if prof.kind == "openai_compat" and prof.api_key_env and not os.environ.get(prof.api_key_env):
-        # 金鑰未設：不硬連（不把缺 key 的 provider 當可用）；回 reason 由呼叫端降級
-        return prof, f"api_key_missing:{prof.api_key_env}"
+    reason = _profile_complete(prof)
+    if reason:
+        return prof, reason
     return prof, ""
 
 
 @dataclass
 class ProviderResponse:
     content: str | None = None
-    tool_calls: list = field(default_factory=list)  # [{id, name, arguments(dict)}]
+    tool_calls: list = field(default_factory=list)
     finish_reason: str = ""
-    raw_usage: dict = field(default_factory=dict)
 
 
 class OpenAICompatProvider:
-    """OpenAI 相容 chat/completions 客戶端（GLM 與自架 Qwen 端點共用）。"""
+    """OpenAI 相容 client。S06：上游錯誤 body 只遮罩後留內部，對外穩定碼。"""
 
     def __init__(self, profile: ProviderProfile):
         self.profile = profile
@@ -160,34 +183,36 @@ class OpenAICompatProvider:
         if key:
             req.add_header("Authorization", f"Bearer {key}")
 
-        last_err = None
+        last_code = None
         for attempt in range(self.profile.max_retries + 1):
             try:
                 with urllib.request.urlopen(req, timeout=self.profile.timeout) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                 return self._parse(data)
             except urllib.error.HTTPError as e:
-                # 429/5xx 重試；4xx 不重試。錯誤訊息絕不含金鑰。
-                body = ""
+                # S06：body 僅遮罩後供內部診斷（本地日誌層），絕不進例外文字
                 try:
-                    body = e.read().decode("utf-8", errors="ignore")[:200]
+                    body = e.read().decode("utf-8", errors="ignore")
                 except Exception:
-                    pass
-                last_err = f"http_{e.code}:{body}"
+                    body = ""
+                _internal_note(f"upstream_http_{e.code} body_masked={mask_secrets(body)[:160]}")
+                last_code = e.code
                 if e.code not in (429, 500, 502, 503, 504):
                     break
-            except Exception as e:  # timeout 等
-                last_err = f"{type(e).__name__}"
+            except Exception as e:
+                _internal_note(f"upstream_{type(e).__name__}")
+                last_code = type(e).__name__
             if attempt < self.profile.max_retries:
                 time.sleep(1.5 * (attempt + 1))
-        raise RuntimeError(f"provider_request_failed:{last_err}")
+        # 對外穩定碼（不含任何上游 body）
+        raise RuntimeError(f"provider_http_error:{last_code}" if isinstance(last_code, int) else f"provider_request_failed:{last_code}")
 
     @staticmethod
     def _parse(data: dict) -> ProviderResponse:
         msg = (data.get("choices") or [{}])[0].get("message") or {}
         content = msg.get("content")
         if content is not None and not isinstance(content, str):
-            content = None  # R02：null/非字串不字串化
+            content = None
         calls = []
         for tc in msg.get("tool_calls") or []:
             fn = tc.get("function") or {}
@@ -197,34 +222,144 @@ class OpenAICompatProvider:
                     args = json.loads(args)
                 except json.JSONDecodeError:
                     args = None
-            calls.append({"id": tc.get("id"), "name": fn.get("name"), "arguments": args if isinstance(args, dict) else None})
-        return ProviderResponse(
-            content=content,
-            tool_calls=calls,
-            finish_reason=(data.get("choices") or [{}])[0].get("finish_reason", ""),
-            raw_usage=data.get("usage") or {},
-        )
+            calls.append({"id": tc.get("id"), "name": fn.get("name"),
+                          "arguments": args if isinstance(args, dict) else None})
+        return ProviderResponse(content=content, tool_calls=calls,
+                                finish_reason=(data.get("choices") or [{}])[0].get("finish_reason", ""))
 
 
-# ---------- 代理人迴圈（真正 tool_calls → 驗證 → 真工具 → 回送） ----------
+def _internal_note(note: str) -> None:
+    """內部診斷（遮罩後）；只進 stderr，不進回答/追蹤/保存。"""
+    import sys
+    print(f"[aiot-provider] {note}", file=sys.stderr)
 
-def _execute_tool(tools: AgentTools, name: str, args: dict | None) -> dict:
-    """白名單＋參數驗證後執行真工具；回傳 dict 給 LLM（絕不丟例外出去）。"""
-    if name not in TOOL_NAMES:
-        return {"ok": False, "error": f"unknown_tool:{name}（白名單外工具不可用）"}
+
+# ---------- S03：可信查詢上下文 ----------
+
+@dataclass
+class TrustedContext:
+    """由可信規則解析（parse_query）建立；LLM 工具參數必須與此一致。"""
+
+    crop_id: str | None = None
+    market_id: str | None = None
+    current_price_jin: float | None = None
+    price_unit: str | None = None
+    observed_date: str | None = None  # YYYY-MM-DD（Asia/Taipei；後端提供）
+    store_id: str | None = None       # 呼叫端店號；LLM 不得覆寫
+    allowed_modes: tuple = ("without_last_week",)
+    previous_price_jin: float | None = None
+    previous_date: str | None = None
+
+    @classmethod
+    def from_parsed(cls, parsed, store_id: str | None, today) -> "TrustedContext":
+        from aiot_price.data.schema import to_taiwan_jin
+
+        req = parsed.to_forecast_request()
+        ctx = cls(store_id=store_id)
+        ctx.crop_id = parsed.crop_id
+        ctx.market_id = parsed.market_id or "中義市場"
+        if parsed.current_price is not None and parsed.price_unit in ("NTD_per_taiwan_jin", "NTD_per_kg"):
+            ctx.current_price_jin = to_taiwan_jin(parsed.current_price, parsed.price_unit)
+            ctx.price_unit = parsed.price_unit
+        obs = parsed.observed_date or today
+        ctx.observed_date = obs.isoformat() if hasattr(obs, "isoformat") else str(obs)
+        if (
+            parsed.previous_price is not None
+            and parsed.previous_price_unit in ("NTD_per_taiwan_jin", "NTD_per_kg")
+            and parsed.previous_date is not None
+            and not parsed.b_reject_reason
+        ):
+            ctx.previous_price_jin = to_taiwan_jin(parsed.previous_price, parsed.previous_price_unit)
+            ctx.previous_date = parsed.previous_date.isoformat() if hasattr(parsed.previous_date, "isoformat") else str(parsed.previous_date)
+            ctx.allowed_modes = ("without_last_week", "with_last_week", "both")
+        return ctx
+
+
+def validate_args_against_context(name: str, args: dict | None, ctx: TrustedContext) -> tuple[bool, str, dict]:
+    """S03：工具參數 vs 可信上下文。回 (ok, reason, 執行用參數)。
+
+    允許：等價單位換算（換算成台斤後相等）；店號一律採用呼叫端值。
+    拒絕：改價/改日期/換品項/換市場/無中生有上週價/啟用未允許模式。
+    """
     if args is None:
-        return {"ok": False, "error": "invalid_arguments:arguments 不是合法 JSON 物件"}
+        return False, "invalid_arguments", {}
     extra = set(args.keys()) - ALLOWED_ARG_KEYS[name]
     if extra:
-        return {"ok": False, "error": f"invalid_argument_keys:{sorted(extra)[:5]}"}
+        return False, f"invalid_argument_keys:{sorted(extra)[:3]}", {}
+
+    from aiot_price.data.schema import to_taiwan_jin
+
+    def _to_jin(price, unit):
+        return to_taiwan_jin(price, unit) if unit in ("NTD_per_taiwan_jin", "NTD_per_kg") else None
+
+    out = dict(args)
+
+    if name == "get_market_quote":
+        if args.get("crop_id") != ctx.crop_id:
+            return False, "crop_mismatch_with_user_input", {}
+        if args.get("market_id") != ctx.market_id:
+            return False, "market_mismatch_with_user_input", {}
+        return True, "", out
+
+    # post_forecast
+    if args.get("crop_id") != ctx.crop_id:
+        return False, "crop_mismatch_with_user_input", {}
+    if args.get("market_id") != ctx.market_id:
+        return False, "market_mismatch_with_user_input", {}
+    mode = args.get("mode", "without_last_week")
+    if mode not in ctx.allowed_modes:
+        return False, "mode_not_allowed_by_user_input", {}
+    # 日期：日期部分必須等於可信報價日
+    obs = str(args.get("observed_at", ""))
+    if obs[:10] != (ctx.observed_date or ""):
+        return False, "observed_date_mismatch_with_user_input", {}
+    # 今天價：換算台斤後必須與可信值一致（容差 0.01；允許合法單位換算）
+    try:
+        price_jin = _to_jin(args.get("current_price"), args.get("price_unit"))
+    except Exception:
+        return False, "current_price_not_comparable", {}
+    if price_jin is None or ctx.current_price_jin is None or abs(price_jin - ctx.current_price_jin) > 0.01:
+        return False, "current_price_mismatch_with_user_input", {}
+    # 上週價：僅可信上下文存在時允許；值須一致；不可無中生有
+    prev = args.get("previous_price")
+    prev_obs = args.get("previous_observed_at")
+    if (prev is not None or prev_obs is not None):
+        if ctx.previous_price_jin is None or ctx.previous_date is None:
+            return False, "previous_price_not_provided_by_user", {}
+        try:
+            prev_jin = _to_jin(prev, args.get("previous_price_unit"))
+        except Exception:
+            return False, "previous_price_not_comparable", {}
+        if prev_jin is None or abs(prev_jin - ctx.previous_price_jin) > 0.01:
+            return False, "previous_price_mismatch_with_user_input", {}
+        if str(prev_obs or "")[:10] != ctx.previous_date:
+            return False, "previous_date_mismatch_with_user_input", {}
+    out.pop("store_id", None)  # 店號由呼叫端決定，不採 LLM 值
+    if ctx.store_id:
+        out["store_id"] = ctx.store_id
+    return True, "", out
+
+
+# ---------- 代理人迴圈（S03/S07） ----------
+
+def _execute_tool(tools: AgentTools, name: str, args: dict | None, ctx: TrustedContext) -> dict:
+    if name not in TOOL_NAMES:
+        return {"ok": False, "error": f"unknown_tool:{name}"}
+    ok, reason, exec_args = validate_args_against_context(name, args, ctx)
+    if not ok:
+        return {"ok": False, "error": f"input_fidelity_rejected:{reason}"}
     try:
         if name == "get_market_quote":
-            return tools.get_market_quote(args["crop_id"], args["market_id"])
-        # post_forecast：直接交給引擎（_validate 語意驗證與 API 共用；錯誤受控回傳）
-        result = tools.post_forecast(args)
-        return result
+            return tools.get_market_quote(exec_args["crop_id"], exec_args["market_id"])
+        return tools.post_forecast(exec_args)
     except Exception as e:
         return {"ok": False, "error": f"tool_execution_error:{type(e).__name__}"}
+
+
+def _fallback_answer(parsed, forecast_result, err: str) -> str:
+    if forecast_result:
+        return RuleBackend().reply(parsed, {"forecast": forecast_result})
+    return "代理人後端暫時無法回應，請稍後再試，或直接使用表單查詢菜價預測。"
 
 
 def run_agent_loop(
@@ -234,108 +369,114 @@ def run_agent_loop(
     store_id: str | None = None,
     today=None,
 ) -> dict:
-    """真代理人流程。回傳與 handle_agent_query 相容並附加 provider 資訊。
-
-    R01 原則同樣適用：缺必要輸入或無有效工具結果時不產生預測成功回答。
-    """
     provider = OpenAICompatProvider(profile)
     base = {
-        "provider": profile.name,
-        "model": profile.model,
-        "runtime": "openai_compat",
-        "backend_used": profile.name,
-        "degraded": False,
-        "degraded_reason": None,
+        "provider": profile.name, "model": profile.model, "runtime": "openai_compat",
+        "backend_used": profile.name, "degraded": False, "degraded_reason": None,
     }
-    if not provider.available():
-        return {**base, "backend_used": "rule", "degraded": True,
-                "degraded_reason": "provider_not_configured"}
-
     parsed = parse_query(query, today=today)
-    tools = AgentTools(engine)
+    ctx = TrustedContext.from_parsed(parsed, store_id, today=today) if today else TrustedContext.from_parsed(parsed, store_id, today=parsed.today)
 
-    # R01 短路：缺必要輸入不進 LLM 迴圈（省請求且防捏造）
     if parsed.missing or parsed.unit_non_comparable:
-        rule = RuleBackend().reply(parsed, {})
-        return {**base, "parsed": _parsed_dict(parsed), "tool_trace": [],
-                "forecast": None, "answer": rule,
+        return {**base, "parsed": _pd(parsed), "tool_trace": [], "forecast": None,
+                "answer": RuleBackend().reply(parsed, {}),
                 "backend_used": "rule", "degraded": True, "degraded_reason": "missing_input_skip_llm"}
 
-    system = load_system_prompt(strict=True)
+    if not provider.available():
+        return {**base, "backend_used": "rule", "degraded": True, "degraded_reason": "provider_not_configured",
+                "parsed": _pd(parsed), "tool_trace": [], "forecast": None,
+                "answer": _fallback_answer(parsed, None, "not_configured")}
+
+    system = load_system_prompt(strict=True) + (
+        f"\n\n本次查詢可信資訊（不得修改）：品項 {ctx.crop_id}、參考市場 {ctx.market_id}、"
+        f"今天價格 {parsed.current_price} {parsed.price_unit}、報價日 {ctx.observed_date}（Asia/Taipei）。"
+    )
+    if ctx.previous_price_jin is not None:
+        system += f" 上週價（可比）{parsed.previous_price} {parsed.previous_price_unit}、日期 {ctx.previous_date}。"
+    else:
+        system += " 使用者未提供可比的上週價：不得自行填入任何 previous 欄位。"
+    system += (
+        "\n你只有 get_market_quote 與 post_forecast 兩個工具。需要預測時必須以與上述可信資訊完全一致的參數呼叫 post_forecast，"
+        "不得修改任何數值、日期、品項或市場；回答只能引用工具結果的數字。"
+    )
+
     messages = [
-        {"role": "system", "content": system + "\n\n你只有兩個工具可用：get_market_quote 與 post_forecast。需要預測時必須呼叫 post_forecast 取得真實結果後才能回答；不得自行計算或編造任何數字。"},
+        {"role": "system", "content": system},
         {"role": "user", "content": query},
     ]
     trace: list[dict] = []
     forecast_result = None
     final_text = None
+    started = time.monotonic()
+    budget_exhausted = False
 
     try:
         for turn in range(profile.max_turns):
+            if time.monotonic() - started > profile.total_timeout:
+                budget_exhausted = True
+                break
             resp = provider.chat(messages, tools=TOOL_SCHEMAS)
             if not resp.tool_calls:
                 final_text = (resp.content or "").strip()
                 break
+            # S07：assistant 宣告保持模型原樣；每個宣告的 tool_call_id 都會有回覆
             messages.append({
                 "role": "assistant",
                 "content": resp.content or "",
                 "tool_calls": [
                     {"id": c["id"], "type": "function",
-                     "function": {"name": c["name"],
-                                  "arguments": json.dumps(c["arguments"] or {}, ensure_ascii=False)}}
+                     "function": {"name": c["name"], "arguments": json.dumps(c["arguments"] or {}, ensure_ascii=False)}}
                     for c in resp.tool_calls
                 ],
             })
-            n_this_turn = 0
-            for call in resp.tool_calls[: max(1, profile.max_tool_calls - len(trace))]:
-                n_this_turn += 1
-                result = _execute_tool(tools, call["name"], call["arguments"])
-                trace.append({"tool": call["name"], "args": {k: (call["arguments"] or {}).get(k) for k in ("crop_id", "market_id", "current_price", "mode")}, "ok": not (isinstance(result, dict) and result.get("error"))})
+            remaining = profile.max_tool_calls - len(trace)
+            for i, call in enumerate(resp.tool_calls):
+                if i >= remaining:
+                    # S07：預算耗盡不再執行，但仍回覆協議訊息（不留懸空 ID）
+                    messages.append({"role": "tool", "tool_call_id": call["id"],
+                                     "content": json.dumps({"ok": False, "error": "tool_budget_exceeded"}, ensure_ascii=False)})
+                    budget_exhausted = True
+                    continue
+                result = _execute_tool(AgentTools(engine), call["name"], call["arguments"], ctx)
+                trace.append({
+                    "tool": call["name"],
+                    "tool_call_id": call["id"],
+                    "args": {k: (call["arguments"] or {}).get(k) for k in ("crop_id", "market_id", "current_price", "mode")},
+                    "ok": not (isinstance(result, dict) and result.get("error")),
+                })
                 if call["name"] == "post_forecast" and isinstance(result, dict) and not result.get("error"):
                     forecast_result = result
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": call["id"],
-                    "content": json.dumps(result, ensure_ascii=False, default=str)[:4000],
-                })
+                # S07：完整 JSON 回送，不從中間截斷（上限內的工具結果本就精簡）
+                messages.append({"role": "tool", "tool_call_id": call["id"],
+                                 "content": json.dumps(result, ensure_ascii=False, default=str)})
+            if budget_exhausted:
+                break
     except RuntimeError as e:
-        # provider 失敗：本機模式不自動切雲端；回明確錯誤（已取得的工具結果仍可回）
-        return {**base, "parsed": _parsed_dict(parsed), "tool_trace": trace,
-                "forecast": forecast_result, "backend_used": "rule", "degraded": True,
-                "degraded_reason": str(e)[:120],
-                "answer": _fallback_answer(parsed, forecast_result, tools, str(e)[:80])}
+        return {**base, "parsed": _pd(parsed), "tool_trace": trace, "forecast": forecast_result,
+                "backend_used": "rule", "degraded": True, "degraded_reason": str(e)[:80],
+                "answer": _fallback_answer(parsed, forecast_result, str(e))}
 
-    # R01：沒有有效工具結果 → 最終文字必須不含預測主張；直接規則化
-    tool_ok = bool(forecast_result and forecast_result.get("results"))
+    tool_ok = bool(forecast_result and forecast_result.get("results") and not forecast_result.get("error"))
     if not tool_ok:
-        rule = RuleBackend().reply(parsed, {})
-        return {**base, "parsed": _parsed_dict(parsed), "tool_trace": trace,
-                "forecast": forecast_result, "backend_used": "rule",
-                "degraded": True, "degraded_reason": "no_tool_result_skip_llm",
-                "answer": rule}
+        reason = "tool_budget_exhausted" if budget_exhausted else "no_tool_result_skip_llm"
+        return {**base, "parsed": _pd(parsed), "tool_trace": trace, "forecast": forecast_result,
+                "backend_used": "rule", "degraded": True, "degraded_reason": reason,
+                "answer": RuleBackend().reply(parsed, {})}
 
     ok, why = validate_qwen_answer(final_text or "", {"forecast": forecast_result})
     if not ok:
-        rule = RuleBackend().reply(parsed, {"forecast": forecast_result})
-        return {**base, "parsed": _parsed_dict(parsed), "tool_trace": trace,
-                "forecast": forecast_result, "backend_used": "rule",
-                "degraded": True, "degraded_reason": f"llm_output_rejected:{why}",
-                "answer": rule}
+        return {**base, "parsed": _pd(parsed), "tool_trace": trace, "forecast": forecast_result,
+                "backend_used": "rule", "degraded": True, "degraded_reason": f"llm_output_rejected:{why}",
+                "answer": RuleBackend().reply(parsed, {"forecast": forecast_result})}
 
-    return {**base, "parsed": _parsed_dict(parsed), "tool_trace": trace,
-            "forecast": forecast_result, "answer": final_text}
+    return {**base, "parsed": _pd(parsed), "tool_trace": trace, "forecast": forecast_result, "answer": final_text}
 
 
-def _parsed_dict(parsed) -> dict:
+def _pd(parsed) -> dict:
     return {
         "crop_id": parsed.crop_id, "current_price": parsed.current_price,
         "price_unit": parsed.price_unit, "market_id": parsed.market_id,
-        "previous_price": parsed.previous_price, "mode": (parsed.to_forecast_request() or {}).get("mode"),
+        "previous_price": parsed.previous_price,
+        "mode": (parsed.to_forecast_request() or {}).get("mode"),
         "missing": parsed.missing, "unit_non_comparable": parsed.unit_non_comparable,
     }
-
-
-def _fallback_answer(parsed, forecast_result, tools, err: str) -> str:
-    if forecast_result:
-        return RuleBackend().reply(parsed, {"forecast": forecast_result})
-    return f"代理人後端連線失敗（{err}）。請稍後再試，或直接使用表單查詢菜價預測。"

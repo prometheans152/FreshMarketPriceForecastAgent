@@ -1,6 +1,8 @@
 # GLM執行進度與交接紀錄
 
-更新日期：2026-10-04（GLM第四輪完成：R01–R08 修復＋供應商可切換代理人；詳[第四輪報告](ROUND4_GLM_API_REPORT.md)）。
+更新日期：2026-10-04（GLM第五輪完成：S01–S09 全修＋Hermes 真介面；詳[第五輪報告](ROUND5_REPAIR_REPORT.md)）。
+
+- **第五輪完成**：Hermes 0.19.0 真建構/真 dispatch/真工具追蹤（tool_complete_callback；無事後補算）；輸入忠實（TrustedContext 防改價/改日期/無中生有）；輸出事實 (mode,horizon,field,unit) 分離；保存不可變 ID＋simulated 隔離；隔離於 import 前生效；227 測試（乾淨環境同數）；凍結工件不變。**真 GLM 仍待金鑰設定。**
 
 ## 當前狀態
 

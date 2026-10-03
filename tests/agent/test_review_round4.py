@@ -222,7 +222,9 @@ class TestR04RecordsIntegrity:
 
         (tmp_path / "prediction_broken.json").write_text("{not json", encoding="utf-8")
         (tmp_path / "prediction_good.json").write_text(
-            json.dumps({"saved_at": "2026-10-04T01:00:00+08:00", "response": {"crop_id": "cabbage"}, "request": {}}),
+            json.dumps({"saved_at": "2026-10-04T01:00:00+08:00",
+                        "response": {"crop_id": "cabbage", "results": [{"horizon_days": 7, "direction": "flat"}]},
+                        "request": {}}),
             encoding="utf-8",
         )
         recs = load_records(tmp_path)

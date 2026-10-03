@@ -46,163 +46,221 @@ _EXAGGERATION_RE = _re.compile(r"必定|保證|絕對會|機率是|的機率|可
 _PCT_RE = _re.compile(r"([+-]?\d+(?:\.\d+)?)\s*%")
 _DATE_RE = _re.compile(r"\d{4}-\d{2}-\d{2}")
 _PRICE_RE = _re.compile(r"(\d+(?:\.\d+)?)\s*元")
-# 期限詞：阿拉伯數字與中文寫法都要綁（R02：中文期限繞過是缺陷）
+# 期限詞（含口語「下週」；14 天系列先列，避免「兩週」被「週」類誤配）
 _HORIZON_WORDS = [
-    (7, _re.compile(r"7\s*天|七\s*天|一週|一周|一個禮拜|一禮拜")),
-    (14, _re.compile(r"14\s*天|十四\s*天|兩週|两周|二週|二周|兩個禮拜|二個禮拜|兩禮拜")),
+    (14, _re.compile(r"14\s*天|十四\s*天|兩週|两周|二週|二周|兩個禮拜|二個禮拜|兩禮拜|下下週|下下周")),
+    (7, _re.compile(r"7\s*天|七\s*天|一週|一周|一個禮拜|一禮拜|下週|下周")),
 ]
-# 方向衝突詞（R02：flat 的衝突涵蓋漲/跌雙向與口語詞）
 _OPPOSITE = {
     "up": ("下跌", "跌", "大跌"),
     "down": ("上漲", "漲", "大漲"),
     "flat": ("上漲", "漲", "大漲", "下跌", "跌", "大跌", "大漲"),
 }
 _B_MARK_RE = _re.compile(r"B\s*模式|實驗性|使用上週|加上上週|有上週")
+_A_MARK_RE = _re.compile(r"A\s*模式|未使用上週|不含上週")
 _KG_MARK_RE = _re.compile(r"元\s*[/／]\s*公斤|每公斤|元每公斤")
 _JIN_MARK_RE = _re.compile(r"元\s*[/／]\s*台斤|每台斤|元每台斤|元\s*[/／]\s*斤")
 
 
 def _collect_facts(forecast: dict) -> dict:
-    """從工具真值收集「期限→允許事實」與全域允許集（R02：分模式綁定）。"""
-    facts = {7: {"pct": set(), "price": {}, "direction": None},
-             14: {"pct": set(), "price": {}, "direction": None}}
-    all_pct, all_price, all_dates = set(), set(), set()
-    for r in forecast.get("results") or []:
+    """S04：事實以 (mode, horizon, field, unit) 分離——百分比與價格不同集合，A/B 不聯集。"""
+    a = {7: {"pct": set(), "price": {}, "dates": set(), "direction": None},
+         14: {"pct": set(), "price": {}, "dates": set(), "direction": None}}
+    b = {7: {"pct": set(), "price": {}, "dates": set(), "direction": None},
+         14: {"pct": set(), "price": {}, "dates": set(), "direction": None}}
+    all_dates = set()
+
+    def _put(bucket, r):
         h = r.get("horizon_days")
-        if h not in facts:
-            continue
+        if h not in bucket:
+            return
         pct = r.get("relative_change_estimate")
         if isinstance(pct, (int, float)):
-            facts[h]["pct"].add(round(pct * 100, 1))
+            bucket[h]["pct"].add(round(pct * 100, 1))
         pe = r.get("price_estimate")
         if isinstance(pe, (int, float)):
             unit = r.get("price_estimate_unit") or ""
-            facts[h]["price"].setdefault(unit, set()).add(round(float(pe), 1))
-        facts[h]["direction"] = r.get("direction")
-    b_facts = {7: set(), 14: set()}  # B 模式專屬數字（pct 與 price 成對）
-    for r in forecast.get("results_with_last_week") or []:
-        h = r.get("horizon_days")
-        if h not in b_facts:
-            continue
-        pct = r.get("relative_change_estimate")
-        pe = r.get("price_estimate")
-        if isinstance(pct, (int, float)):
-            b_facts[h].add(round(pct * 100, 1))
-        if isinstance(pe, (int, float)):
-            b_facts[h].add(round(float(pe), 1))
-    for r in (forecast.get("results") or []) + (forecast.get("results_without_last_week") or []):
-        pct = r.get("relative_change_estimate")
-        pe = r.get("price_estimate")
-        if isinstance(pct, (int, float)):
-            all_pct.add(round(pct * 100, 1))
-        if isinstance(pe, (int, float)):
-            all_price.add(round(float(pe), 1))
+            bucket[h]["price"].setdefault(unit, set()).add(round(float(pe), 1))
         if r.get("target_date"):
-            all_dates.add(str(r["target_date"]))
+            bucket[h]["dates"].add(str(r["target_date"]))
+
+    for r in forecast.get("results") or []:
+        _put(a, r)
+        _put(a, r)  # results_without_last_week 語意同 A
+    for r in forecast.get("results_without_last_week") or []:
+        _put(a, r)
     for r in forecast.get("results_with_last_week") or []:
-        if r.get("target_date"):
-            all_dates.add(str(r["target_date"]))
+        _put(b, r)
+    for bucket in (a, b):
+        for h in (7, 14):
+            d = (bucket[h]["direction"])
+    # 方向
+    for r in forecast.get("results") or []:
+        if r.get("horizon_days") in a:
+            a[r["horizon_days"]]["direction"] = r.get("direction")
+    for r in forecast.get("results_with_last_week") or []:
+        if r.get("horizon_days") in b:
+            b[r["horizon_days"]]["direction"] = r.get("direction")
+    for bucket in (a, b):
+        for h in (7, 14):
+            all_dates |= bucket[h]["dates"]
     if forecast.get("public_data_cutoff"):
         all_dates.add(str(forecast["public_data_cutoff"]))
     ioa = forecast.get("input_observed_at")
     if ioa:
         all_dates.add(str(ioa)[:10])
-    return {"h": facts, "b": b_facts, "all_pct": all_pct, "all_price": all_price, "all_dates": all_dates}
+    return {"a": a, "b": b, "all_dates": all_dates}
 
 
-def _horizon_of(sentence: str) -> int | None:
+def _horizon_spans(text: str) -> list[tuple[int, int, int]]:
+    """句內期限詞定位：回 [(start, end, h)]（依位置排序；重疊取先匹配）。"""
+    spans = []
     for h, pat in _HORIZON_WORDS:
-        if pat.search(sentence):
-            return h
-    return None
+        for m in pat.finditer(text):
+            spans.append((m.start(), m.end(), h))
+    spans.sort()
+    # 去重疊（同位置取 14 優先已由排序保證：14 的 pattern 在清單前面）
+    out = []
+    last_end = -1
+    for st, en, h in spans:
+        if st >= last_end:
+            out.append((st, en, h))
+            last_end = en
+    return out
+
+
+def _segments(sentence: str) -> list[tuple[str, int | None]]:
+    """把句子切成 (子段, horizon)——每個期限詞管到下一個期限詞之前。"""
+    spans = _horizon_spans(sentence)
+    if not spans:
+        return [(sentence, None)]
+    segs = []
+    if spans[0][0] > 0:
+        segs.append((sentence[: spans[0][0]], None))
+    for i, (st, en, h) in enumerate(spans):
+        nxt = spans[i + 1][0] if i + 1 < len(spans) else len(sentence)
+        segs.append((sentence[st:nxt], h))
+    return segs
+
+
+def _near(v: float, allowed: set) -> bool:
+    return any(abs(v - a) <= 0.15 for a in allowed)
 
 
 def validate_qwen_answer(answer, tool_outputs: dict) -> tuple[bool, str]:
-    """對照工具真值驗證 LLM 文字（R01/R02 版）。
+    """S04 版：期限詞定位分段 → 各段以 (mode,horizon,field,unit) 檢查。
 
-    - answer 非 str／空白 → 拒（null 不得字串化後放行）。
-    - 工具錯誤或無結果 → 預測主張（期限詞＋數字/方向）一律拒；只能陳述無法預測。
-    - 期限句的百分比/價格必須屬於該期限的 A 事實（B 數字需句內有 B 標示且屬於該期限 B 集）。
-    - 價格單位標示必須與工具單位一致（公斤/台斤）。
-    - 方向衝突詞對照該期限工具方向。
+    - 百分比與價格為不同型別集合；B 價格不能當百分比（反之亦然）。
+    - 只標 B 的段落只准引用 B 事實；A/B 對照段（同時標示）可用聯集；未標示→A。
+    - 各期限的目標日期只准該期限的日期（交換日期即拒）。
     """
     if not isinstance(answer, str) or not answer.strip():
         return False, "empty_or_non_string_answer"
 
     forecast = tool_outputs.get("forecast") or {}
     has_valid_results = bool(forecast.get("results")) and not forecast.get("error")
-    sentences = [x for x in _re.split(r"[。\n；;]", answer) if x.strip()]
 
     if _EXAGGERATION_RE.search(answer):
         return False, "exaggeration_or_probability_claim"
 
+    sentences = [x for x in _re.split(r"[。\n；;]", answer) if x.strip()]
+
     if not has_valid_results:
-        # R01：沒有有效工具結果時，含期限預測主張的句子一律拒
         for sent in sentences:
-            if _horizon_of(sent) is not None:
+            if _horizon_spans(sent):
                 return False, "prediction_claim_without_tool_results"
         return True, ""
 
     facts = _collect_facts(forecast)
 
-    for m in _DATE_RE.finditer(answer):
-        if m.group(0) not in facts["all_dates"]:
-            return False, f"unverified_date:{m.group(0)}"
+    # 非目標日期（觀察起點日／公開行情截止日）：只做全域存在檢查，不參與期限配對
+    non_target_dates = set()
+    ioa = forecast.get("input_observed_at")
+    if ioa:
+        non_target_dates.add(str(ioa)[:10])
+    if forecast.get("public_data_cutoff"):
+        non_target_dates.add(str(forecast["public_data_cutoff"]))
+
+    # 日期：每個日期配對「就近期限」（同句最近的前後期限詞）
+    for sent in sentences:
+        spans = _horizon_spans(sent)
+        for m in _DATE_RE.finditer(sent):
+            d = m.group(0)
+            if d not in facts["all_dates"]:
+                return False, f"unverified_date:{d}"
+            if d in non_target_dates:
+                continue  # 起點／行情日不是任何期限的目標日
+            if spans:
+                near_h = min(spans, key=lambda sp: abs(sp[0] - m.start()))[2]
+                if d not in (facts["a"][near_h]["dates"] | facts["b"][near_h]["dates"]):
+                    return False, f"date_horizon_mismatch_h{near_h}:{d}"
 
     for sent in sentences:
-        h = _horizon_of(sent)
-        is_b_sentence = bool(_B_MARK_RE.search(sent))
-        allowed_pct = set(facts["h"][h]["pct"]) if h else facts["all_pct"]
-        allowed_price = facts["all_price"] if not h else set()
-        if h:
-            for unit_set in facts["h"][h]["price"].values():
-                allowed_price |= unit_set
-        if is_b_sentence and h:
-            allowed_pct = allowed_pct | facts["b"][h]
+        for seg, h in _segments(sent):
+            # 模式標示可能在期限詞「之前」（如「B 模式 7 天後…」）：
+            # 判定用文字包含期限詞前 10 字元的上下文。
+            seg_start = sent.index(seg) if seg and seg in sent else 0
+            ctx = sent[max(0, seg_start - 10): seg_start + len(seg)]
+            is_b = bool(_B_MARK_RE.search(ctx))
+            is_a_marked = bool(_A_MARK_RE.search(ctx))
+            use_b = is_b
+            use_a = (not is_b) or is_a_marked  # A/B 對照段兩者皆可；純 B 段只有 B
 
-        for m in _PCT_RE.finditer(sent):
-            v = round(float(m.group(1)), 1)
-            if not any(abs(v - a) <= 0.15 for a in allowed_pct):
-                return False, f"unverified_percentage_h{h or 0}:{v}"
-        for m in _PRICE_RE.finditer(sent):
-            v = round(float(m.group(1)), 1)
-            if not any(abs(v - a) <= 0.15 for a in allowed_price):
-                # B 句的 B 專屬價格也允許
-                if not (is_b_sentence and h and any(abs(v - a) <= 0.15 for a in facts["b"][h])):
+            if h is None:
+                # 無期限段：任一期限的對應 mode 事實皆可（型別仍分離）
+                a_pcts = set().union(*[facts["a"][x]["pct"] for x in (7, 14)]) if use_a else set()
+                b_pcts = set().union(*[facts["b"][x]["pct"] for x in (7, 14)]) if use_b else set()
+                a_prices = set()
+                b_prices = set()
+                for x in (7, 14):
+                    if use_a:
+                        for vs in facts["a"][x]["price"].values():
+                            a_prices |= vs
+                    if use_b:
+                        for vs in facts["b"][x]["price"].values():
+                            b_prices |= vs
+            else:
+                a_pcts = facts["a"][h]["pct"] if use_a else set()
+                b_pcts = facts["b"][h]["pct"] if use_b else set()
+                a_prices = set()
+                b_prices = set()
+                if use_a:
+                    for vs in facts["a"][h]["price"].values():
+                        a_prices |= vs
+                if use_b:
+                    for vs in facts["b"][h]["price"].values():
+                        b_prices |= vs
+
+            for m in _PCT_RE.finditer(seg):
+                v = round(float(m.group(1)), 1)
+                if not _near(v, a_pcts | b_pcts):
+                    return False, f"unverified_pct_h{h or 0}:{v}"
+            for m in _PRICE_RE.finditer(seg):
+                v = round(float(m.group(1)), 1)
+                if not _near(v, a_prices | b_prices):
                     return False, f"unverified_price_h{h or 0}:{v}"
 
-        # 單位綁定（R02）：句中標示公斤但工具價格單位是台斤（或反之）→ 拒
-        if h:
-            unit_sets = facts["h"][h]["price"]
-            has_jin = "NTD_per_taiwan_jin" in unit_sets
-            has_kg = "NTD_per_kg" in unit_sets
-            sent_kg = bool(_KG_MARK_RE.search(sent))
-            sent_jin = bool(_JIN_MARK_RE.search(sent))
-            if sent_kg and has_jin and not has_kg:
-                return False, f"unit_mismatch_h{h}"
-            if sent_jin and has_kg and not has_jin:
-                return False, f"unit_mismatch_h{h}"
+            # 單位標示 vs 該段允許單位
+            if h is not None:
+                units = set()
+                if use_a:
+                    units |= set(facts["a"][h]["price"].keys())
+                if use_b:
+                    units |= set(facts["b"][h]["price"].keys())
+                has_jin = "NTD_per_taiwan_jin" in units
+                has_kg = "NTD_per_kg" in units
+                if _KG_MARK_RE.search(seg) and has_jin and not has_kg:
+                    return False, f"unit_mismatch_h{h}"
+                if _JIN_MARK_RE.search(seg) and has_kg and not has_jin:
+                    return False, f"unit_mismatch_h{h}"
 
-        # 方向衝突（含中文期限與口語誇大詞）
-        d = facts["h"][h]["direction"] if h else None
-        if d:
-            for opp in _OPPOSITE.get(d, ()):
-                if opp in sent:
-                    return False, f"direction_conflict_h{h}"
-
-    # 無期限句的數字仍須全域可溯
-    horizon_sents = {id(x) for x in sentences if _horizon_of(x) is not None}
-    for sent in sentences:
-        if id(sent) in horizon_sents:
-            continue
-        for m in _PCT_RE.finditer(sent):
-            v = round(float(m.group(1)), 1)
-            if not any(abs(v - a) <= 0.15 for a in facts["all_pct"] | facts["b"][7] | facts["b"][14]):
-                return False, f"unverified_percentage:{v}"
-        for m in _PRICE_RE.finditer(sent):
-            v = round(float(m.group(1)), 1)
-            if not any(abs(v - a) <= 0.15 for a in facts["all_price"] | facts["b"][7] | facts["b"][14]):
-                return False, f"unverified_price:{v}"
+            # 方向衝突（以該段期限的工具方向為準；A 優先，無 A 用 B）
+            if h is not None:
+                d = facts["a"][h]["direction"] or facts["b"][h]["direction"]
+                if d:
+                    for opp in _OPPOSITE.get(d, ()):
+                        if opp in seg:
+                            return False, f"direction_conflict_h{h}"
     return True, ""
 
 
@@ -399,6 +457,9 @@ def handle_agent_query(
     return {
         "backend": getattr(backend, "name", "unknown"),
         "backend_used": br.backend_used,
+        "provider": "rule",  # 與 providers 迴圈一致的中繼資料（rule 無 LLM）
+        "model": None,
+        "runtime": "rule",
         "degraded": br.degraded,
         "degraded_reason": br.degraded_reason,
         "forecast": tool_outputs.get("forecast"),

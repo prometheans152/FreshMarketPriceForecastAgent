@@ -209,7 +209,8 @@ class ForecastEngine:
     # ---------- 主流程 ----------
 
     def forecast(self, req: dict) -> dict:
-        request_id = req.get("request_id") or f"req-{pd.Timestamp.now(tz='Asia/Taipei').strftime('%Y%m%d%H%M%S%f')}"
+        # S05：預測識別一律伺服器生成（客戶端不得覆寫→不同輸入覆蓋同一預測）
+        request_id = f"req-{pd.Timestamp.now(tz='Asia/Taipei').strftime('%Y%m%d%H%M%S%f')}"
         error, n = self._validate(req)
         if error:
             return {"request_id": request_id, "mode_executed": None, "error": error, "results": []}
@@ -326,8 +327,11 @@ class ForecastEngine:
         else:
             results_a_out = results_a
 
+        client_ref = req.get("request_id")
         return {
             "request_id": request_id,
+            "client_ref": client_ref if isinstance(client_ref, str) and len(client_ref) <= 64 else None,
+            "simulated": bool(req.get("simulated")),
             "mode_executed": mode_executed,
             "model_version": self.manifest["model_version"],
             "data_version": self.manifest["source"]["json_sha256"][:12],
