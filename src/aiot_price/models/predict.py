@@ -108,6 +108,16 @@ class ForecastEngine:
         mode = req.get("mode", "without_last_week")
         if mode not in MODE:
             return {"code": "bad_request", "message": f"mode 須為 {MODE} 之一。"}, None
+        # R05：store_id 後端驗證（string/null、匿名格式、長度）；前端檢查不能取代
+        store_id = req.get("store_id")
+        if store_id is not None:
+            import re as _re
+
+            if not isinstance(store_id, str) or not _re.match(r"^[A-Za-z0-9_-]+$", store_id) or len(store_id) > 32:
+                return {
+                    "code": "bad_request",
+                    "message": "store_id 須為匿名短字串（僅英數、-、_，≤32 字元），不收真名或物件。",
+                }, None
         sanity = self.manifest.get("price_sanity_jin", {}).get(crop_id)
         price_out_of_range = bool(
             sanity and (price_jin < sanity[0] or price_jin > sanity[1])
@@ -137,15 +147,18 @@ class ForecastEngine:
                 except (TypeError, ValueError):
                     b_invalid = "上週日期格式錯誤（須含時區的 ISO8601）"
                     prev_obs = None
-            if b_invalid is None:
+            if b_invalid is None and req.get("previous_observed_at") is not None and prev_price is None:
+                # R05：只給上週日期、缺上週價格 → 降級 B（保留 A），不得 float(None) 500
+                b_invalid = "已提供上週日期但缺少上週價格，僅提供 A 模式結果"
+            if b_invalid is None and prev_price is not None:
                 try:
                     prev_jin_check = to_taiwan_jin(
                         prev_price, req.get("previous_price_unit") or req.get("price_unit") or "unknown"
                     )
                     if not math.isfinite(prev_jin_check) or prev_jin_check <= 0:
                         b_invalid = "上週價格單位不可比或換算後非正數"
-                except UnitError:
-                    b_invalid = "上週價格單位不可比（無重量資訊）"
+                except (UnitError, TypeError, ValueError):
+                    b_invalid = "上週價格單位不可比或無法換算"
 
         # 規格可比性（F01）：明示的規格欄位不一致 → B 不可比（接入 check_b_input 語意）
         spec_now = req.get("specification")

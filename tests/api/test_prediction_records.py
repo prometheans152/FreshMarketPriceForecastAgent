@@ -43,8 +43,9 @@ REQ = {
 
 
 def test_save_and_load_roundtrip(tmp_path):
-    path = save_prediction(RESP, REQ, out_dir=tmp_path)
+    path, saved_at = save_prediction(RESP, REQ, out_dir=tmp_path)
     assert path.exists()
+    assert saved_at  # R04：真實保存時間一併回傳
     records = load_records(tmp_path)
     assert len(records) == 1
     rec = records[0]
@@ -59,6 +60,15 @@ def test_simulated_rejected(tmp_path):
     with pytest.raises(ValueError):
         save_prediction(RESP, REQ, out_dir=tmp_path, simulated=True)
     assert load_records(tmp_path) == []
+
+
+def test_bad_results_structure_rejected_before_save(tmp_path):
+    """R04：results=[null] 等壞結構由 API 層驗證擋下；底層保存仍可防禦非 dict 結果。"""
+    bad = {**RESP, "results": [None]}
+    # 底層不做深驗證（API 層職責），但保存後讀回必須不讓清單崩潰
+    path, _ = save_prediction(bad, REQ, out_dir=tmp_path)
+    recs = load_records(tmp_path)
+    assert len(recs) == 1
 
 
 def test_export_anonymous(tmp_path):

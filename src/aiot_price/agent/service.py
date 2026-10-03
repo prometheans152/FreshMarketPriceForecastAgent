@@ -42,90 +42,168 @@ def load_system_prompt(path: str | Path = DEFAULT_PROMPT_PATH, *, strict: bool =
 
 import re as _re
 
-_EXAGGERATION_RE = _re.compile(r"必定|保證|絕對會|機率是|的機率|可信度|準確率|已驗證|已經驗證|一定會")
+_EXAGGERATION_RE = _re.compile(r"必定|保證|絕對會|機率是|的機率|可信度|準確率|已驗證|已經驗證|一定會|已通過")
 _PCT_RE = _re.compile(r"([+-]?\d+(?:\.\d+)?)\s*%")
 _DATE_RE = _re.compile(r"\d{4}-\d{2}-\d{2}")
 _PRICE_RE = _re.compile(r"(\d+(?:\.\d+)?)\s*元")
-_DIRECTION_WORDS = {
-    "up": ("上漲", "漲"),
-    "down": ("下跌", "跌"),
-    "flat": ("持平", "平"),
-}
+# 期限詞：阿拉伯數字與中文寫法都要綁（R02：中文期限繞過是缺陷）
+_HORIZON_WORDS = [
+    (7, _re.compile(r"7\s*天|七\s*天|一週|一周|一個禮拜|一禮拜")),
+    (14, _re.compile(r"14\s*天|十四\s*天|兩週|两周|二週|二周|兩個禮拜|二個禮拜|兩禮拜")),
+]
+# 方向衝突詞（R02：flat 的衝突涵蓋漲/跌雙向與口語詞）
 _OPPOSITE = {
-    "up": ("下跌", "跌"),
-    "down": ("上漲", "漲"),
-    # 工具說持平的期限，講「漲」或「跌」都是方向衝突
-    "flat": ("上漲", "漲", "下跌", "跌"),
+    "up": ("下跌", "跌", "大跌"),
+    "down": ("上漲", "漲", "大漲"),
+    "flat": ("上漲", "漲", "大漲", "下跌", "跌", "大跌", "大漲"),
 }
+_B_MARK_RE = _re.compile(r"B\s*模式|實驗性|使用上週|加上上週|有上週")
+_KG_MARK_RE = _re.compile(r"元\s*[/／]\s*公斤|每公斤|元每公斤")
+_JIN_MARK_RE = _re.compile(r"元\s*[/／]\s*台斤|每台斤|元每台斤|元\s*[/／]\s*斤")
 
 
-def validate_qwen_answer(answer: str, tool_outputs: dict) -> tuple[bool, str]:
-    """對照工具真值驗證 Qwen 文字。回 (ok, reason)；失敗即丟棄改用規則回答。
+def _collect_facts(forecast: dict) -> dict:
+    """從工具真值收集「期限→允許事實」與全域允許集（R02：分模式綁定）。"""
+    facts = {7: {"pct": set(), "price": {}, "direction": None},
+             14: {"pct": set(), "price": {}, "direction": None}}
+    all_pct, all_price, all_dates = set(), set(), set()
+    for r in forecast.get("results") or []:
+        h = r.get("horizon_days")
+        if h not in facts:
+            continue
+        pct = r.get("relative_change_estimate")
+        if isinstance(pct, (int, float)):
+            facts[h]["pct"].add(round(pct * 100, 1))
+        pe = r.get("price_estimate")
+        if isinstance(pe, (int, float)):
+            unit = r.get("price_estimate_unit") or ""
+            facts[h]["price"].setdefault(unit, set()).add(round(float(pe), 1))
+        facts[h]["direction"] = r.get("direction")
+    b_facts = {7: set(), 14: set()}  # B 模式專屬數字（pct 與 price 成對）
+    for r in forecast.get("results_with_last_week") or []:
+        h = r.get("horizon_days")
+        if h not in b_facts:
+            continue
+        pct = r.get("relative_change_estimate")
+        pe = r.get("price_estimate")
+        if isinstance(pct, (int, float)):
+            b_facts[h].add(round(pct * 100, 1))
+        if isinstance(pe, (int, float)):
+            b_facts[h].add(round(float(pe), 1))
+    for r in (forecast.get("results") or []) + (forecast.get("results_without_last_week") or []):
+        pct = r.get("relative_change_estimate")
+        pe = r.get("price_estimate")
+        if isinstance(pct, (int, float)):
+            all_pct.add(round(pct * 100, 1))
+        if isinstance(pe, (int, float)):
+            all_price.add(round(float(pe), 1))
+        if r.get("target_date"):
+            all_dates.add(str(r["target_date"]))
+    for r in forecast.get("results_with_last_week") or []:
+        if r.get("target_date"):
+            all_dates.add(str(r["target_date"]))
+    if forecast.get("public_data_cutoff"):
+        all_dates.add(str(forecast["public_data_cutoff"]))
+    ioa = forecast.get("input_observed_at")
+    if ioa:
+        all_dates.add(str(ioa)[:10])
+    return {"h": facts, "b": b_facts, "all_pct": all_pct, "all_price": all_price, "all_dates": all_dates}
 
-    檢查：誇大詞黑名單、百分比/日期/價格必須來自工具結果、
-    各期限句中不得出現與工具相反的方向詞。
+
+def _horizon_of(sentence: str) -> int | None:
+    for h, pat in _HORIZON_WORDS:
+        if pat.search(sentence):
+            return h
+    return None
+
+
+def validate_qwen_answer(answer, tool_outputs: dict) -> tuple[bool, str]:
+    """對照工具真值驗證 LLM 文字（R01/R02 版）。
+
+    - answer 非 str／空白 → 拒（null 不得字串化後放行）。
+    - 工具錯誤或無結果 → 預測主張（期限詞＋數字/方向）一律拒；只能陳述無法預測。
+    - 期限句的百分比/價格必須屬於該期限的 A 事實（B 數字需句內有 B 標示且屬於該期限 B 集）。
+    - 價格單位標示必須與工具單位一致（公斤/台斤）。
+    - 方向衝突詞對照該期限工具方向。
     """
-    if not answer or not answer.strip():
-        return False, "empty_answer"
+    if not isinstance(answer, str) or not answer.strip():
+        return False, "empty_or_non_string_answer"
+
     forecast = tool_outputs.get("forecast") or {}
-    if forecast.get("error"):
-        return True, ""  # 工具失敗情境由規則回答處理，不經 Qwen
+    has_valid_results = bool(forecast.get("results")) and not forecast.get("error")
+    sentences = [x for x in _re.split(r"[。\n；;]", answer) if x.strip()]
 
     if _EXAGGERATION_RE.search(answer):
         return False, "exaggeration_or_probability_claim"
 
-    # 允許數字集合：各結果的相對變化(%)、價格估計、公開截止年月日
-    allowed_pct: set[float] = set()
-    allowed_price: set[float] = set()
-    allowed_dates: set[str] = set()
-    horizon_dir: dict[int, str] = {}
-    for key in ("results", "results_without_last_week", "results_with_last_week"):
-        for r in forecast.get(key) or []:
-            pct = r.get("relative_change_estimate")
-            if isinstance(pct, (int, float)):
-                allowed_pct.add(round(pct * 100, 1))
-            pe = r.get("price_estimate")
-            if isinstance(pe, (int, float)):
-                allowed_price.add(round(float(pe), 1))
-            allowed_dates.add(str(r.get("target_date")))
-            h = r.get("horizon_days")
-            if h and key == "results":
-                horizon_dir[int(h)] = r.get("direction")
-    for d in (forecast.get("public_data_cutoff"),):
-        if d:
-            allowed_dates.add(str(d))
-    # 觀察起點日（含日期部分的字串）也允許出現在解釋文字
-    ioa = forecast.get("input_observed_at")
-    if ioa:
-        allowed_dates.add(str(ioa)[:10])
+    if not has_valid_results:
+        # R01：沒有有效工具結果時，含期限預測主張的句子一律拒
+        for sent in sentences:
+            if _horizon_of(sent) is not None:
+                return False, "prediction_claim_without_tool_results"
+        return True, ""
 
-    for m in _PCT_RE.finditer(answer):
-        v = round(float(m.group(1)), 1)
-        # 與任一允許值相差 <=0.15 視為同一數字的排版差
-        if not any(abs(v - a) <= 0.15 for a in allowed_pct):
-            return False, f"unverified_percentage:{v}"
+    facts = _collect_facts(forecast)
+
     for m in _DATE_RE.finditer(answer):
-        if m.group(0) not in allowed_dates:
+        if m.group(0) not in facts["all_dates"]:
             return False, f"unverified_date:{m.group(0)}"
-    for m in _PRICE_RE.finditer(answer):
-        v = round(float(m.group(1)), 1)
-        if not any(abs(v - a) <= 0.15 for a in allowed_price):
-            return False, f"unverified_price:{v}"
 
-    # 方向一致性：含「N 天」的句子不得使用與工具相反的方向詞
-    for sent in _re.split(r"[。\n；;]", answer):
-        for h, d in horizon_dir.items():
-            if f"{h} 天" in sent or f"{h}天" in sent:
-                for opp in _OPPOSITE.get(d, ()):
-                    if opp in sent:
-                        return False, f"direction_conflict_h{h}"
+    for sent in sentences:
+        h = _horizon_of(sent)
+        is_b_sentence = bool(_B_MARK_RE.search(sent))
+        allowed_pct = set(facts["h"][h]["pct"]) if h else facts["all_pct"]
+        allowed_price = facts["all_price"] if not h else set()
+        if h:
+            for unit_set in facts["h"][h]["price"].values():
+                allowed_price |= unit_set
+        if is_b_sentence and h:
+            allowed_pct = allowed_pct | facts["b"][h]
+
+        for m in _PCT_RE.finditer(sent):
+            v = round(float(m.group(1)), 1)
+            if not any(abs(v - a) <= 0.15 for a in allowed_pct):
+                return False, f"unverified_percentage_h{h or 0}:{v}"
+        for m in _PRICE_RE.finditer(sent):
+            v = round(float(m.group(1)), 1)
+            if not any(abs(v - a) <= 0.15 for a in allowed_price):
+                # B 句的 B 專屬價格也允許
+                if not (is_b_sentence and h and any(abs(v - a) <= 0.15 for a in facts["b"][h])):
+                    return False, f"unverified_price_h{h or 0}:{v}"
+
+        # 單位綁定（R02）：句中標示公斤但工具價格單位是台斤（或反之）→ 拒
+        if h:
+            unit_sets = facts["h"][h]["price"]
+            has_jin = "NTD_per_taiwan_jin" in unit_sets
+            has_kg = "NTD_per_kg" in unit_sets
+            sent_kg = bool(_KG_MARK_RE.search(sent))
+            sent_jin = bool(_JIN_MARK_RE.search(sent))
+            if sent_kg and has_jin and not has_kg:
+                return False, f"unit_mismatch_h{h}"
+            if sent_jin and has_kg and not has_jin:
+                return False, f"unit_mismatch_h{h}"
+
+        # 方向衝突（含中文期限與口語誇大詞）
+        d = facts["h"][h]["direction"] if h else None
+        if d:
+            for opp in _OPPOSITE.get(d, ()):
+                if opp in sent:
+                    return False, f"direction_conflict_h{h}"
+
+    # 無期限句的數字仍須全域可溯
+    horizon_sents = {id(x) for x in sentences if _horizon_of(x) is not None}
+    for sent in sentences:
+        if id(sent) in horizon_sents:
+            continue
+        for m in _PCT_RE.finditer(sent):
+            v = round(float(m.group(1)), 1)
+            if not any(abs(v - a) <= 0.15 for a in facts["all_pct"] | facts["b"][7] | facts["b"][14]):
+                return False, f"unverified_percentage:{v}"
+        for m in _PRICE_RE.finditer(sent):
+            v = round(float(m.group(1)), 1)
+            if not any(abs(v - a) <= 0.15 for a in facts["all_price"] | facts["b"][7] | facts["b"][14]):
+                return False, f"unverified_price:{v}"
     return True, ""
-
-
-class AgentBackend(Protocol):
-    name: str
-
-    def reply(self, parsed: ParsedQuery, tool_outputs: dict) -> str: ...
 
 
 class RuleBackend:
@@ -253,7 +331,10 @@ class QwenBackend:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-            answer = str(data["choices"][0]["message"]["content"]).strip()
+            raw_content = data["choices"][0]["message"]["content"]
+            if not isinstance(raw_content, str):
+                raise ValueError(f"non-string content: {type(raw_content).__name__}")
+            answer = raw_content.strip()
         except Exception as e:
             return BackendResult(
                 RuleBackend().reply(parsed, tool_outputs), "rule", True, f"qwen_request_failed:{type(e).__name__}"
@@ -303,8 +384,15 @@ def handle_agent_query(
     else:
         tool_outputs["forecast"] = None
 
+    # R01：缺必要輸入或工具無有效結果時，不把請求送 LLM——直接由規則層
+    # 回「要求補充／無法預測」；LLM 只在有事實可解釋時參與。
+    fc = tool_outputs.get("forecast")
+    tool_ok = bool(fc and not fc.get("error") and fc.get("results"))
+    if parsed.missing or parsed.unit_non_comparable or not tool_ok:
+        rule_answer = RuleBackend().reply(parsed, tool_outputs)
+        br = BackendResult(rule_answer, "rule", True, "no_tool_result_skip_llm" if not parsed.missing and not parsed.unit_non_comparable else "missing_input_skip_llm")
     # F02/F07：實際執行的後端與降級狀態；結構化 forecast 真值獨立回傳給前端
-    if hasattr(backend, "reply_result"):
+    elif hasattr(backend, "reply_result"):
         br = backend.reply_result(parsed, tool_outputs)
     else:
         br = BackendResult(backend.reply(parsed, tool_outputs), getattr(backend, "name", "rule"))

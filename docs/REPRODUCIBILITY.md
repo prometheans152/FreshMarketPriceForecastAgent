@@ -144,3 +144,9 @@ PYTHONPATH=src .venv/Scripts/python.exe -m uvicorn aiot_price.api.app:app --host
 2. ~~`requirements-lock.txt` 缺 fastapi／uvicorn／starlette~~：**已解決（2026-10-04）**——lock 改為可攜 `-e .`、pyproject 補齊 fastapi／uvicorn／pyarrow（httpx 入 dev），並於專案外乾淨 venv 驗證通過（見 §1 與 [clean_env_check](../outputs/audits/2026-10-04_round2/clean_env_check.md)）。
 3. 發布延遲（觀測日 vs 可下載日）未實測：重現者拿到的最新日期可能落後，屬來源特性非流程錯誤（MODEL_VALIDATION_PLAN 3.3）。
 4. 同店 A/B（T16 HOLD）與自動排程更新（依 policy 不建）：不影響上述公開模型全流程重現。
+
+## 第四輪補充（2026-10-04）
+
+- 依賴新增：`hermes-agent==0.19.0`（官方 Nous Research；import 名 `run_agent`）、`pytest-asyncio`、`openai==2.24.0`（hermes 依賴）——見 requirements-lock.txt。全套測試 192 passed（歷史：第三輪 134、初驗 98）。
+- 代理人啟動與切換：`AIOT_AGENT_PROFILE`（rule/glm_zai/glm_bigmodel/qwen_local）＋`AIOT_AGENT_FRAMEWORK`（direct/hermes）；詳 docs/ROUND4_GLM_API_REPORT.md §5-6。
+- 乾淨環境最終驗證：outputs/audits/round4_glm_api/clean_env_final.md。

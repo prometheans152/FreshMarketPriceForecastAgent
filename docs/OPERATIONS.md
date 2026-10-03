@@ -1,6 +1,6 @@
 # 營運操作手冊（T30）
 
-建立：2026-10-04（本機時間 00:02–00:04 實測）；同日 01:08–01:13 依第二輪獨立審查（F04／F05）重構更新流程後補第二輪實測（見 §3.5）。適用範圍：TRAIN_LOCAL（本 Windows 工作區）的公開行情更新。策略聲明見 [configs/update_policy.yaml](../configs/update_policy.yaml)（policy_version 0.2.0）；實測報告 JSON 在 `outputs/update_tests/`（Git 忽略目錄）。
+建立：2026-10-04（本機時間 00:02–00:04 實測）；同日 01:08–01:13 依第二輪獨立審查（F04／F05）重構更新流程後補第二輪實測（見 §3.5）；同日依第三輪獨立審查 R07 補第三輪修復（--config 受控、reload 失敗獨立狀態 exit 5，見 §3.6）。適用範圍：TRAIN_LOCAL（本 Windows 工作區）的公開行情更新。策略聲明見 [configs/update_policy.yaml](../configs/update_policy.yaml)（policy_version 0.3.0）；實測報告 JSON 在 `outputs/update_tests/` 與 `outputs/audits/round4_glm_api/r07_update/`（均為 Git 忽略目錄）。
 
 > **SERVER 端（推論/API/Qwen 的行情刷新與版本管理）：待 T24／T29 補。** 本文件目前只涵蓋本機側；SERVER 位址與部署方式尚未取得（T23 HOLD）。取得後需補：SERVER 上模型包的更新／hash 校驗、服務重啟與 fixture 重播、以及手機端可用性確認。
 
@@ -49,17 +49,18 @@ PYTHONPATH=src .venv/Scripts/python.exe scripts/update_public_data.py \
 - 有用 `--reload-check` 時：`reload_check.cutoff_after` 必須等於新日期才算「重啟後生效」（§6）；
 - `date_semantics`：快照截止日／特徵實際可見日／資料版本三個概念對照（§7）。
 
-離開代碼（2026-10-04 第二輪審查後重新編號，與 update_policy.yaml 0.2.0 同步）：
+離開代碼（2026-10-04 第三輪審查 R07 修復後與 update_policy.yaml 0.3.0 同步；各階段失敗行為分開定義，**不再以「失敗一律保留舊檔」概括**）：
 
-| exit | 意義 | 保留狀態 |
+| exit | 意義 | 磁碟狀態／處置 |
 | --- | --- | --- |
 | `0` | 成功（含無新資料） | — |
-| `1` | 參數／設定錯誤，或其他未預期但受控回報的失敗 | 舊檔全部保留 |
+| `1` | 參數／設定錯誤（含 `--config` 不存在／壞 YAML；報告記 `failure_stage=config`），或其他未預期但受控回報的失敗 | 未寫入任何檔案；報告 JSON 一定生成（不裸拋 traceback） |
 | `2` | schema 驗證失敗（壞 JSON／缺欄／壞日期／Infinity／負值／重複鍵／空檔） | 該檔不落地 |
 | `3` | 下載失敗（連線／HTTP／逾時） | 舊檔全部保留 |
-| `4` | 寫入／核對失敗（暫存寫入、逐列核對、原子替換、備份還原、reload-check） | 快照已保存者保留（partial_state 註明歷史未刷新）；release parquet 保護為舊內容 |
+| `4` | 寫入／核對失敗（暫存寫入、逐列核對、原子替換、備份還原）；另含**本 run 未落地任何資料**時的 reload-check 失敗（純驗證失敗） | 快照已保存者保留（partial_state 註明歷史未刷新）；release parquet 保護為舊內容（必要時自動還原備份） |
+| `5` | **資料已更新但 reload-check 失敗**（`status=data_updated_reload_failed`）：快照與 release 歷史已核對通過並落地（提交邊界），服務重載驗證失敗 | **不回滾已提交的新資料**——磁碟上已是核對通過的新資料；需手動重啟服務／重建引擎（§6）；舊資料已在 `release_history.backup_path` 備份，確需回舊資料可手動還原 |
 
-> 注意：0.1.0 版舊文件中「1＝下載失敗、3＝release 刷新失敗」的編號已停用；接到 exit 3／4 的自動化或文件引用需對照上表。
+> 注意：0.1.0 版舊文件中「1＝下載失敗、3＝release 刷新失敗」的編號已停用；0.2.0 版把「reload-check 失敗」歸在 exit 4，0.3.0 起拆分——**本 run 有已提交資料時 reload 失敗＝exit 5（資料已更新）**，只有未落地任何資料（dry-run／無新資料）時才是 exit 4。接到 exit 3／4／5 的自動化或文件引用需對照上表。
 
 ## 3. 實測輸出摘要（2026-10-04 00:02–00:04 +08:00）
 
@@ -162,6 +163,20 @@ PYTHONPATH=src .venv/Scripts/python.exe scripts/update_public_data.py \
 
 **真實 CLI 冒煙（非 in-process）**：重構後亦以子程序實跑兩次驗證退出碼——`--input data/raw/taichung/retail_prices_20261003.json --dry-run`（真實本地快照、無網路）→ exit 0／`no_new_data`（`round3_cli_smoke_dryrun.json`）；`--url http://127.0.0.1:9/`（本機拒絕連線埠，未對外部發請求）→ exit 3、報告 `status=failed`＋`old_files_kept=true`（`round3_cli_dead_source.json`）。
 
+### 3.6 第三輪審查 R07 修復實測（2026-10-04 第四輪；policy 0.3.0）
+
+第三輪獨立審查（[REVIEW_44dabe3.md](../audits/2026-10-04_round3_independent/REVIEW_44dabe3.md) R07）重現兩個狀態契約缺陷後修復：`--config` 載入移入受控區；reload-check 失敗與寫入失敗分離（提交邊界＝快照保存＋release 歷史原子替換且核對通過）。實測證據在 `outputs/audits/round4_glm_api/r07_update/`（產生器 `_r07_repair_tests.py`）。**與 §3.5 相同：下載為模擬傳輸、故障注入靠 monkeypatch、所有寫入僅落暫存副本；正式 `models/releases/0.1.0/` 與 `data/raw/` 測試前後 9 檔 hash 全部不變**（`hashes_formal_before/after.json`）。
+
+| # | 情境（全部模擬） | 結果 | 關鍵證據 |
+| --- | --- | --- | --- |
+| r07a | `--config` 不存在檔案（**真實 CLI 子程序**） | exit **1**、全 PASS | 報告 JSON 生成（此前未生成）：`status=failed`、`failure_stage=config`、`error` 以 `config_error` 開頭並記 FileNotFoundError；stderr 無 traceback；未寫入任何檔案 |
+| r07a2 | `--config` 壞 YAML（in-process） | exit **1**、全 PASS | 同上受控（yaml 語法錯不再裸拸） |
+| r07b | **資料已提交後 reload-check 失敗**（monkeypatch `engine_public_cutoff`：刷新前正常、刷新後失敗；副本 release＋模擬下載＋`--refresh-release-history --reload-check`） | exit **5**、全 PASS | `status=data_updated_reload_failed`（非 failed）；history `12288→12309` 列且最大日 `2026-10-04`＝**新資料已提交不回滾**；舊區段逐列相同；快照與備份都在；`reload_check` 記 `data_committed=true`、`reloaded=false`、`manual_restart_required=true`、`restart_guidance` 含 §6 與備份還原說明；`date_semantics` 仍產出 |
+| r07c | dry-run（無資料落地）＋ reload-check 失敗 | exit **4**、全 PASS | `status=failed`＋`data_committed=false`＝純驗證失敗；release parquet hash 不變、無任何寫入 |
+| 回歸 | 直接重跑 §3.5 的 `_round3_repair_tests.py` t1–t5（證據改寫到本目錄，不覆蓋 `outputs/update_tests/round3_*.json` 歷史結果） | 全 PASS | `round3_repair_scenarios_rerun_round4.json`：新路徑成功（12288→12309）、寫入中斷保舊、核對失敗還原、schema 拒絕（壞 JSON／缺甘藍欄／Infinity；0 值仍放行）、重載成功（cutoff 2026-10-02→2026-10-04，權重不變） |
+
+修復後全套既有 pytest 亦重跑通過（164 passed，2026-10-04；含第四輪其他修復新增之測試，非本案範圍）。
+
 ## 4. 故障查法
 
 | 症狀 | 診斷 | 處理 |
@@ -171,7 +186,9 @@ PYTHONPATH=src .venv/Scripts/python.exe scripts/update_public_data.py \
 | **品項值不合法**（exit 2；Infinity／負值／無法轉數字／(市場,日期) 鍵重複） | 0.2.0 起三個支援品項欄逐格檢查：空值／NaN＝缺測、0＝無價（依契約轉缺測）可通過；其餘拒絕 | 同上：不落地。若官方真開始供應負值或非數字內容，視為 schema 變動處理 |
 | **無新資料**（exit 0，`no_new_data`） | 不是故障：官方 API 是近一年滾動視窗，同日重複下載回相同內容（DATA_CARD 已記錄）；報告會顯示 `same_hash_as_baseline: true` 或新增日期 0 | 不需處理。想確認來源活著就看 HTTP 200 與 SHA256 有沒有寫進報告 |
 | **寫入／核對失敗**（exit 4；暫存寫入中斷／逐列核對不符／原子替換失敗／替換後驗證失敗／備份還原失敗） | `release_history.error` 會寫明失敗在哪一步；`target_is_old_content`／`restored_from_backup` 說明目標現況 | 0.2.0 起自動保護：目標 parquet 保持完整可讀的舊內容（必要時已自動從備份還原）。仍失敗（`target_is_old_content: false`）時用報告 `backup_path` 的備份手動覆蓋回 `public_history.parquet`，再重跑一次；不可手動編 parquet。快照若已保存屬合法取得內容，保留不回滾（報告 `partial_state` 有註明歷史未刷新） |
-| **reload-check 失敗**（exit 4；引擎建不起來或 hash 不符） | 報告 `reload_check.error`；常見原因是 release 目錄不完整或模型檔 hash 與 manifest 不符 | 先確認 release 目錄五檔齊全；權重不符代表模型包被動過，回到 T18 package.py 重新打包，不要就地修 |
+| **設定檔錯誤**（exit 1；`--config` 不存在／壞 YAML／無法決定 URL） | 報告 `failure_stage=config`、`error` 以 `config_error` 開頭；0.3.0 起一定生成報告 JSON，不裸拋 traceback | 未寫入任何檔案。確認 `--config` 路徑與 YAML 語法後重跑；不要改 `src/` 的解析器 |
+| **資料已更新但 reload-check 失敗**（exit **5**；`status=data_updated_reload_failed`；引擎建不起來或 hash 不符，但快照／release 歷史已核對通過落地） | 報告 `reload_check.error`、`manual_restart_required=true`、`restart_guidance`；常見原因是 release 目錄不完整或模型檔 hash 與 manifest 不符 | **不回滾已提交的新資料**——這不是更新失敗，是「重載驗證未通過的成功資料更新」。先依 §6 手動重啟服務／重建引擎，再重跑 `--reload-check` 驗證；引擎建不起來時先確認 release 目錄五檔齊全，權重不符代表模型包被動過，回到 T18 package.py 重新打包，不要就地修。確需回到舊資料：用報告 `release_history.backup_path` 的備份手動覆蓋回 `public_history.parquet` |
+| **reload-check 失敗（無資料落地）**（exit 4；dry-run／無新資料時的純驗證失敗） | 報告 `reload_check.data_committed=false` | 本 run 未寫入任何資料，屬驗證失敗；同上排查 release 目錄與模型包完整性 |
 | **快照目錄出現多個同日檔**（`_HHMMSS` 後綴） | 正常：不覆蓋舊檔的設計；同日多次成功取得**新內容**才會發生 | 保留全部並讓 provenance 對得上即可，不刪檔 |
 
 ## 5. 版本與聯繫
@@ -198,7 +215,8 @@ PYTHONPATH=src .venv/Scripts/python.exe scripts/update_public_data.py \
        --input <最新快照> --refresh-release-history --reload-check --dry-run
    ```
    報告 `reload_check.cutoff_after` 必須等於新日期；不等於＝沒生效（多半是服務沒重啟或讀到別的目錄）。
-4. Qwen **不需要**重載（與菜價行情無關，見 §1）；模型權重與 manifest 不因刷新改變，不需重新訓練或重新打包。
+4. **reload-check 失敗不等於更新失敗**（0.3.0／R07）：資料已提交（快照與 release 歷史已核對通過落地）時，reload-check 失敗回 **exit 5**、`status=data_updated_reload_failed`——磁碟上已是核對通過的新資料，**不回滾**。處置＝手動完成第 2 步的重啟，再重跑 `--reload-check` 驗證；舊資料在 `release_history.backup_path` 備份，確需回舊資料時手動覆蓋回 `public_history.parquet`。只有本 run 未落地任何資料（dry-run／無新資料）時，reload 失敗才是 exit 4 的純驗證失敗。
+5. Qwen **不需要**重載（與菜價行情無關，見 §1）；模型權重與 manifest 不因刷新改變，不需重新訓練或重新打包。
 
 ## 7. 「快照截止日」≠「特徵實際可見日」≠「資料版本」（F05d）
 

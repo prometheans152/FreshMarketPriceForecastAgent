@@ -34,6 +34,14 @@
 - **併發**：`/agent/query` 經 `run_in_threadpool` 執行；模擬 0.5s 延遲後端下 health 未被阻塞（審查重現的阻塞情境修正）。
 - **降級透明**：回應含 `backend_used`／`degraded`／`degraded_reason`／`forecast`（結構化真值）；規則結果不標 Qwen；前端顯示「Qwen 失敗→規則模式（原因）」。
 
+## 第四輪補強（2026-10-04；R01–R08；tests/agent/test_review_round4.py＋test_providers.py＋test_hermes.py）
+
+- **R01 短路**：缺輸入／工具錯誤不送任何 LLM（零請求實測）；驗證器不再對工具錯誤 return True。
+- **R02 綁定**：期限×模式×單位（含中文期限詞、null content、公斤/台斤標示）；期限交換/跨模式/誇大詞全拒，正確回答不誤擋。
+- **真 tool-calling 迴圈**（providers.py，19 項離線協議測試）：白名單 2 工具、參數鍵白名單、共用語意驗證、role:"tool" 回送、max_turns/max_tool_calls、provider 失敗保留真值不切雲端。
+- **Hermes 0.19.0 整合**（5 項離線測試）：官方 registry 註冊、enabled_toolsets 白名單（31 內建→2）、HERMES_HOME 隔離與環境 scrub、輸出同過真值驗證器。
+- R04 保存防偽：request_id 綁定伺服器暫存真推論（偽造/simulated/壞結構全拒）。
+
 ## 待 SERVER 補測（HOLD 項）
 
 1. 真 Qwen 載入後：中文品項理解變體（口語/錯字）、工具參數正確率、回答延遲與顯存（T25 基準）。

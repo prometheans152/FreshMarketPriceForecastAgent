@@ -2,12 +2,20 @@
 # 本檔是「策略聲明」：實際行為由 scripts/update_public_data.py 實作，兩者需同步修改。
 # 對應設計原則（design.md §8）：行情刷新、模型發布、Qwen 載入是不同操作。
 # 2026-10-04 初版（0.1.0）；同日第二輪審查後改版（0.2.0）：修 F04（下載路徑中斷）、
-# F05（原子替換／schema 加強／重載驗證／日期語意）。證據見 docs/OPERATIONS.md 與
-# outputs/update_tests/round3_*.json。
+# F05（原子替換／schema 加強／重載驗證／日期語意）；同日第三輪審查後改版（0.3.0）：
+# 修 R07（config 載入受控、reload 失敗獨立狀態與退出碼 5、失敗行為改階段表）。
+# 證據見 docs/OPERATIONS.md、outputs/update_tests/round3_*.json 與
+# outputs/audits/round4_glm_api/r07_update/。
 
-policy_version: "0.2.0"
+policy_version: "0.3.0"
 effective_date: "2026-10-04"
 change_log:
+  - "0.3.0（2026-10-04 第三輪審查修復 R07）：--config 不存在／壞 YAML 改為受控
+     產生報告 JSON（failure_stage=config）後 exit 1，不裸拋；明確提交邊界＝快照
+     保存＋release 歷史原子替換且逐列核對通過，reload-check 失敗不回滾已提交的
+     新資料，改回獨立狀態 data_updated_reload_failed（exit 5）＋手動重啟指引；
+     「失敗一律保留舊檔」概括句改為 config／download／schema／write／reload
+     各階段行為表；本 run 無落地寫入時 reload 失敗仍為純驗證失敗（exit 4）。"
   - "0.2.0（2026-10-04 第二輪審查修復）：退出碼重新編號（3=下載、4=寫入／核對，
      1 改為參數／設定錯誤）；parquet 更新改暫存＋逐列核對＋os.replace 原子替換＋
      失敗自動還原；schema 加強（三品項欄存在、有限值、鍵唯一、壞 JSON 受控）；
@@ -46,10 +54,14 @@ no_new_data:                 # 無新資料＝不動
   action: 只寫報告（status=no_new_data），不存新快照、不碰 release、不重訓
   evidence: outputs/update_tests/scenario_a1_real_download.json（真實下載、0 新日期；2026-10-04 原證據保留）
 
-failure:                     # 0.2.0：退出碼重新編號；全部寫報告 JSON、保留舊檔
-  usage: >
-    參數／設定錯誤（--input 與 --url 互斥、--input 檔不存在、設定檔無法決定 URL、
-    其他未預期但受控回報的失敗）→ status=failed、exit code 1。
+failure:                     # 0.3.0（R07）：各階段分開定義；全部寫報告 JSON。
+                              # 提交邊界＝快照保存＋release 歷史原子替換且逐列核對通過；
+                              # 不再用「失敗一律保留舊檔」概括（reload 階段例外，見下）。
+  config: >
+    設定階段錯誤（--config 指向不存在檔案、壞 YAML／編碼錯、設定檔無法決定 URL；
+    --input 與 --url 互斥、--input 檔不存在）→ status=failed、
+    failure_stage=config、error 以 config_error 開頭、exit code 1；
+    未寫入任何檔案，指定的 --report 一定生成（不裸拋 traceback）。
   download: >
     下載失敗（逾時／連線拒絕／HTTP 錯誤）→ status=failed、exit code 3、
     舊檔全部保留；不得把失敗當成「價格不變」或「無新資料」回給使用者。
@@ -59,12 +71,25 @@ failure:                     # 0.2.0：退出碼重新編號；全部寫報告 J
     （例：缺少必要欄位：甘藍（平地高麗菜）；絲瓜：非有限值（Infinity））。
   write: >
     寫入／核對失敗（暫存寫入中斷、逐列核對不符、os.replace 原子替換失敗、
-    替換後驗證失敗、備份還原失敗、reload-check 失敗）→ status=failed、exit code 4；
+    替換後驗證失敗、備份還原失敗）→ status=failed、exit code 4；
     快照已保存者保留並在報告 partial_state 說明「歷史未刷新」；
     release parquet 一律保護為舊內容（必要時自動從備份還原並驗證）。
+  reload: >
+    reload-check 失敗分兩種（0.3.0 起與 write 階段分離）：
+    (a) 本 run 已提交資料（快照已保存或 release 歷史已原子替換且核對通過）→
+    不回滾已提交的新資料；status=data_updated_reload_failed、exit code 5；
+    報告 reload_check 記 data_committed=true、reloaded=false、
+    manual_restart_required=true 與 restart_guidance（需手動重啟服務或重建引擎，
+    步驟見 docs/OPERATIONS.md §6；舊資料已在 release_history.backup_path 備份，
+    確需回舊資料可手動還原）。
+    (b) 本 run 未落地任何資料（dry-run／無新資料／未刷新）→ 純驗證失敗：
+    status=failed、exit code 4。
   evidence: >
     outputs/update_tests/round3_repair_scenarios.json（0.2.0：模擬下載全程、
-    寫入中斷、核對失敗、壞 JSON、缺甘藍欄、Infinity、reload-check）；
+    寫入中斷、核對失敗、壞 JSON、缺甘藍欄、Infinity、reload-check；原證據保留）；
+    outputs/audits/round4_glm_api/r07_update/（0.3.0 / R07：--config 不存在受控、
+    reload 失敗 exit 5 與 dry-run reload 失敗 exit 4、5 組情境回歸、
+    正式工件 hash 前後對照）；
     scenario_c_dead_source.json／scenario_d_schema_change.json（0.1.0 原證據保留）。
 
 snapshot_retention:
@@ -101,7 +126,7 @@ refresh_release_history:     # --refresh-release-history：只刷新推論特徵
     追加新日期只讓推論引擎（ForecastEngine）讀到較新的歷史特徵；
     模型本身仍是舊訓練快照訓練的，manifest 的 observation_end 維持訓練當時日期。
 
-engine_reload:               # 0.2.0 新增（F05c）：更新如何對已啟動的服務生效
+engine_reload:               # 0.2.0 新增（F05c）；0.3.0 補 reload 失敗行為（R07）
   fact: >
     ForecastEngine 只在初始化時讀 public_history.parquet；行情更新「磁碟檔」後，
     已啟動的引擎／API 服務不會自動看到新行情（本輪已實測：同一實例刷新後仍回舊
@@ -112,6 +137,14 @@ engine_reload:               # 0.2.0 新增（F05c）：更新如何對已啟動
     重啟 Uvicorn行程；SERVER 部署後＝重啟推論服務行程（T24/T29 另補）。
     Qwen 不需要重載（與菜價行情無關）。
   verification: --reload-check 的報告 reload_check.cutoff_after 必須等於新日期才算生效。
+  on_reload_check_failure: >
+    資料已提交（本 run 快照已保存或 release 歷史已原子替換且核對通過）時，
+    reload-check 失敗不代表更新失敗：exit code 5、status=data_updated_reload_failed，
+    磁碟上已是核對通過的新資料（不回滾）。處置＝依 docs/OPERATIONS.md §6 手動
+    重啟服務／重建引擎後重跑 --reload-check 驗證；舊資料在
+    release_history.backup_path 備份，確需回舊資料時手動覆蓋回
+    public_history.parquet。本 run 未落地任何資料（dry-run／無新資料）時，
+    reload-check 失敗只是驗證失敗：exit code 4、status=failed。
 
 date_semantics:              # 0.2.0 新增（F05d）：三個概念不得混用
   snapshot_cutoff: >
@@ -145,9 +178,10 @@ reporting:
   every_run: 呼叫端用 --report 指定 JSON 路徑；報告含 HTTP、SHA256、schema 統計、
     新增日期、release 前後列數、備份路徑、dry_run 標記、date_semantics 三概念
   honesty: 報告須標明來源（download 或 local_file）；本地模擬測試不得寫成真實下載
-  exit_codes:                 # 0.2.0 重新編號（3 與 4 為新語意）
+  exit_codes:                 # 0.3.0（R07）：新增 5；4 不再包含「有已提交資料時的 reload 失敗」
     0: 成功（含無新資料）
-    1: 參數／設定錯誤，或其他未預期但受控回報的失敗
+    1: 參數／設定錯誤（含 --config 不存在／壞 YAML；failure_stage=config），或其他未預期但受控回報的失敗
     2: schema 驗證失敗（含壞 JSON）
     3: 下載失敗
-    4: 寫入／核對失敗（含原子替換、備份還原、reload-check）
+    4: 寫入／核對失敗（含原子替換、備份還原）；另含本 run 未落地任何資料時的 reload-check 失敗（純驗證失敗）
+    5: 資料已更新但 reload-check 失敗（data_updated_reload_failed）：已提交的新資料不回滾，需手動重啟服務（docs/OPERATIONS.md §6）；舊資料在 release_history.backup_path 備份

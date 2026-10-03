@@ -41,13 +41,19 @@ _ALIAS_PATTERNS.sort(key=lambda x: -len(x[0]))
 
 _CLAUSE_SPLIT_RE = re.compile(r"[，,、;；。]")
 _DATE_RE = re.compile(r"(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})日?")
+# 月／日寫法（9/1、9月1日）；年用今天年。放在年月日之後嘗試。
+_MD_DATE_RE = re.compile(r"(?<!\d)(\d{1,2})[/月](\d{1,2})日?(?!\d)")
+
+_DEFAULT_YEAR = (2026,)  # 月/日寫法補年用；parse_query 依 today 覆寫
 _UNIT_PATTERNS = [
     (re.compile(r"公斤|/kg"), "NTD_per_kg"),
     (re.compile(r"(?<!公)(?<!公 )台?斤|(?<!公)/斤"), "NTD_per_taiwan_jin"),
     (re.compile(r"(?:一|1|\d+)\s*(?:顆|粒|把|根|袋)"), "per_piece_or_bunch"),
 ]
-_PRICE_NUM_RE = re.compile(r"(\d{1,5}(?:\.\d+)?)\s*(?:元|塊)|(?:元|塊)\s*(\d{1,5}(?:\.\d+)?)")
-_PRICE_AFTER_UNIT_RE = re.compile(r"(?:斤|公斤)\s*[:：]?\s*(\d{1,5}(?:\.\d+)?)")
+_PRICE_NUM_RE = re.compile(r"([+-]?\d{1,5}(?:\.\d+)?)\s*(?:元|塊)|(?:元|塊)\s*([+-]?\d{1,5}(?:\.\d+)?)")
+_PRICE_AFTER_UNIT_RE = re.compile(r"(?:斤|公斤)\s*[:：]?\s*([+-]?\d{1,5}(?:\.\d+)?)")
+# 數量詞（兩斤32 的「兩斤」）：價格換算用
+_QTY_RE = re.compile(r"(兩|二|三|四|五|六|七|八|九|十|[1-9]\d*)\s*(?:台)?斤")
 _YESTERDAY_RE = re.compile(r"昨(?:天|日)")
 _LAST_WEEK_RE = re.compile(r"上(?:週|周|禮拜)")
 _LAST_TIME_RE = re.compile(r"上次")
@@ -67,6 +73,8 @@ class PriceMention:
     crop_text: str | None = None
     different_store: bool = False
     different_spec: bool = False
+    quantity: float = 1.0  # 「兩斤32」的數量（總價換算單價用）
+    invalid_date: bool = False  # 明示了日期但無法解析（不等於未提供）
     source_text: str = ""
 
 
@@ -151,13 +159,22 @@ def _extract_mentions(text: str) -> list[PriceMention]:
                 break
 
         explicit = None
+        date_invalid = False
         m = _DATE_RE.search(clause)
         if m:
             try:
                 explicit = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
             except ValueError:
-                explicit = None
-        if explicit is not None:
+                # R03：明示但無效（如 2026-02-30）≠ 未提供；標記後續拒 B，不補預設
+                date_invalid = True
+        if explicit is None and not date_invalid:
+            md = _MD_DATE_RE.search(clause)
+            if md:
+                try:
+                    explicit = date(_DEFAULT_YEAR[0], int(md.group(1)), int(md.group(2)))
+                except ValueError:
+                    date_invalid = True
+        if explicit is not None or date_invalid:
             when = "last_week_dated" if (_LAST_WEEK_RE.search(clause) or _LAST_TIME_RE.search(clause)) else "dated"
         elif _YESTERDAY_RE.search(clause):
             when = "yesterday"
@@ -167,6 +184,13 @@ def _extract_mentions(text: str) -> list[PriceMention]:
             when = "last_time"
         else:
             when = "today"
+
+        # 數量（兩斤/2斤）→ 價格若為總價則換算單價
+        qty = 1.0
+        qm = _QTY_RE.search(clause)
+        if qm:
+            word = qm.group(1)
+            qty = {"兩": 2, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}.get(word, None) or (float(word) if word.isdigit() else 1.0)
 
         crop_id = crop_text = None
         for alias, cid in _ALIAS_PATTERNS:
@@ -184,11 +208,14 @@ def _extract_mentions(text: str) -> list[PriceMention]:
         if not vals:
             continue
         for v in vals:
+            unit_price = v / qty if qty and qty > 1 and unit in ("NTD_per_taiwan_jin", "NTD_per_kg") else v
             mentions.append(
                 PriceMention(
-                    v, unit, when, explicit, crop_id, crop_text,
+                    unit_price, unit, when, explicit, crop_id, crop_text,
                     bool(_DIFF_STORE_RE.search(clause)),
                     bool(_DIFF_SPEC_RE.search(clause)),
+                    qty,
+                    date_invalid,
                     clause,
                 )
             )
@@ -198,6 +225,7 @@ def _extract_mentions(text: str) -> list[PriceMention]:
 def parse_query(text: str, today: date | None = None) -> ParsedQuery:
     """從中文查詢解析。子句級綁定；無法可靠解讀時要求補充或回 A，不猜。"""
     pq = ParsedQuery(today=today or datetime.now().astimezone().date())
+    globals()["_DEFAULT_YEAR"] = (pq.today.year,)
     if not text or not text.strip():
         pq.missing = ["品項", "今天價格", "計價單位（元/台斤或元/公斤）"]
         return pq
@@ -217,7 +245,7 @@ def parse_query(text: str, today: date | None = None) -> ParsedQuery:
 
     usable_current = [
         m for m in current_candidates
-        if m.unit in ("NTD_per_taiwan_jin", "NTD_per_kg") and m.value == m.value
+        if m.unit in ("NTD_per_taiwan_jin", "NTD_per_kg") and m.value == m.value and m.value > 0
     ]
     non_comparable_today = [m for m in current_candidates if m.unit == "per_piece_or_bunch"]
     crops_seen = sorted({m.crop_id for m in usable_current if m.crop_id})
@@ -246,8 +274,18 @@ def parse_query(text: str, today: date | None = None) -> ParsedQuery:
                 m.unit = pq.price_unit
     past_usable = [
         m for m in past_candidates
-        if m.unit in ("NTD_per_taiwan_jin", "NTD_per_kg") and m.value == m.value
+        if m.unit in ("NTD_per_taiwan_jin", "NTD_per_kg") and m.value == m.value and m.value > 0
     ]
+    # R03：上週品項必須與今天品項相同（或未指明品項），跨品項拒 B
+    cross_crop = [m for m in past_usable if m.crop_id and pq.crop_id and m.crop_id != pq.crop_id]
+    invalid_date_mentions = [m for m in past_candidates if m.invalid_date]
+    if cross_crop:
+        other = cross_crop[0]
+        pq.b_reject_reason = f"上週價品項是{other.crop_text or '另一種品項'}，與今天的{pq.crop_text or '本品項'}品項不同，不可比，僅提供 A 模式結果"
+        past_usable = []
+    elif invalid_date_mentions:
+        pq.b_reject_reason = "上週日期無法解析（如 2026-02-30 不存在），請提供有效日期後再對照"
+        past_usable = []
     if past_usable:
         chosen_past = past_usable[0]
         if chosen_past.different_store:

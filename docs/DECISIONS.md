@@ -46,6 +46,10 @@
 | D39 | 2026-10-03，GLM 執行 T26–T28 本機層 | 代理人分層設計：確定性規則提取＋2 個有限工具（與 API 同源）＋可插解釋層（本機規則/SERVER Qwen）；Qwen 失敗自動降級規則回答。本機存取限制：body ≤8KB、每 IP 每分鐘 30 次 | tests/agent＋test_access_limits 共 35 項通過；AGENT_EVALUATION.md 記錄本機層結果與 Qwen 端待測項；web 加入「問代理人」入口（實測截圖 outputs/e2e/ui_agent_mobile.png）。 |
 | D40 | 2026-10-04，GLM 第三輪（依[獨立審查](reviews/ROUND2_7fdb43b_REVIEW.md)修正 7fdb43b） | F01–F10 全數處理：輸入契約子句級綁定、Qwen 輸出真值驗證器與降級標示、threadpool 併發、8KB 實際位元組、/records 完整流程、更新流程原子替換與重載驗證、Qwen 研究結論修訂、lock/pyproject/文檔同步；模型與評估工件未動（public_test_results.json hash `2d28acd2…` 不變），保留負向結果與原選型時序 | 測試 98→134 項（新增 36 項審查行為測試）；T26 改 DOING（本機規則層完成、Qwen 實機待 SERVER）；T19/T20/T21/T22 補第三輪證據；T16/T23 維持 HOLD。 |
 
+| D41 | 2026-10-04，使用者明確補充（本次對話） | 本機模型確定為 **Qwen3.8-27B**；代理人須能切換成 **GLM API**，先使用現有 GLM API 開發／測試；「應該會用 HARMES」暫按 Hermes Agent 理解，框架尚非最終定案 | 取代 D32/D38 的型號原意未明及較小模型首選，也修正 D39 的 Qwen-only 解釋層目標。新增 [代理人方向](AGENT_RUNTIME_DIRECTION.md)；T26/T27 拆出不依賴 SERVER 的 GLM 路徑。API 平台／模型 ID／金鑰位置及 Qwen 量化／推論服務待實際設定；沒有宣稱 Hermes 或 GLM 已接通。`44dabe3` 第三輪 R01–R08 仍須修正，模型及封存評估不因這次方向更新而變更。 |
+| D42 | 2026-10-04，GLM 第四輪（依[第三輪獨立審查](reviews/../../outputs/audits/2026-10-04_round3_independent/REVIEW_44dabe3.md)與使用者本次指示） | R01–R08 修復完成（測試 134→192，無刪測試）；代理人後端改**供應商可切換三層**：OpenAI 相容迴圈（GLM/自架 Qwen3.8-27B 同契約）＋官方 hermes-agent 0.19.0 整合（白名單僅 2 菜價工具、HERMES_HOME 隔離、輸出同過真值驗證器）＋規則降級；`AIOT_AGENT_PROFILE`/`AIOT_AGENT_FRAMEWORK` 明確切換、qwen_local 不自動切雲端；R04 保存改 request_id 綁定伺服器真推論。GLM 金鑰未配置（待使用者：平台/model ID/金鑰設定） | 詳[第四輪報告](ROUND4_GLM_API_REPORT.md)。模型/評估/切分工件 hash 不變；真 GLM、真 Qwen、T16/T32/T35 各自 HOLD。 |
+| D42 | 2026-10-04，GLM 第四輪（依[第三輪獨立審查](reviews/../../outputs/audits/2026-10-04_round3_independent/REVIEW_44dabe3.md)與使用者本次指示） | R01–R08 修復完成（測試 134→192，無刪測試）；代理人後端改**供應商可切換三層**：OpenAI 相容迴圈（GLM/自架 Qwen3.8-27B 同契約）＋官方 hermes-agent 0.19.0 整合（白名單僅 2 菜價工具、HERMES_HOME 隔離、輸出同過真值驗證器）＋規則降級；`AIOT_AGENT_PROFILE`/`AIOT_AGENT_FRAMEWORK` 明確切換、qwen_local 不自動切雲端；R04 保存改 request_id 綁定伺服器真推論。GLM 金鑰未配置（待使用者：平台/model ID/金鑰設定） | 詳[第四輪報告](ROUND4_GLM_API_REPORT.md)。模型/評估/切分工件 hash 不變；真 GLM、真 Qwen、T16/T32/T35 各自 HOLD。 |
+
 ## 目前未決事項
 
 - 正式題名與初版品項／方法、真店資料可取得程度；TW01目前是本案執行方向。

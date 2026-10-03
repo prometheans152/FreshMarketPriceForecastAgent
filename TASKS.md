@@ -2,11 +2,11 @@
 
 > 給 GLM：先讀 [AGENTS.md](AGENTS.md)、[design.md](design.md)、[GLM_HANDOFF.md](docs/GLM_HANDOFF.md)及[MODEL_VALIDATION_PLAN.md](docs/MODEL_VALIDATION_PLAN.md)，按依賴逐項執行。依執行環境採用 Superpowers 的 executing-plans 或 subagent-driven-development；技能不可用時，保留相同的逐項驗證與獨立審查流程。不要把寫好任務、下載資料或產生圖表當成模型已驗證。
 
-**Goal:** 在目前 Windows 電腦訓練菜價模型，將已驗證的模型部署到另一台 RTX 3090 SERVER，讓使用者以手機輸入今天店價及選填上週同店價，由 Qwen 代理人呼叫模型，提供 7／14 天預測與有根據的解釋。
+**Goal（D41）:** 保留本機已訓練菜價模型與封存評估，先用可替換的 GLM API 後端完成代理人工具整合，再在另一台 RTX 3090 SERVER 自架 Qwen3.8-27B 並以同一介面切換重驗。使用者以手機輸入今天店價及選填上週同店價，取得 7／14 天預測與有根據的解釋。Hermes Agent 暫定（使用者原文 HARMES），詳見 [代理人方向](docs/AGENT_RUNTIME_DIRECTION.md)。
 
 **Architecture:** 訓練端負責資料、時間切分、訓練、評估與可攜模型包；SERVER 負責菜價推論 API、Qwen 代理人及手機網頁。公開市場零售均價模型與同店價格適配分開驗證；有上週紀錄時比較兩種輸入，沒有時仍可使用公開歷史與今天報價。兩台主機不是同一台，3090 SERVER 的作業系統、連線與服務入口尚待取得。
 
-**Tech Stack:** 暫定 Python 資料／模型程式與 HTTP API、手機可操作的 Web 介面、SERVER 本機 Qwen。具體演算法、API／Web 框架、Qwen 型號、量化及推論框架由前期實測選定並鎖版；目前沒有已安裝或已能執行的保證，不預設使用雲端模型 API。
+**Tech Stack:** 已有 Python 資料／模型程式、HTTP API 與手機 Web 原型；D41 新增 Hermes Agent 暫定、GLM API 先行與本機 Qwen3.8-27B 可切換。Qwen 型號已確定，但量化／推論引擎及 Hermes 整合未驗證；GLM 平台／模型 ID／金鑰位置未配置，不宣稱已連通。歷史「不預設雲端 API」已由使用者此次明確需求取代。
 
 **Spec:** [design.md](design.md)；研究依據：[課程要求](docs/COURSE_REQUIREMENTS.md)、[公開零售資料](docs/research/TW01_PUBLIC_RETAIL_DATA.md)、[既有作品](docs/research/TW01_RELATED_WORK_RECHECK.md)、[TW01 歷史與現行討論](docs/ideas/TW01_VEGETABLE_BASKET.md)。當前使用者的雙主機安排優先於歷史方案。
 
@@ -32,6 +32,8 @@
 5. 手機外部查詢、模型包不一致、私價誤入 Git、惡意文字或重複呼叫：守住存取、版本、隱私與工具呼叫範圍；T18、T24、T26、T28、T29、T34 驗證。
 
 ## 任務狀態與產出規則
+
+**2026-10-04 D41 覆蓋更新：** `44dabe3` 的 134 項測試通過不代表第三輪全數验收；[第三輪獨立審查](outputs/audits/2026-10-04_round3_independent/REVIEW_44dabe3.md)R01–R08 仍開放。下方較早 PASS／修復完成紀錄保留歷史，受影響項不得據此對外宣稱驗收。T26/T27 的本機 GLM 路徑可先行；只有真 Qwen／SERVER 子項依賴 T23–T25。本輪是需求更新，未關閉任何缺陷或完成新執行測試。
 
 本檔是任務狀態主要來源。**2026-10-04 第三輪後現況：T01–T15、T17–T22、T26 前 22 項 PASS／DOING（T26 本機規則層完成、Qwen 實機待 SERVER）；T16（真店到期價）、T23（SERVER 資訊）HOLD；T24–T36 依 SERVER／公告等待。** 各項實際狀態與證據見下方逐項記錄；產出已存在者以其驗收證據為準。根目錄 `design.md`、本檔與接手／驗證文件的初稿，不能代替下列任務的實測證據。
 
@@ -298,9 +300,11 @@
 
 **驗收證據：** 本機與SERVER同包同輸入的對照結果、hash及環境版本；只傳檔不算部署成功，SERVER真API回應才可完成。
 
-### T25 核實Qwen型號並測試3090執行
+### T25 驗證已指定的 Qwen3.8-27B 在 3090 執行
 
 **狀態：DOING（2026-10-03：型號核實完成；3090 實測 HOLD 待 SERVER）｜依賴：T23｜產出：** `docs/QWEN_SERVER_BENCHMARK.md`、`configs/agent_model.yaml`、`outputs/server/qwen_benchmark/`。
+
+**D41：使用者已確認 Qwen3.8-27B，不是 Qwen3-8B。** 下方原「原意待確認／9B首選」保留為歷史，已由 D38 修訂與 D41 取代。此任務只待量化工件、推論引擎、context 及真 3090 測試；不能自動改成較小模型，也不能阻擋 T26/T27 的 GLM 路徑。
 
 2026-10-03 實際證據：官方來源（QwenLM GitHub、HF Qwen org）核實——Qwen3.8 僅 2.4T/27B 兩尺寸，官方權重皆超 24GB 不可行；候選 Qwen3.5-9B（首選，BF16 約 19.3GB、明文支援工具呼叫）/Qwen3.5-4B/Qwen3-8B（皆 Apache-2.0）。產出 [QWEN_SERVER_BENCHMARK.md](docs/QWEN_SERVER_BENCHMARK.md)（核實完成/實測 HOLD 分節）＋[agent_model.yaml](configs/agent_model.yaml)。**待使用者確認 Qwen3.8 原意**（見 DECISIONS D38）；載入/顯存/延遲實測依 T23。
 
@@ -312,7 +316,10 @@
 
 ### T26 實作代理人工具與呼叫流程
 
-**狀態：DOING（2026-10-04 第三輪依獨立審查 F08 調整：本機規則層完成且經審查後修復；架構為「規則調度＋Qwen 解釋」而非 Qwen 生成 tool_calls，SERVER 端 Qwen 實機待 T24/T25）｜依賴：T20、T24、T25｜產出：** `src/aiot_price/agent/tools.py`、`src/aiot_price/agent/service.py`、`configs/agent_prompt.md`、`tests/agent/test_tools.py`。
+**狀態：DOING（2026-10-04 第四輪：R01–R08 已修；真 tool-calling 迴圈＋官方 Hermes 0.19.0＋GLM/Qwen 可切換完成離線驗證——真 GLM 待金鑰、真 Qwen 待 SERVER）｜依賴：本機契約與整合依 T20 及共用缺陷修復；真 GLM 請求依本案 API 設定；只有 SERVER Qwen 子項依 T24/T25｜產出：** `src/aiot_price/agent/tools.py`、`src/aiot_price/agent/service.py`、`configs/agent_prompt.md`、`tests/agent/` 及實際 Hermes 整合設定／工具追蹤。
+
+- [ ] **T26 本機／GLM 子項（D41）：** 先修第三輪 R01–R05 共用防線；建立供應商無關的工具契約，按 Hermes 官方介面查驗整合（框架暫定），只暴露本案有限工具。真正模型 tool_calls、工具參數驗證、執行及結果回送需有證據，不能只有 GLM 文字改寫。
+- [ ] **T26 切換子項（D41）：** provider／model／Base URL／key_env 集中配置，GLM API 與本機 Qwen3.8-27B 共用工具及前端；如實標示實際 provider／model／降級，模型切換不改菜價工件、封存評估或可信保存。未明確允許時不做本機→雲端自動 fallback。
 
 2026-10-03 實際證據：分層代理人（確定性規則提取＋2 有限工具與API同源＋可插後端：RuleBackend/QwenBackend 降級安全）；`POST /agent/query` 上線（web「問代理人」入口實測截圖 outputs/e2e/ui_agent_mobile.png）；test_tools 12 項過；單次查詢工具呼叫上限 3。
 
@@ -325,7 +332,9 @@
 
 ### T27 檢查代理人回答忠實與失敗降級
 
-**狀態：DOING（2026-10-03：本機層 14 項全過；Qwen 端忠實性待 SERVER）｜依賴：T17、T26｜產出：** `tests/agent/test_faithfulness.py`、`docs/AGENT_EVALUATION.md`、`outputs/agent_evaluation/`。
+**狀態：DOING（2026-10-04 第四輪：離線防線 48 項新測試過；真 GLM／真 Qwen 忠實性分開待金鑰／SERVER）｜依賴：T17、T26；GLM 子項不依賴 T23–T25｜產出：** `tests/agent/test_faithfulness.py`、`docs/AGENT_EVALUATION.md`、`outputs/agent_evaluation/`。
+
+- [ ] **T27 分後端驗收（D41）：** 同一案例集先做離線協議／錯誤防線測試，再以真 GLM API 記工具參數正確性、真值忠實性與延遲；日後切 Qwen3.8-27B 重測。數字必須綁期限／模式／單位；工具失敗、缺資料、空 content、不同比較商品、保存來源及雲端降級均須覆蓋。GLM 通過不代表 Qwen 通過，聊天成功不代表工具整合完成。
 
 2026-10-03 實際證據：本機層覆蓋菜名歧義/單位/無上週/有上週標實驗性/不漲忠實呈現/缺資料要求補充/無資料市場不給假結論/Qwen失敗降級/無機率字眼——test_faithfulness 14 項＋[AGENT_EVALUATION.md](docs/AGENT_EVALUATION.md)＋outputs/agent_evaluation/local_results.json（8 案例）。真 Qwen 載入、prompt injection 實測與延遲量測依 T24/T25。
 

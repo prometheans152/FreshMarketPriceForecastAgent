@@ -359,8 +359,9 @@ async function onSubmit(event) {
 
     renderResponse(data);
     savePrefs();
-    lastRun = { request: built.body, response: data };
+    lastRun = { request: built.body, response: data, source: 'form' };
     resetSaveBar();
+    setSaveStatus('本列保存的是剛才的表單查詢結果。', false);
   } catch (err) {
     if (err instanceof ApiError) {
       showError(err.message, err.code);
@@ -566,10 +567,7 @@ async function saveCurrentRecord() {
     const { res, data } = await fetchJson(API_RECORDS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        forecast_response: lastRun.response,
-        request: lastRun.request
-      })
+      body: JSON.stringify({ request_id: lastRun.response.request_id })
     });
     if (!res.ok || !data || data.ok !== true) {
       const msg = data && data.error && data.error.message
@@ -805,6 +803,17 @@ function bindAgent() {
         return;
       }
       renderAgentResult(out, data);
+      // R06：代理人成功且附帶有效預測時，lastRun 對應本次代理人結果；
+      // 保存按鈕與表單共用，但保存的永遠是「最近一次成功查詢」。
+      if (data.forecast && !data.forecast.error && Array.isArray(data.forecast.results) && data.forecast.results.length) {
+        lastRun = {
+          request: { query: text, store_id: storeId, source: 'agent' },
+          response: data.forecast,
+          source: 'agent'
+        };
+        resetSaveBar();
+        setSaveStatus('本列保存的是剛才的代理人查詢結果。', false);
+      }
     } catch (err) {
       out.textContent = '無法連線到伺服器，請確認服務已啟動或網路狀況。';
     } finally {

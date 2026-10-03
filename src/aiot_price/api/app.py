@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -165,6 +166,8 @@ async def forecast(request: Request) -> JSONResponse:
         )
     engine = get_engine()
     response = engine.forecast(body)
+    if not response.get("error"):
+        register_recent_forecast(response, body)
     status = 200
     if response.get("error"):
         code = response["error"].get("code")
@@ -211,12 +214,71 @@ async def agent_query(request: Request) -> JSONResponse:
             content={"error": {"code": "bad_request", "message": "store_id 須為短字串（匿名店號）。"}},
         )
     engine = get_engine()
-    qwen = QwenBackend()
-    backend = qwen if qwen.available() else RuleBackend()
-    # F03：同步推論（含 Qwen 網路等待）丟執行緒池，事件迴圈不被阻塞，
-    # 其他請求（health/forecast）可並行服務。
-    result = await run_in_threadpool(handle_agent_query, engine, query, store_id, backend)
+    # 第四輪 D41：供應商可切換（AIOT_AGENT_PROFILE：rule|glm_zai|glm_bigmodel|qwen_local）
+    from aiot_price.agent.providers import resolve_active_profile, run_agent_loop
+
+    profile, prof_reason = resolve_active_profile()
+    if profile is None or prof_reason:
+        # 配置不完整（未知 profile／缺金鑰）：明確 503，不靜默降級成別的後端冒充執行
+        hint = "金鑰未設" if "api_key_missing" in prof_reason else "設定無效"
+        return JSONResponse(
+            status_code=503,
+            content={"error": {"code": "bad_request", "message": f"代理人後端配置不完整（{prof_reason}；{hint}）。請設定環境變數或改用 AIOT_AGENT_PROFILE=rule。"}},
+        )
+    framework = os.environ.get("AIOT_AGENT_FRAMEWORK", "direct")  # direct | hermes
+    if profile.kind == "openai_compat" and framework == "hermes":
+        from aiot_price.agent.hermes_runner import run_hermes_agent
+
+        result = await run_in_threadpool(run_hermes_agent, engine, query, profile, store_id)
+    elif profile.kind == "openai_compat":
+        result = await run_in_threadpool(run_agent_loop, engine, query, profile, store_id)
+    elif profile.name == "rule":
+        qwen = QwenBackend()
+        backend = qwen if qwen.available() else RuleBackend()
+        result = await run_in_threadpool(handle_agent_query, engine, query, store_id, backend)
+    fc = result.get("forecast")
+    if isinstance(fc, dict) and not fc.get("error"):
+        # R06：代理人產生的預測同樣註冊，供「保存本次結果」以 request_id 綁定
+        register_recent_forecast(fc, {"query": query, "store_id": store_id})
     return JSONResponse(status_code=200, content=result)
+
+
+# ---------- 伺服器預測暫存（R04：POST /records 只收 request_id，不信任客戶端結果） ----------
+
+import time as _time
+
+_RECENT_FORECASTS: dict = {}  # request_id -> {"response":..., "request":..., "created_at":...}
+_RECENT_CAP = 500
+
+
+def register_recent_forecast(response: dict, request_obj: dict | None) -> None:
+    """每次 /forecast 或 /agent/query 的真實推論結果註冊（LRU 上限）。"""
+    rid = response.get("request_id")
+    if not rid:
+        return
+    if len(_RECENT_FORECASTS) >= _RECENT_CAP:
+        oldest = min(_RECENT_FORECASTS.items(), key=lambda kv: kv[1]["created_at"])[0]
+        _RECENT_FORECASTS.pop(oldest, None)
+    _RECENT_FORECASTS[rid] = {
+        "response": response,
+        "request": request_obj,
+        "created_at": _time.time(),
+    }
+
+
+def _valid_forecast_structure(resp: dict) -> bool:
+    """保存前的結構驗證（R04：results=[null] 等壞結構不得入庫）。"""
+    if not isinstance(resp, dict):
+        return False
+    results = resp.get("results")
+    if not isinstance(results, list):
+        return False
+    for r in results:
+        if not isinstance(r, dict):
+            return False
+    if resp.get("error") is not None and not isinstance(resp.get("error"), dict):
+        return False
+    return True
 
 
 # ---------- 預測保存流程（F08/T22：使用者自願保存／匯出／刪除） ----------
@@ -234,24 +296,42 @@ _RECORD_ID_RE = _re_id.compile(r"^[A-Za-z0-9_-]+$")
 
 @app.post("/records")
 async def save_record(request: Request) -> JSONResponse:
-    """保存一次預測（使用者自願）：body={forecast_response, request}。"""
+    """保存一次預測（使用者自願）。
+
+    R04 契約：只接受 {"request_id": "..."}——保存內容由伺服器暫存的本伺服器推論結果
+    綁定，不接受客戶端提交的任意完整結果（偽造版本/金額/simulated 一律拒）。
+    暫存為記憶體 LRU（重啟後清空）：過期或未知 id 回 404「請重新查詢後再保存」。
+    """
     try:
         body = await read_limited_json(request)
     except BodyTooLarge:
         return JSONResponse(status_code=413, content={"error": {"code": "payload_too_large", "message": "內容過大。"}})
     except Exception:
         return JSONResponse(status_code=400, content={"error": {"code": "bad_request", "message": "請求本文須為 JSON。"}})
-    resp_obj, req_obj = body.get("forecast_response"), body.get("request")
-    if not isinstance(resp_obj, dict) or not isinstance(req_obj, dict):
+    if not isinstance(body, dict):
+        return JSONResponse(status_code=400, content={"error": {"code": "bad_request", "message": "本文須為 JSON 物件。"}})
+    if "request_id" not in body:
         return JSONResponse(
-            status_code=400,
-            content={"error": {"code": "bad_request", "message": "需要 forecast_response 與 request 兩個 JSON 物件。"}},
+            status_code=422,
+            content={"error": {"code": "bad_request", "message": "請提供 request_id 欄位（字串）；不接受客戶端提交完整預測結果。"}},
         )
+    rid = body.get("request_id")
+    if not isinstance(rid, str) or not re.match(r"^[A-Za-z0-9_-]+$", rid or ""):
+        return JSONResponse(status_code=400, content={"error": {"code": "bad_request", "message": "無效的 request_id。"}})
+    entry = _RECENT_FORECASTS.get(rid)
+    if entry is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": {"code": "bad_request", "message": "找不到此預測（可能已過期或服務已重啟）；請重新查詢後再保存。"}},
+        )
+    resp_obj, req_obj = entry["response"], entry["request"]
+    if not _valid_forecast_structure(resp_obj):
+        return JSONResponse(status_code=422, content={"error": {"code": "bad_request", "message": "預測結構無效，無法保存。"}})
     try:
-        path = await run_in_threadpool(save_prediction, resp_obj, req_obj)
+        path, saved_at = await run_in_threadpool(save_prediction, resp_obj, req_obj)
     except ValueError as e:
         return JSONResponse(status_code=422, content={"error": {"code": "bad_request", "message": str(e)}})
-    return JSONResponse(status_code=200, content={"ok": True, "record_id": path.stem.replace("prediction_", ""), "saved_at": resp_obj.get("input_observed_at")})
+    return JSONResponse(status_code=200, content={"ok": True, "record_id": path.stem.replace("prediction_", ""), "saved_at": saved_at})
 
 
 @app.get("/records")

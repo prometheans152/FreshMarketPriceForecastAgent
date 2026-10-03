@@ -48,13 +48,72 @@ verification:
     尚未實測。使用者候選不排除，列為優先實測對象。NVFP4 需 Blackwell，3090（Ampere）
     不適用其數字。詳見 docs/QWEN_SERVER_BENCHMARK.md。
 
-# F09 修訂：不預先鎖定 default_candidate；原 "qwen3.5-9b" 建議值移除，
-# 改以 candidates[].test_priority 表達實測優先順序，最終由使用者確認＋3090 實測後鎖定。
+# D41：型號意向已確定 Qwen3.8-27B；此處 null 僅表示量化／推論工件尚未實测鎖版。
+# 下方 direction 是需求紀錄，不是已接入服務的執行設定；目前程式尚未消費此段。
+direction:
+  decision: D41
+  updated_at: "2026-10-04"
+  implementation_status: "requirements_only_not_wired"
+  confirmed_local_model: "Qwen3.8-27B"
+  initial_backend: "glm_api"
+  required_backends: ["glm_api", "qwen_local"]
+  runtime_preference: "hermes_agent"
+  runtime_status: "tentative_user_wrote_HARMES"
+  cloud_fallback_without_explicit_opt_in: false
+  glm_endpoint: null
+  glm_model: null
+  details: "docs/AGENT_RUNTIME_DIRECTION.md"
+
+# ---------- runtime（第四輪 D41 接線：供應商無關代理人設定） ----------
+# 由 src/aiot_price/agent/providers.py 消費；環境變數 AIOT_AGENT_PROFILE 選擇（預設 rule）。
+# 本段是「實際執行設定」；上方 direction 段是需求紀錄，兩者分開維護。
+runtime:
+  default_profile: rule            # 無金鑰/未設定時的安全預設（無 LLM）
+  cloud_fallback: false            # qwen_local 失敗不自動切雲端（D41 明確要求）
+  profiles:
+    rule:
+      kind: rule
+      description: "無 LLM：確定性規則解析＋真工具＋模板回答（降級路徑，不需金鑰）"
+    glm_zai:
+      kind: openai_compat
+      description: "GLM API（Z.AI 平台，OpenAI 相容）——需確認帳戶方案允許本專題使用情境"
+      base_url: "https://api.z.ai/api/paas/v4"
+      model: ""                     # 待使用者提供實際 model ID（如 glm-4.x 系列）
+      api_key_env: AIOT_GLM_API_KEY
+      timeout: 20
+      max_tokens: 800
+      max_tool_calls: 4
+      max_turns: 4
+      max_retries: 2
+    glm_bigmodel:
+      kind: openai_compat
+      description: "GLM API（智譜 BigModel 平台，OpenAI 相容）——與 Z.AI 不互換，依使用者實際平台"
+      base_url: "https://open.bigmodel.cn/api/paas/v4"
+      model: ""
+      api_key_env: AIOT_GLM_API_KEY
+      timeout: 20
+      max_tokens: 800
+      max_tool_calls: 4
+      max_turns: 4
+      max_retries: 2
+    qwen_local:
+      kind: openai_compat
+      description: "本機 Qwen3.8-27B 推論端點（SERVER_3090 部署後啟用；OpenAI 相容，如 llama.cpp/vLLM server）"
+      base_url: "http://127.0.0.1:8080/v1"   # 佔位：實際位址待 SERVER 設定後替換
+      model: "Qwen3.8-27B"
+      api_key_env: ""               # 本機端點通常不需金鑰
+      timeout: 60
+      max_tokens: 800
+      max_tool_calls: 4
+      max_turns: 4
+      max_retries: 1
+      cloud_fallback: false
+
 default_candidate: null
 default_note: >
-  待使用者確認型號意向（Qwen3.8 系列之 GGUF 路線 vs 8B 級官方權重）＋3090 實測
-  （載入／峰值顯存／延遲／有限context／併發1／中文品項理解／工具參數正確率）
-  完成後鎖定；實測優先順序見各候選 test_priority 與 benchmark_plan。
+  使用者已確認本機型號 Qwen3.8-27B，不再询問 8B 原意。null 只保留量化工件／推論引擎／
+  context 待 3090 實測鎖版；先用 GLM API 走同一代理人工具契約。
+  下方其餘較小模型是歷史候選，不代表可以自動取代使用者選型。
 
 candidates:
   qwen3.8-27b-gguf-q4:
@@ -252,6 +311,6 @@ benchmark_plan:
   output_dir: "outputs/server/qwen_benchmark/"
 
 status: >
-  F09 修訂完成（2026-10-03）：結論修正（官方 BF16/FP8 超24GB；27B GGUF 4-bit 為待實測候選，
-  使用者候選不排除）、候選擴充（新增 qwen3.8-27b-gguf-q4）、default_candidate 改 null、
-  新增 benchmark_plan。3090 實測 HOLD 待 SERVER；最終型號待使用者確認＋實測後鎖定。
+  D41 需求同步（2026-10-04）：本機型號已確認 Qwen3.8-27B；GLM API 先行並須可切換，
+  Hermes Agent 暫定。direction 尚未接入執行程式，非連線成果。
+  F09／較小模型清單保留歷史；Qwen 量化工件與3090實測仍待 SERVER，不阻擋GLM路徑。

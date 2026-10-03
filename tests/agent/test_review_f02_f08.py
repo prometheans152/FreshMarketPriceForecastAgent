@@ -294,11 +294,15 @@ class TestF08RecordsEndpoints:
         )
         client = TestClient(app)
 
-        # 保存
-        r = client.post(
-            "/records",
-            json={"forecast_response": {"crop_id": "cabbage", "results": [{"horizon_days": 7, "target_date": "2026-10-11", "direction": "flat"}], "error": None}, "request": {"crop_id": "cabbage"}},
-        )
+        # R04 新契約：先真實查詢取得 request_id，再以 id 保存（伺服器暫存綁定）
+        fq = client.post("/forecast", json={
+            "crop_id": "cabbage", "market_id": "中義市場", "current_price": 32.0,
+            "price_unit": "NTD_per_taiwan_jin", "observed_at": "2026-10-04T10:00:00+08:00",
+            "mode": "without_last_week",
+        })
+        assert fq.status_code == 200
+        req_id = fq.json()["request_id"]
+        r = client.post("/records", json={"request_id": req_id})
         assert r.status_code == 200
         rid = r.json()["record_id"]
         assert rid

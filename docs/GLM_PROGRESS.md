@@ -1,15 +1,18 @@
 # GLM執行進度與交接紀錄
 
-更新日期：2026-10-04（GLM第三輪：依獨立審查修正 7fdb43b）。
+更新日期：2026-10-04（GLM第四輪完成：R01–R08 修復＋供應商可切換代理人；詳[第四輪報告](ROUND4_GLM_API_REPORT.md)）。
 
 ## 當前狀態
 
-- **第三輪完成審查 F01–F10 全數處理**：[審查](reviews/ROUND2_7fdb43b_REVIEW.md)重現的錯誤逐項修正並以 36 項新行為測試釘死（測試 98→**134 項全過**）；模型與評估工件未動（public_test_results.json hash `2d28acd2…` 不變），負向結果與原選型時序保留。
+- **第四輪完成（2026-10-04）：** R01–R08 全修（192 項測試全過）；代理人三層就緒——`rule`（預設）／`glm_zai`/`glm_bigmodel`（OpenAI 相容真 tool-calling）／`qwen_local`（本機 Qwen3.8-27B，不自動切雲端）；框架可選官方 `hermes`（hermes-agent 0.19.0 已裝、白名單隔離、輸出同過真值驗證器）。GLM 金鑰未配置：待使用者提供平台/model ID/金鑰（AIOT_GLM_API_KEY）；真 GLM 呼叫與 Hermes chat 端到端待此。模型與封存評估未動（hash 見第四輪報告 §9）。
+- **D41 方向（歷史，2026-10-04 早）：** 本機模型已確定 Qwen3.8-27B，新增 GLM API 可替換且先行使用；Hermes Agent 暫定（HARMES 的拼寫對應為助理解讀）。詳見 [代理人方向](AGENT_RUNTIME_DIRECTION.md)。本次只更新文件／需求設定，未接 API、未安裝 Hermes。
+- **第三輪獨立審查結論仍為 Request changes：** `44dabe3` 原環境 134 項測試通過，但 R01–R08 尚未修復；[報告](../outputs/audits/2026-10-04_round3_independent/REVIEW_44dabe3.md)與重現證據保留。GLM 原「F01–F10 全數完成」只能當自報，不能当已通過審查。權重與封存評估未變，但 release fixtures 曾重生成，不能稱全部工件位元組不變。
+- **第三輪 GLM 自報（歷史）：** 依[第二輪審查](reviews/ROUND2_7fdb43b_REVIEW.md)增加 36 項測試，98→134 項通過；原自報完成範圍以後續 R01–R08 審查修正為準。
 - T26 依審查 F08 改 **DOING**（本機規則層完成；架構為規則調度＋Qwen 解釋，Qwen 實機與 tool_calls 生成架構待 T24/T25）；T22 補前端保存流程（/records＋UI，瀏覽器實測）；T16/T23 維持 HOLD。
 
 - **第二輪（2026-10-03夜～10-04凌晨）新增：T26 PASS（代理人本機層）、T25/T27/T28/T30/T33/T34 DOING（本機/核實部分完成）、T16/T23 維持 HOLD。** 累計 98 項自動化測試全過。
 - **代理人已可用**：`POST /agent/query`（確定性提取＋2有限工具＋可插後端；本機規則模式、SERVER 插 Qwen、Qwen 失敗自動降級）；網頁新增「用問的也可以」入口（實測截圖 outputs/e2e/ui_agent_mobile.png）。
-- **Qwen 型號核實（T25）**：Qwen3.8 官方僅 2.4T/27B（皆超 24GB，3090 不可行）；首選候選 Qwen3.5-9B（約 19.3GB、明文支援工具呼叫）——**待使用者確認原意**（DECISIONS D38）。
+- **Qwen 型號（T25／D41）：** 使用者已指定 Qwen3.8-27B；原「跑不動／9B首選／原意待確認」已被 D38 修訂及 D41 取代。量化檔、推論引擎與真 3090 測試仍待環境；先推進 GLM API 路徑。
 - 第一輪完成 T01–T15、T17–T22 共21項（PASS），詳見下方紀錄。
 - 主機分工不變：TRAIN_LOCAL（本機 Ryzen 7 5800X/32GB，有RTX 3080 ti但無CUDA toolkit、訓練用CPU）已完成資料、訓練、打包、本機API與網頁；SERVER_3090 缺連線資訊（見[SERVER_INVENTORY](SERVER_INVENTORY.md)）。
 - 公開模型成績（封存測試，凍結清單SHA256 `4e136574…` 校驗通過）：h=7 rf_reg 方向 macro-F1 **0.422**（持平基線0.309）、h=14 hgb_reg **0.417**（基線0.295）；點回歸MAE **未優於**不變價基線（0.066 vs 0.044；0.098 vs 0.075）——已如實寫入所有輸出警示，不作點預測宣稱。
@@ -18,7 +21,7 @@
 
 ## 啟動時處理
 
-GLM先查TASKS與本紀錄，再從第一個依賴已滿足的TODO開始。**下一輪可執行項**：T26代理人工具（可用本機API先行開發，SERVER實測後補T25基準）、T33報告準備（T15/T17結果已齊）。SERVER資訊到位後依序T23→T24/T25→T26→T27→T28→T29→T30/T31→T32→T33–T36。
+GLM 開發執行者先查 TASKS、D41、[代理人方向](AGENT_RUNTIME_DIRECTION.md)及第三輪 R01–R08。先修共用本機缺陷，接 Hermes 暫定框架／GLM API 路徑並驗收 T26/T27 本機子項；缺 API 只阻真 GLM 呼叫，不阻協議測試。SERVER 到位後再做 T23→T24/T25 與 Qwen 後端重驗，不把 GLM 全部工作串在其後。T16／T32／正式交付依各自真實條件處理。
 
 ## 執行紀錄
 

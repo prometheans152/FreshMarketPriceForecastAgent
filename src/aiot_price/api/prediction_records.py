@@ -30,7 +30,7 @@ def save_prediction(response: dict, request: dict, out_dir: str | Path = DEFAULT
     }
     path = out_dir / f"prediction_{ts}.json"
     path.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
-    return path
+    return path, record["saved_at"]
 
 
 def load_records(out_dir: str | Path = DEFAULT_DIR) -> list[dict]:

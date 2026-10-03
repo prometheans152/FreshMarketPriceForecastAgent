@@ -30,6 +30,17 @@ F05d：報告以 date_semantics 區分三個概念——「快照截止日」（
 日，因市場／品項而異，由推論端計算）、「資料版本」（manifest 的訓練快照
 SHA256／observation_end，不隨刷新改變）。
 
+R07 修正（第三輪獨立審查，2026-10-04）——更新失敗的狀態契約：
+1. --config 載入移入受控區：設定檔不存在／壞 YAML／編碼錯時不再裸拋
+   FileNotFoundError／YAMLError，而是寫報告 JSON（status=failed、
+   failure_stage=config、error 以 config_error 開頭）後回 exit 1。
+2. 明確提交／回復邊界：快照保存與 release 歷史原子替換（逐列核對通過）即視為
+   「已提交」。reload-check 失敗時不回滾已提交的新資料（回滾反而讓磁碟內容與
+   已核對的成功更新不一致），改回獨立狀態 status="data_updated_reload_failed"
+   （exit 5，reloaded=False 的成功資料更新），報告附手動重啟服務指引與備份位置；
+   本 run 未落地任何資料（dry-run／無新資料）時 reload-check 失敗仍為純驗證
+   失敗（status=failed、exit 4）。
+
 設計原則（design.md §8）：「行情刷新、模型發布、Qwen 載入是不同操作」。
 本腳本只刷新公開行情（快照＋推論歷史 parquet），**完全不動**：
 - 模型權重 model_h7.joblib／model_h14.joblib（重訓一律回 TRAIN_LOCAL 的 T08–T18）
@@ -57,15 +68,29 @@ SHA256／observation_end，不隨刷新改變）。
   # 指定其他下載 URL（例：測試失效來源的錯誤處理）
   PYTHONPATH=src .venv/Scripts/python.exe scripts/update_public_data.py --url http://127.0.0.1:9/
 
-離開代碼（與 configs/update_policy.yaml 同步；1/3 的語意自本版起調整，見
-OPERATIONS.md）：
+離開代碼（與 configs/update_policy.yaml、docs/OPERATIONS.md 同步；R07 修復後
+新增 5，各階段失敗行為不再以「失敗一律保留舊檔」概括，改以下表為準）：
   0＝成功（含「無新資料」）
-  1＝參數／設定錯誤，或其他未預期但受控回報的失敗
+  1＝參數／設定錯誤（含 --config 不存在／壞 YAML；報告記 failure_stage=config），
+     或其他未預期但受控回報的失敗
   2＝schema 驗證失敗（含壞 JSON、缺欄、壞日期、Infinity／負值、重複鍵）
   3＝下載失敗（連線／HTTP／逾時）
-  4＝寫入／核對失敗（快照保存後的歷史刷新寫入、逐列核對、原子替換、備份還原、
-     reload-check 失敗）
-失敗一律保留舊檔（或還原為舊檔），只寫報告 JSON。
+  4＝寫入／核對失敗（歷史刷新的暫存寫入、逐列核對、原子替換、備份還原）；
+     另含「本 run 未落地任何資料」時的 reload-check 失敗（純驗證失敗）
+  5＝資料已更新但 reload-check 失敗（status=data_updated_reload_failed）：
+     快照與 release 歷史已核對通過並落地（提交邊界），不回滾已提交的新資料；
+     需手動重啟服務／重建引擎（docs/OPERATIONS.md §6）；舊資料已在備份
+     （release_history.backup_path），確需回舊資料時可手動還原
+
+各階段失敗行為（提交邊界＝快照保存＋release 歷史原子替換且逐列核對通過）：
+  config：不寫入任何檔案，只寫報告 JSON（exit 1）
+  download：舊檔全部保留（exit 3）
+  schema：該檔不落地（exit 2）
+  write：快照若已保存屬合法取得內容保留（partial_state 註明歷史未刷新）；
+         release parquet 保護為舊內容、必要時自動從備份還原（exit 4）
+  reload：本 run 有已提交資料 → 不回滾，status=data_updated_reload_failed、
+          exit 5＋手動重啟指引（舊資料在備份）；本 run 無落地寫入（dry-run／
+          無新資料）→ status=failed、exit 4（純驗證失敗）
 """
 
 from __future__ import annotations
@@ -108,10 +133,11 @@ SUPPORTED_CROP_COLUMNS = [m.source_column for m in CROP_MAPPINGS.values()]
 
 # 退出碼（與 configs/update_policy.yaml / docs/OPERATIONS.md 同步）
 EXIT_OK = 0        # 成功（含無新資料）
-EXIT_USAGE = 1     # 參數／設定錯誤、未預期但受控回報的失敗
+EXIT_USAGE = 1     # 參數／設定錯誤（含 config 載入失敗）、未預期但受控回報的失敗
 EXIT_SCHEMA = 2    # schema 驗證失敗（含壞 JSON）
 EXIT_DOWNLOAD = 3  # 下載失敗
-EXIT_WRITE = 4     # 寫入／核對失敗（含原子替換、備份還原、reload-check）
+EXIT_WRITE = 4     # 寫入／核對失敗（含原子替換、備份還原）；無落地資料時的 reload-check 失敗
+EXIT_RELOAD = 5    # R07：資料已更新但 reload-check 失敗（data_updated_reload_failed；不回滾已提交資料）
 
 
 # ---------------------------------------------------------------------------
@@ -573,7 +599,21 @@ def main(argv=None) -> int:
     url = args.url
     source_cfg: dict = {}
     if not args.input:
-        config = load_config(args.config)
+        # R07：--config 載入移入受控區——不存在／壞 YAML／編碼錯時不再裸拋例外，
+        # 而是產生報告 JSON（status=failed、failure_stage=config、error 以
+        # config_error 開頭）後回 exit 1，指定的 --report 一定會生成。
+        try:
+            config = load_config(args.config)
+        except Exception as exc:  # FileNotFoundError／yaml.YAMLError／UnicodeDecodeError／OSError
+            report.update({"status": "failed",
+                           "failure_stage": "config",
+                           "error": f"config_error：設定檔載入失敗（{args.config}）："
+                                    f"{type(exc).__name__}: {exc}",
+                           "old_files_kept": True})
+            _emit(report, args)
+            print(f"錯誤：config_error：設定檔載入失敗（{args.config}）："
+                  f"{type(exc).__name__}: {exc}；未寫入任何檔案。", file=sys.stderr)
+            return EXIT_USAGE
         sources = (config or {}).get("sources") or {}
         if args.source:
             source_cfg = sources.get(args.source) or {}
@@ -586,6 +626,7 @@ def main(argv=None) -> int:
             url = source_cfg.get("download_url")
         if not url:
             report.update({"status": "failed",
+                           "failure_stage": "config",
                            "error": "無法決定下載 URL（--url 未給、設定檔無採用中來源）"})
             _emit(report, args)
             return EXIT_USAGE
@@ -724,31 +765,69 @@ def main(argv=None) -> int:
                 print(f"release 歷史未變更：{rh.get('reason') or rh.get('dry_run_note')}")
 
         # ---- 第 6 步：（選配）reload-check（刷新後）：證明重建引擎讀到新日期 ----
+        # R07 提交邊界：快照已保存或 release 歷史已原子替換（逐列核對通過）＝已提交；
+        # 此後 reload-check 失敗不回滾已提交的新資料（回滾反而讓磁碟內容與已核對的
+        # 成功更新不一致），改回獨立狀態 data_updated_reload_failed（exit 5）並附
+        # 手動重啟指引。本 run 未落地任何資料（dry-run／無新資料）時則仍是純驗證
+        # 失敗（status=failed、exit 4）。
+        reload_failed_msg: str | None = None
         if args.reload_check:
             reload_after, reload_error_after = engine_public_cutoff(Path(args.release_dir))
             if reload_error is not None or reload_error_after is not None:
                 msg = reload_error or reload_error_after
-                report["reload_check"] = {"ok": False, "error": msg,
-                                          "cutoff_before": reload_before,
-                                          "release_dir": str(Path(args.release_dir))}
-                report.update({"status": "failed",
-                               "error": f"reload-check 失敗：{msg}"})
-                _emit(report, args)
-                print(f"錯誤：reload-check 失敗：{msg}", file=sys.stderr)
-                return EXIT_WRITE
-            changed = reload_before != reload_after
-            report["reload_check"] = {
-                "ok": True,
-                "release_dir": str(Path(args.release_dir)),
-                "cutoff_before": reload_before,
-                "cutoff_after": reload_after,
-                "changed": bool(changed),
-                "note": "以兩個全新 ForecastEngine 例證明重啟／重建引擎後讀到的新截止日；"
-                        "已啟動中的引擎／服務不會自動看到新行情，需重啟服務或重建引擎"
-                        "（步驟見 docs/OPERATIONS.md §6）；模型權重未變。",
-            }
-            print(f"reload-check：刷新後引擎 public_cutoff = {reload_after}"
-                  + (f"（已讀到新日期；權重未變）" if changed else "（與刷新前相同）"))
+                data_committed = (saved is not None) or bool(
+                    (report.get("release_history") or {}).get("changed"))
+                if not data_committed:
+                    report["reload_check"] = {"ok": False, "error": msg,
+                                              "cutoff_before": reload_before,
+                                              "cutoff_after": reload_after,
+                                              "release_dir": str(Path(args.release_dir)),
+                                              "data_committed": False}
+                    report.update({"status": "failed",
+                                   "error": f"reload-check 失敗（本 run 未寫入任何資料，屬純驗證失敗）：{msg}"})
+                    _emit(report, args)
+                    print(f"錯誤：reload-check 失敗：{msg}", file=sys.stderr)
+                    return EXIT_WRITE
+                rh = report.get("release_history") or {}
+                backup_note = rh.get("backup_path")
+                report["reload_check"] = {
+                    "ok": False,
+                    "error": msg,
+                    "cutoff_before": reload_before,
+                    "cutoff_after": reload_after,
+                    "release_dir": str(Path(args.release_dir)),
+                    "data_committed": True,
+                    "reloaded": False,
+                    "status_meaning": "資料已更新（快照／release 歷史已核對通過並落地）、"
+                                      "服務重載驗證失敗（reloaded=False）——不回滾已提交的新資料；"
+                                      "需手動重啟服務或重建引擎",
+                    "manual_restart_required": True,
+                    "restart_guidance": "資料已更新、服務重載失敗——需手動重啟服務：依 "
+                                        "docs/OPERATIONS.md §6 重啟推論服務（本機 API＝重啟 "
+                                        "Uvicorn 行程；SERVER 部署後＝重啟推論服務行程），"
+                                        "重啟後重跑 --reload-check 確認 public_cutoff 已是新日期；"
+                                        "確需回到舊資料時，以報告 release_history.backup_path 的備份（"
+                                        + (str(backup_note) if backup_note else "見 release_history.backup_path")
+                                        + "）手動覆蓋回 public_history.parquet。",
+                }
+                reload_failed_msg = msg
+                print(f"警告：reload-check 失敗：{msg}；資料已更新不回滾"
+                      f"（status=data_updated_reload_failed，exit 5），需手動重啟服務"
+                      f"（docs/OPERATIONS.md §6）；舊資料已在備份。", file=sys.stderr)
+            else:
+                changed = reload_before != reload_after
+                report["reload_check"] = {
+                    "ok": True,
+                    "release_dir": str(Path(args.release_dir)),
+                    "cutoff_before": reload_before,
+                    "cutoff_after": reload_after,
+                    "changed": bool(changed),
+                    "note": "以兩個全新 ForecastEngine 例證明重啟／重建引擎後讀到的新截止日；"
+                            "已啟動中的引擎／服務不會自動看到新行情，需重啟服務或重建引擎"
+                            "（步驟見 docs/OPERATIONS.md §6）；模型權重未變。",
+                }
+                print(f"reload-check：刷新後引擎 public_cutoff = {reload_after}"
+                      + (f"（已讀到新日期；權重未變）" if changed else "（與刷新前相同）"))
 
         # ---- F05d：報告中區分三個日期／版本概念 ----
         date_semantics: dict = {
@@ -777,6 +856,17 @@ def main(argv=None) -> int:
         report["date_semantics"] = date_semantics
 
         # ---- 收尾 ----
+        if reload_failed_msg is not None:
+            # R07：資料已提交（快照／release 歷史核對通過並落地）、reload 驗證失敗——
+            # 獨立狀態「reloaded=False 的成功資料更新」，不回滾、不算純失敗（exit 5）。
+            report["status"] = "data_updated_reload_failed"
+            report["error"] = (f"reload-check 失敗：{reload_failed_msg}；資料已更新不回滾，"
+                               f"需手動重啟服務（docs/OPERATIONS.md §6），舊資料已在備份"
+                               f"（release_history.backup_path）")
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            _emit(report, args)
+            print(f"狀態：{report['status']}（資料已更新；服務重載失敗，需手動重啟服務——docs/OPERATIONS.md §6）")
+            return EXIT_RELOAD
         report["status"] = "ok" if has_new else "no_new_data"
         shutil.rmtree(tmp_dir, ignore_errors=True)
         _emit(report, args)
