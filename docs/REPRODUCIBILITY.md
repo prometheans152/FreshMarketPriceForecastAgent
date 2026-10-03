@@ -149,4 +149,4 @@ PYTHONPATH=src .venv/Scripts/python.exe -m uvicorn aiot_price.api.app:app --host
 
 - 依賴新增：`hermes-agent==0.19.0`（官方 Nous Research；import 名 `run_agent`）、`pytest-asyncio`、`openai==2.24.0`（hermes 依賴）——見 requirements-lock.txt。全套測試 192 passed（歷史：第三輪 134、初驗 98）。
 - 代理人啟動與切換：`AIOT_AGENT_PROFILE`（rule/glm_zai/glm_bigmodel/qwen_local）＋`AIOT_AGENT_FRAMEWORK`（direct/hermes）；詳 docs/ROUND4_GLM_API_REPORT.md §5-6。
-- 乾淨環境最終驗證：outputs/audits/round4_glm_api/clean_env_final.md。
+- 乾淨環境最終驗證（2026-10-04 03:5x，提交 13151dd 程式）：專案外 %TEMP% 全新 venv → 完整路徑 editable 安裝＋lock 套件 → import 含 hermes-agent 0.19.0 → 真工件載入 → **全套 192 passed（22.46s，與原環境一致）**。第三輪「乾淨環境只有 98」缺口已補。詳細記錄：outputs/audits/round4_glm_api/clean_env_final.md（忽略目錄）。
