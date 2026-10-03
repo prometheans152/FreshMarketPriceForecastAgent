@@ -65,6 +65,14 @@
 
 所有動態字串以 escape 後再插入 DOM，避免後端字串注入 HTML。
 
+## 5.5 代理人問答區塊（2026-10-03 第二輪新增）
+
+- 表單下方「用問的也可以」：文字框（≤2000字）＋「問代理人」按鈕（Enter 亦可送出）。
+- 呼叫 `POST /agent/query`（body：`{query, store_id}`，store_id 取 localStorage 同表單）。
+- 回答以純文字顯示（`textContent`，不注入 HTML）；標題顯示後端（「Qwen 代理人」或「代理人（規則模式）」）。
+- 自然語言解析規則與忠實性要求見 [AGENT_EVALUATION](AGENT_EVALUATION.md)；實測截圖 `outputs/e2e/ui_agent_mobile.png`。
+- 錯誤：非 2xx 顯示 `error.message`；連線失敗顯示「無法連線到伺服器」。
+
 ## 6. localStorage
 
 - 僅一個鍵 `tw01_ui_prefs_v1`，JSON：`{ crop_id, market_id, price_unit, store_id }`。

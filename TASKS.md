@@ -292,7 +292,9 @@
 
 ### T25 核實Qwen型號並測試3090執行
 
-**狀態：TODO｜依賴：T23｜產出：** `docs/QWEN_SERVER_BENCHMARK.md`、`configs/agent_model.yaml`、`outputs/server/qwen_benchmark/`。
+**狀態：DOING（2026-10-03：型號核實完成；3090 實測 HOLD 待 SERVER）｜依賴：T23｜產出：** `docs/QWEN_SERVER_BENCHMARK.md`、`configs/agent_model.yaml`、`outputs/server/qwen_benchmark/`。
+
+2026-10-03 實際證據：官方來源（QwenLM GitHub、HF Qwen org）核實——Qwen3.8 僅 2.4T/27B 兩尺寸，官方權重皆超 24GB 不可行；候選 Qwen3.5-9B（首選，BF16 約 19.3GB、明文支援工具呼叫）/Qwen3.5-4B/Qwen3-8B（皆 Apache-2.0）。產出 [QWEN_SERVER_BENCHMARK.md](docs/QWEN_SERVER_BENCHMARK.md)（核實完成/實測 HOLD 分節）＋[agent_model.yaml](configs/agent_model.yaml)。**待使用者確認 Qwen3.8 原意**（見 DECISIONS D38）；載入/顯存/延遲實測依 T23。
 
 - [ ] 向官方來源確認使用者所稱Qwen3.8的實際可取得名稱、大小、授權與工具呼叫支援；無法確認就記錄，不拿歷史聊天中的型號／連結當證明，也不暗自換模型。
 - [ ] 選適合可用24GB顯存與SERVER環境的候選／量化／上下文及推論框架，實際測載入、峰值顯存、延遲、中文品項理解與工具參數正確率。
@@ -302,7 +304,9 @@
 
 ### T26 實作代理人工具與呼叫流程
 
-**狀態：TODO｜依賴：T20、T24、T25｜產出：** `src/aiot_price/agent/tools.py`、`src/aiot_price/agent/service.py`、`configs/agent_prompt.md`、`tests/agent/test_tools.py`。
+**狀態：PASS（2026-10-03，本機層；SERVER 端 Qwen 整合於 T24 後補實測）｜依賴：T20、T24、T25｜產出：** `src/aiot_price/agent/tools.py`、`src/aiot_price/agent/service.py`、`configs/agent_prompt.md`、`tests/agent/test_tools.py`。
+
+2026-10-03 實際證據：分層代理人（確定性規則提取＋2 有限工具與API同源＋可插後端：RuleBackend/QwenBackend 降級安全）；`POST /agent/query` 上線（web「問代理人」入口實測截圖 outputs/e2e/ui_agent_mobile.png）；test_tools 12 項過；單次查詢工具呼叫上限 3。
 
 - [ ] 定義取得可用公開行情、呼叫 `POST /forecast` 的有限工具及參數schema，建立 `POST /agent/query` 接收自然語言查詢；代理人提取菜名、價格與日期，缺必要資料先要求補充，不自行發明店價。
 - [ ] 真正執行工具再回答；限制工具名、端點、呼叫次數與超時，不給代理人任意shell、任意URL或修改模型的權限。
@@ -311,7 +315,9 @@
 
 ### T27 檢查代理人回答忠實與失敗降級
 
-**狀態：TODO｜依賴：T17、T26｜產出：** `tests/agent/test_faithfulness.py`、`docs/AGENT_EVALUATION.md`、`outputs/agent_evaluation/`。
+**狀態：DOING（2026-10-03：本機層 14 項全過；Qwen 端忠實性待 SERVER）｜依賴：T17、T26｜產出：** `tests/agent/test_faithfulness.py`、`docs/AGENT_EVALUATION.md`、`outputs/agent_evaluation/`。
+
+2026-10-03 實際證據：本機層覆蓋菜名歧義/單位/無上週/有上週標實驗性/不漲忠實呈現/缺資料要求補充/無資料市場不給假結論/Qwen失敗降級/無機率字眼——test_faithfulness 14 項＋[AGENT_EVALUATION.md](docs/AGENT_EVALUATION.md)＋outputs/agent_evaluation/local_results.json（8 案例）。真 Qwen 載入、prompt injection 實測與延遲量測依 T24/T25。
 
 - [ ] 用固定中文案例測菜名歧義、單位、無上週價、日期不比、工具回傳不漲、來源過期、Qwen／API超時與惡意指示；核對參數、結果與最終回答。
 - [ ] 回答不能改變工具方向／數字、捏造原因／機率或將均價說成同店真值；Qwen不可用時手機仍能顯示直接模型結果與說明。
@@ -320,7 +326,9 @@
 
 ### T28 完成安全、隱私與資源限制
 
-**狀態：TODO｜依賴：T20、T22、T26｜產出：** `docs/SECURITY_PRIVACY.md`、相關服務設定與 `tests/api/test_access_limits.py`。
+**狀態：DOING（2026-10-03：本機層完成；對外部署補強於 T29）｜依賴：T20、T22、T26｜產出：** `docs/SECURITY_PRIVACY.md`、相關服務設定與 `tests/api/test_access_limits.py`。
+
+2026-10-03 實際證據：body>8KB→413、每IP每分鐘30次→429（滑動窗口）、日誌不記 body、/health與/metadata無秘密實測（test_access_limits 6 項過）；[SECURITY_PRIVACY.md](docs/SECURITY_PRIVACY.md) 列 SERVER 部署待補項（TLS/反向代理限流/Qwen端口不對外/服務帳號）。
 
 - [ ] 按實際使用範圍設存取控制、請求大小／頻率／超時、允許來源、敏感紀錄保護與日誌遮罩；Qwen與內部模型端點不無限制暴露。
 - [ ] 核對私價留存、匯出／刪除、店家匿名、金鑰環境設定及依賴；保護模型載入與外部資料文字，避免被當操作指令。
@@ -338,7 +346,9 @@
 
 ### T30 建立資料更新、監控與模型更新流程
 
-**狀態：TODO｜依賴：T05、T24、T29｜產出：** `scripts/update_public_data.py`、`docs/OPERATIONS.md`、`configs/update_policy.yaml`。
+**狀態：DOING（2026-10-03：本機手動更新流程四情境實測通過；SERVER 自動化/排程待 T24/T29）｜依賴：T05、T24、T29｜產出：** `scripts/update_public_data.py`、`docs/OPERATIONS.md`、`configs/update_policy.yaml`。
+
+2026-10-03 實際證據：[update_public_data.py](scripts/update_public_data.py)（schema驗證/快照比較/--dry-run/--refresh-release-history 備份＋只追加＋寫後核對）＋[update_policy.yaml](configs/update_policy.yaml)＋[OPERATIONS.md](docs/OPERATIONS.md)；四情境實測（真實下載無新資料、模擬新資料、失效來源、schema變動）通過，報告 outputs/update_tests/；追加機制在暫存副本真實執行（12,288→12,309列、自動備份、append-only 核對），0.1.0 原檔 hash 前後不變。
 
 - [ ] 先提供手動可驗證更新流程，檢查來源hash／日期／schema，避免重複與壞檔覆蓋；舊資料及更新失敗有日期提示與降級。
 - [ ] 明確區分「刷新公開行情／特徵」與「重訓並升級模型」；重訓仍在Windows經T08–T18再傳SERVER，不每次查詢就重訓。
@@ -368,7 +378,9 @@
 
 ### T33 完成研究報告、投影片與課程對照
 
-**狀態：TODO｜依賴：T01、T04、T15、T17、T27、T32；T16結果如有則納入｜產出：** `docs/FINAL_REPORT.md`、`docs/FINAL_SLIDES.md`及當屆要求的實際投影片格式。
+**狀態：DOING（2026-10-03：初稿完成；期末細則/組員/最終數據齊後定稿）｜依賴：T01、T04、T15、T17、T27、T32；T16結果如有則納入｜產出：** `docs/FINAL_REPORT.md`、`docs/FINAL_SLIDES.md`及當屆要求的實際投影片格式。
+
+2026-10-03 實際證據：[FINAL_REPORT.md](docs/FINAL_REPORT.md)（10章＋數字來源對照表）與[FINAL_SLIDES.md](docs/FINAL_SLIDES.md)（15頁）初稿；數字與 outputs JSON 逐項核對（含 momentum 基線與選定模型相當的負向並列）；組員/期末格式標待補。
 
 - [ ] 整理動機、具體前作、資料／授權、雙主機架構、代理人工具、方法、時間切分、7／14天量化、A／B私價結果與限制；圖表使用實際評估輸出。
 - [ ] 映射當屆每項交付；私價驗證未完成則明列資料／到期缺口，公開市場成績不填入同店欄，也不稱符合全部評分細則。
@@ -377,7 +389,9 @@
 
 ### T34 完成README、重現包與公開前檢查
 
-**狀態：TODO｜依賴：T18、T30、T32、T33｜產出：** 更新 `README.md`、`.gitignore`；新增 `docs/REPRODUCIBILITY.md`、`docs/PUBLICATION_REVIEW.md`。
+**狀態：DOING（2026-10-03：REPRODUCIBILITY 初版完成含 2026-10-04 實測；PUBLICATION_REVIEW 與最終 README 待 T32 後）｜依賴：T18、T30、T32、T33｜產出：** 更新 `README.md`、`.gitignore`；新增 `docs/REPRODUCIBILITY.md`、`docs/PUBLICATION_REVIEW.md`。
+
+2026-10-03 實際證據：[REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md)（環境/資料/管線/訓練/評估/打包/fixtures/API/pytest 全流程＋hash 對照；實測 fixtures 3/3、pytest 98 passed）；requirements-lock.txt 已補 fastapi/uvicorn/pyarrow/httpx 鎖版；SERVER 重現標待 T24。
 
 - [ ] 寫出本機訓練、SERVER啟動、API／手機使用、版本、資料取得、重現評估與限制；將大型權重／資料的取得方式寫清，不把忽略文件不存在說成可直接重現。
 - [ ] 檢查提交候選中的秘密、原始私價／店家識別／錄音、資料授權、檔案大小、連結與輸出；只準備可審閱內容，不擅自建立公開遠端或提交課程。

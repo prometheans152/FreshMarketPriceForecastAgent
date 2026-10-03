@@ -94,6 +94,16 @@
       <div id="errorBox" class="error-box" role="alert" hidden></div>
 
       <section id="result" aria-live="polite"></section>
+
+      <section id="agentSection" class="agent-box">
+        <h2>用問的也可以</h2>
+        <p class="hint">直接打「高麗菜 一斤32」，代理人會幫你查。</p>
+        <div class="agent-row">
+          <input type="text" id="agentQuery" placeholder="例：高麗菜今天一斤32，上週28" maxlength="2000" autocomplete="off">
+          <button type="button" id="agentBtn" class="primary">問代理人</button>
+        </div>
+        <div id="agentResult" class="agent-result" aria-live="polite" hidden></div>
+      </section>
     </main>
 
     <footer>

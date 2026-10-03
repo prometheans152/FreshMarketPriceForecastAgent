@@ -31,6 +31,38 @@ RELEASE_DIR = os.environ.get("AIOT_RELEASE_DIR", "models/releases/0.1.0")
 
 app = FastAPI(title="AIoT 菜價 7/14 天預測 API", version="0.1.0")
 
+# ---------- 存取限制（T28；SERVER 對外開放的基本防線）----------
+
+MAX_BODY_BYTES = 8 * 1024  # 預測請求遠小於此；超過視為濫用
+RATE_LIMIT_PER_MINUTE = 30  # 每客戶端 IP 每分鐘請求數（記憶體版，單進程）
+_rate_buckets: dict[str, list[float]] = {}
+
+
+@app.middleware("http")
+async def access_limits(request: Request, call_next):
+    # 請求大小：Content-Length 超限直接拒絕，不讀 body
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > MAX_BODY_BYTES:
+        return JSONResponse(
+            status_code=413,
+            content={"error": {"code": "payload_too_large", "message": "請求內容過大。"}},
+        )
+    # 速率限制：滑動窗口 per client IP（僅記路徑與狀態，不記錄 body——隱私）
+    import time as _time
+
+    client_ip = request.client.host if request.client else "unknown"
+    now = _time.time()
+    window = _rate_buckets.setdefault(client_ip, [])
+    window[:] = [t for t in window if now - t < 60]
+    if len(window) >= RATE_LIMIT_PER_MINUTE:
+        return JSONResponse(
+            status_code=429,
+            content={"error": {"code": "rate_limited", "message": "查詢太頻繁，請稍後再試。"}},
+        )
+    window.append(now)
+    response = await call_next(request)
+    return response
+
 _engine: ForecastEngine | None = None
 
 
@@ -118,7 +150,45 @@ async def forecast(request: Request) -> JSONResponse:
     return JSONResponse(status_code=status, content=response)
 
 
-# 手機頁面（T21 web/）同源服務；目錄不存在時跳過
+# ---------- 代理人端點（T26）----------
+
+from aiot_price.agent.service import QwenBackend, RuleBackend, handle_agent_query  # noqa: E402
+
+
+@app.post("/agent/query")
+async def agent_query(request: Request) -> JSONResponse:
+    """自然語言菜價查詢：確定性解析 → 有限工具 → 忠實回答。
+
+    QwenBackend 需環境變數 AIOT_QWEN_BASE_URL／AIOT_QWEN_MODEL（SERVER 部署）；
+    未設定時使用規則後端（與工具同源，回答只引用工具數字）。
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse(
+            status_code=400,
+            content={"error": {"code": "bad_request", "message": "請求本文須為 JSON（{\"query\": \"...\"}）。"}},
+        )
+    query = body.get("query") if isinstance(body, dict) else None
+    if not isinstance(query, str) or not query.strip() or len(query) > 2000:
+        return JSONResponse(
+            status_code=400,
+            content={"error": {"code": "bad_request", "message": "請提供 1–2000 字的查詢文字。"}},
+        )
+    store_id = body.get("store_id")
+    if store_id is not None and (not isinstance(store_id, str) or len(store_id) > 32):
+        return JSONResponse(
+            status_code=400,
+            content={"error": {"code": "bad_request", "message": "store_id 須為短字串（匿名店號）。"}},
+        )
+    engine = get_engine()
+    qwen = QwenBackend()
+    backend = qwen if qwen.available() else RuleBackend()
+    result = handle_agent_query(engine, query, store_id=store_id, backend=backend)
+    return JSONResponse(status_code=200, content=result)
+
+
+# 手機頁面（T21 web/）同源服務；mount 必須在所有 API 路由之後註冊，避免攔截 API 路徑
 _web_dir = Path(__file__).resolve().parents[3] / "web"
 if _web_dir.exists():
     app.mount("/", StaticFiles(directory=str(_web_dir), html=True), name="web")

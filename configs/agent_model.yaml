@@ -1,0 +1,125 @@
+# TW01 代理人模型候選設定（T25 型號核實，2026-10-03）
+# 僅列官方來源（github.com/QwenLM、huggingface.co/Qwen）查核過的候選；顯存為參數量推算值，非官方數字。
+# 預設候選在 SERVER（RTX 3090 24GB）實測後鎖定；本檔不等於已載入驗證通過。
+
+verification:
+  checked_at: "2026-10-03"
+  sources:
+    - "https://github.com/QwenLM/Qwen3.8"
+    - "https://huggingface.co/collections/Qwen/qwen38"
+    - "https://huggingface.co/Qwen"
+  qwen38_finding: >
+    Qwen3.8 為官方系列（2026-08），但開源檢查點僅 Qwen3.8-2.4T-A95B（MoE 旗艦）與
+    Qwen3.8-27B（dense 約27.78B）；無 4B-14B 尺寸。27B 官方權重 BF16 約55.5GB／FP8 約28GB，
+    超過單卡24GB，不列入3090首選。詳見 docs/QWEN_SERVER_BENCHMARK.md。
+
+default_candidate: "qwen3.5-9b"   # 建議首選；3090 實測後鎖定，不視為已驗證
+default_note: "3090 實測（載入／峰值顯存／延遲／中文品項理解／工具參數正確率）完成前不鎖定版本。"
+
+candidates:
+  qwen3.5-9b:
+    recommended: true
+    official_name: "Qwen/Qwen3.5-9B"
+    params: "9.65B（BF16 safetensors 約19.3GB）"
+    architecture: "dense-hybrid（Gated DeltaNet + Gated Attention）；視覺語言 image-text-to-text"
+    released: "2026-03-02"
+    license: "Apache-2.0"
+    context: "262,144 native（YaRN 至 1,010,000）"
+    tool_calling:
+      supported: true
+      evidence: "模型卡明文 \"Qwen3.5 excels in tool calling capabilities\"；建議 Qwen-Agent 與 MCP；chat template 內建 tools 區段"
+    quantization_options:
+      official: "無（官方僅 BF16 權重，isQuantized 標示為 false）"
+      community: "FP8／GGUF 等社群量化存在，非官方，採用須另行驗證"
+    vram_estimate: "BF16 約19.3GB（24GB 可放，緊）；vLLM --language-model-only 可略過視覺編碼器省顯存"
+    source_urls:
+      huggingface: "https://huggingface.co/Qwen/Qwen3.5-9B"
+    notes: "首選：官方提供中最接近 8B 級的最新中型模型，工具呼叫與長 context 明確支援。"
+
+  qwen3.5-4b:
+    recommended: false
+    official_name: "Qwen/Qwen3.5-4B"
+    params: "約4.66B（BF16 約9.3GB）"
+    architecture: "dense-hybrid（Gated DeltaNet，行銷描述含 sparse MoE）；視覺語言 image-text-to-text"
+    released: "2026-03-02"
+    license: "Apache-2.0"
+    context: "262,144 native（YaRN 至 1,010,000）"
+    tool_calling:
+      supported: true
+      evidence: "同 Qwen3.5 系列模型卡敘述；chat template 內建 tools 區段；Qwen-Agent／MCP"
+    quantization_options:
+      official: "無"
+      community: "GGUF 等社群量化存在，非官方"
+    vram_estimate: "BF16 約9.3GB（寬裕，KV 空間大）"
+    source_urls:
+      huggingface: "https://huggingface.co/Qwen/Qwen3.5-4B"
+    notes: "備選：9B 實測 KV 不足或延遲不足時降級用。"
+
+  qwen3-8b:
+    recommended: false
+    official_name: "Qwen/Qwen3-8B"
+    params: "8.2B（BF16 約16.4GB）"
+    architecture: "dense；純文字"
+    released: "2025-04-27"
+    license: "Apache-2.0"
+    context: "32,768 native（YaRN 131,072）"
+    tool_calling:
+      supported: true
+      evidence: "模型卡 \"Expertise in agent capabilities, enabling precise integration with external tools\"；建議 Qwen-Agent；chat template 支援 tools／tool_call 標籤"
+    quantization_options:
+      official: "無（官方僅 BF16）"
+      community: "452 個社群量化（llama.cpp／Ollama 用），非官方"
+    vram_estimate: "BF16 約16.4GB（可行）"
+    source_urls:
+      huggingface: "https://huggingface.co/Qwen/Qwen3-8B"
+    notes: "備選：較舊但工具呼叫生態最成熟；Qwen3.5 hybrid 架構框架版本不合時的退路。"
+
+  qwen3.8-27b:
+    recommended: false
+    official_name: "Qwen/Qwen3.8-27B"
+    params: "約27.78B（BF16 約55.5GB）"
+    architecture: "dense；視覺語言 image-text-to-text（原生影像與影片理解）"
+    released: "2026-08-14"
+    license: "Apache-2.0"
+    context: "262,144 native（YaRN 至 1,000,000）"
+    tool_calling:
+      supported: true
+      evidence: "模型卡 agentic 基準（Terminal Bench 2.1、SWE-bench Pro 等）與 tool_call chat template；vLLM serve 參數 --tool-call-parser qwen3_coder --enable-auto-tool-choice"
+    quantization_options:
+      official: "Qwen/Qwen3.8-27B-FP8（官方 FP8）"
+      community: "INT4 GGUF（約15-16GB，可入24GB）等社群量化，非官方"
+    vram_estimate: "BF16 約55.5GB、官方FP8 約28GB → 皆超過24GB；僅社群INT4 可放入單卡"
+    source_urls:
+      huggingface: "https://huggingface.co/Qwen/Qwen3.8-27B"
+      collection: "https://huggingface.co/collections/Qwen/qwen38"
+    notes: "使用者所稱 Qwen3.8 的最小官方成員；官方權重在3090不可行，不列入首選。若使用者堅持需回報顯存衝突或考慮社群量化另行驗證。"
+
+excluded:
+  - name: "Qwen3.8-2.4T-A95B / -FP8"
+    reason: "2.4T 總參 MoE，權重遠超24GB"
+  - name: "Qwen3.8-Flash-Next"
+    reason: "約180B 總參 MoE 預覽；授權 qwen-community-1.0 非 Apache 2.0"
+  - name: "Qwen3.5-397B-A17B、Qwen3.5-122B-A10B、Qwen3.5-35B-A3B、Qwen3.6-35B-A3B、Qwen3-Coder-30B-A3B"
+    reason: "MoE 總參數使 BF16／FP8 權重皆超過24GB"
+  - name: "Qwen3.5-27B、Qwen3.6-27B"
+    reason: "dense 27B，同 Qwen3.8-27B 超卡"
+
+inference_frameworks:
+  vllm:
+    official: true
+    tool_call: "--tool-call-parser qwen3_coder --enable-auto-tool-choice（QwenLM/Qwen3.8 README serving 段）"
+    note: "Qwen3.5-9B 需 main 分支版本（模型卡）"
+  sglang:
+    official: true
+    tool_call: "官方 README 列為生產建議；Qwen3.5-9B 需 main 分支版本"
+  llama_cpp:
+    official: "部分：Qwen3.5 系列有 GGUF 支援（README）；官方權重非 GGUF，實際檔案為社群量化"
+    tool_call: "未在官方頁載明工具呼叫細節，採用前需實測"
+  ollama:
+    official: false
+    tool_call: "官方頁未列為建議框架；僅出現在社群量化說明"
+  qwen_agent:
+    official: true
+    tool_call: "Qwen3.5／Qwen3 模型卡建議的官方 agent 框架（含 MCP）"
+
+status: "型號核實完成（2026-10-03）；3090 實測 HOLD 待 SERVER（OS／CUDA／位址未知），實測後鎖定 default_candidate"

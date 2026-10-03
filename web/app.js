@@ -188,6 +188,7 @@ function init() {
   });
 
   $('predictForm').addEventListener('submit', onSubmit);
+  bindAgent();
 }
 
 /* ---------- 請求組裝與驗證 ---------- */
@@ -464,6 +465,61 @@ function renderResponse(data) {
   }
 
   box.innerHTML = parts.join('');
+}
+
+/* ---------- 代理人問答（T26 /agent/query） ---------- */
+
+function bindAgent() {
+  const btn = document.getElementById('agentBtn');
+  const input = document.getElementById('agentQuery');
+  const out = document.getElementById('agentResult');
+  if (!btn || !input || !out) return;
+
+  async function ask() {
+    const text = input.value.trim();
+    out.hidden = false;
+    if (!text) {
+      out.textContent = '請輸入問題，例如「高麗菜 一斤32」。';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = '查詢中…';
+    out.textContent = '代理人查詢中…';
+    try {
+      const storeId = localStorage.getItem('vp_store_id') || 'store-a';
+      const res = await fetch('agent/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: text, store_id: storeId })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = data && data.error && data.error.message ? data.error.message : '查詢失敗（HTTP ' + res.status + '）';
+        out.textContent = msg;
+        return;
+      }
+      const backend = data.backend === 'qwen' ? 'Qwen 代理人' : '代理人（規則模式）';
+      out.textContent = '';
+      const head = document.createElement('p');
+      head.className = 'agent-head';
+      head.textContent = backend + '：';
+      const body = document.createElement('div');
+      body.className = 'agent-answer';
+      body.textContent = data.answer || '（沒有回應）';
+      out.appendChild(head);
+      out.appendChild(body);
+    } catch (err) {
+      out.textContent = '無法連線到伺服器，請稍後再試。';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '問代理人';
+    }
+  }
+
+  btn.addEventListener('click', ask);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') ask();
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);

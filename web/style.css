@@ -497,3 +497,12 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- 代理人問答 ---------- */
+.agent-box { margin-top: 24px; padding: 16px; border: 1px solid var(--border, #d8d8d8); border-radius: 12px; }
+.agent-box h2 { font-size: 1.05rem; margin: 0 0 4px; }
+.agent-row { display: flex; gap: 8px; }
+.agent-row input { flex: 1; min-width: 0; }
+.agent-result { margin-top: 12px; white-space: pre-wrap; line-height: 1.6; }
+.agent-head { margin: 0 0 4px; font-weight: 600; }
+.agent-answer { }
