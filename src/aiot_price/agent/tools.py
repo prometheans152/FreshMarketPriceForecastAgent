@@ -37,22 +37,49 @@ for _cid, _m in CROP_MAPPINGS.items():
 # 長名先配（避免「平地高麗菜」被「甘藍」先吃掉）
 _ALIAS_PATTERNS.sort(key=lambda x: -len(x[0]))
 
-# 價格兩種形式：「32元」與單位詞後裸數字「一斤32」
-_PRICE_WITH_UNIT_RE = re.compile(r"(?:元|塊)(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:元|塊)")
-_PRICE_BARE_RE = re.compile(r"(?:斤|公斤)\s*[:：]?\s*(\d{1,4}(?:\.\d+)?)")
-# 公斤必須先於台斤檢查，且台斤不得匹配「公斤」中的斤
+# ---------- 子句級解析（F01：每個價格綁定自己的單位/品項/日期/店家線索） ----------
+
+_CLAUSE_SPLIT_RE = re.compile(r"[，,、;；。]")
+_DATE_RE = re.compile(r"(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})日?")
 _UNIT_PATTERNS = [
-    (re.compile(r"公斤|/kg|\/公斤"), "NTD_per_kg"),
+    (re.compile(r"公斤|/kg"), "NTD_per_kg"),
     (re.compile(r"(?<!公)(?<!公 )台?斤|(?<!公)/斤"), "NTD_per_taiwan_jin"),
-    (re.compile(r"(?:一|1)?\s*(?:顆|粒|把|根)"), "per_piece_or_bunch"),
+    (re.compile(r"(?:一|1|\d+)\s*(?:顆|粒|把|根|袋)"), "per_piece_or_bunch"),
 ]
-_PREV_HINTS = re.compile(r"上(?:週|周|禮拜|次)")
-_TODAY_HINTS = re.compile(r"今(?:天|日|日價|天價)")
+_PRICE_NUM_RE = re.compile(r"(\d{1,5}(?:\.\d+)?)\s*(?:元|塊)|(?:元|塊)\s*(\d{1,5}(?:\.\d+)?)")
+_PRICE_AFTER_UNIT_RE = re.compile(r"(?:斤|公斤)\s*[:：]?\s*(\d{1,5}(?:\.\d+)?)")
+_YESTERDAY_RE = re.compile(r"昨(?:天|日)")
+_LAST_WEEK_RE = re.compile(r"上(?:週|周|禮拜)")
+_LAST_TIME_RE = re.compile(r"上次")
+_DIFF_STORE_RE = re.compile(r"另一(?:家|間)|別家|別間|不同(?:家|間)|換(?:了)?(?:一家|間)")
+_DIFF_SPEC_RE = re.compile(r"換(?:了)?規格|不同規格|不同品種|有機")
+
+
+@dataclass
+class PriceMention:
+    """單一子句內的價格提及：綁定當下的單位、品項、日期與可比性線索。"""
+
+    value: float
+    unit: str | None
+    when: str  # today / yesterday / last_week / last_time / dated / last_week_dated
+    explicit_date: date | None = None
+    crop_id: str | None = None
+    crop_text: str | None = None
+    different_store: bool = False
+    different_spec: bool = False
+    source_text: str = ""
 
 
 @dataclass
 class ParsedQuery:
-    """自然語言查詢的確定性解析結果；missing 列出待補欄位。"""
+    """自然語言查詢的確定性解析結果。
+
+    F01 不變量：
+    - current_price 綁定其所在子句的單位與品項；不從其他子句借用單位。
+    - 明示日期優先；「昨天」如實當昨天（observed_date=t-1），不默默改今天。
+    - 「上次」無日期不補 t-7；「上週」無明示日期才以 t-7 為假設並標 assumed。
+    - 不同店／不同規格的上週價在解析層即拒 B（回 A）。
+    """
 
     crop_id: str | None = None
     crop_text: str | None = None
@@ -61,100 +88,186 @@ class ParsedQuery:
     market_id: str | None = None
     previous_price: float | None = None
     previous_price_unit: str | None = None
+    previous_date: object = None
+    previous_date_assumed: bool = False
     days_ago_previous: int | None = None
+    observed_date: object = None  # 使用者明示的報價日（昨天/明示日期）；None=今天
     today: date = field(default_factory=lambda: datetime.now().astimezone().date())
     unit_non_comparable: bool = False
-    missing: list[str] = field(default_factory=list)
+    ambiguous_crops: list = field(default_factory=list)
+    b_reject_reason: str | None = None
+    missing: list = field(default_factory=list)
 
     def to_forecast_request(self, store_id: str | None = None) -> dict | None:
-        """組 ForecastRequest；必要欄位缺或單位不可比時回 None（missing 已填）。"""
+        """組 ForecastRequest；必要欄位缺或單位不可比回 None（missing 已填）。"""
         self.missing = []
         if self.crop_id is None:
-            self.missing.append("品項")
+            if self.ambiguous_crops:
+                self.missing.append("品項（偵測到多品項，請指定一種）")
+            else:
+                self.missing.append("品項")
         if self.current_price is None:
             self.missing.append("今天價格")
         if self.price_unit in (None, "per_piece_or_bunch"):
             self.missing.append("計價單位（元/台斤或元/公斤）")
         if self.missing:
             return None
+        obs = self.observed_date or self.today
         req = {
             "crop_id": self.crop_id,
-            "market_id": self.market_id or "中義市場",  # 未指名市場的保守預設；回應中明示
+            "market_id": self.market_id or "中義市場",
             "current_price": self.current_price,
             "price_unit": self.price_unit,
-            "observed_at": f"{self.today.isoformat()}T12:00:00+08:00",
+            "observed_at": f"{obs.isoformat()}T12:00:00+08:00",
             "mode": "without_last_week",
             "store_id": store_id,
         }
-        if self.previous_price is not None and self.previous_price_unit not in (None, "per_piece_or_bunch"):
+        if (
+            self.previous_price is not None
+            and self.previous_price_unit not in (None, "per_piece_or_bunch")
+            and self.previous_date is not None
+            and not self.b_reject_reason
+        ):
             req["previous_price"] = self.previous_price
             req["previous_price_unit"] = self.previous_price_unit
-            ago = self.days_ago_previous or 7
-            prev_day = self.today - timedelta(days=ago)
-            req["previous_observed_at"] = f"{prev_day.isoformat()}T12:00:00+08:00"
+            req["previous_observed_at"] = f"{self.previous_date.isoformat()}T12:00:00+08:00"
+            req["previous_date_assumed"] = self.previous_date_assumed
             req["mode"] = "both"
         return req
 
 
+def _extract_mentions(text: str) -> list[PriceMention]:
+    """逐子句提取價格提及；每個提及只綁定自己子句內的線索。"""
+    mentions: list[PriceMention] = []
+    for clause in _CLAUSE_SPLIT_RE.split(text):
+        clause = clause.strip()
+        if not clause:
+            continue
+
+        unit = None
+        for pat, u in _UNIT_PATTERNS:
+            if pat.search(clause):
+                unit = u
+                break
+
+        explicit = None
+        m = _DATE_RE.search(clause)
+        if m:
+            try:
+                explicit = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            except ValueError:
+                explicit = None
+        if explicit is not None:
+            when = "last_week_dated" if (_LAST_WEEK_RE.search(clause) or _LAST_TIME_RE.search(clause)) else "dated"
+        elif _YESTERDAY_RE.search(clause):
+            when = "yesterday"
+        elif _LAST_WEEK_RE.search(clause):
+            when = "last_week"
+        elif _LAST_TIME_RE.search(clause):
+            when = "last_time"
+        else:
+            when = "today"
+
+        crop_id = crop_text = None
+        for alias, cid in _ALIAS_PATTERNS:
+            if alias and alias in clause:
+                crop_id, crop_text = cid, alias
+                break
+
+        vals: list[float] = []
+        for pm in _PRICE_NUM_RE.finditer(clause):
+            v = pm.group(1) or pm.group(2)
+            vals.append(float(v))
+        for pm in _PRICE_AFTER_UNIT_RE.finditer(clause):
+            vals.append(float(pm.group(1)))
+
+        if not vals:
+            continue
+        for v in vals:
+            mentions.append(
+                PriceMention(
+                    v, unit, when, explicit, crop_id, crop_text,
+                    bool(_DIFF_STORE_RE.search(clause)),
+                    bool(_DIFF_SPEC_RE.search(clause)),
+                    clause,
+                )
+            )
+    return mentions
+
+
 def parse_query(text: str, today: date | None = None) -> ParsedQuery:
-    """從中文查詢提取品項/價格/單位/市場/上週價。規則確定性、可單測。"""
+    """從中文查詢解析。子句級綁定；無法可靠解讀時要求補充或回 A，不猜。"""
     pq = ParsedQuery(today=today or datetime.now().astimezone().date())
     if not text or not text.strip():
         pq.missing = ["品項", "今天價格", "計價單位（元/台斤或元/公斤）"]
         return pq
 
-    # 品項：最長別名優先
-    for alias, cid in _ALIAS_PATTERNS:
-        if alias and alias in text:
-            pq.crop_id, pq.crop_text = cid, alias
-            break
+    mentions = _extract_mentions(text)
+    if not mentions:
+        pq.missing = ["品項", "今天價格", "計價單位（元/台斤或元/公斤）"]
+        return pq
 
-    # 單位
-    for pat, unit in _UNIT_PATTERNS:
-        if pat.search(text):
-            if unit == "per_piece_or_bunch":
-                pq.unit_non_comparable = True
-            else:
-                pq.price_unit = unit
-            break
-
-    # 價格：所有價格候選（帶單位元／塊，與「一斤32」式裸數字）
-    prices: list[tuple[int, float]] = []
-    for m in _PRICE_WITH_UNIT_RE.finditer(text):
-        val = m.group(1) or m.group(2)
-        # 取數字起始位置（group2 在後；group1 是「元32」形式）
-        pos = m.start(1) if m.group(1) else m.start(2)
-        prices.append((pos, float(val)))
-    for m in _PRICE_BARE_RE.finditer(text):
-        prices.append((m.start(1), float(m.group(1))))
-    prices = sorted(set(prices))
-    if prices:
-        # 上週價：出現在上週提示詞之後最近的價格
-        prev_price = None
-        m_hint = _PREV_HINTS.search(text)
-        if m_hint:
-            after = [(pos, p) for pos, p in prices if pos > m_hint.start()]
-            if after:
-                prev_price = after[0][1]
-        # 今天價：非上週價的第一個價格；若只有一個價格且無上週提示，就是今天價
-        today_candidates = [(pos, p) for pos, p in prices]
-        if prev_price is not None:
-            prev_pos = next(pos for pos, p in prices if p == prev_price and pos > m_hint.start())
-            today_candidates = [(pos, p) for pos, p in prices if pos != prev_pos]
-        if today_candidates:
-            pq.current_price = today_candidates[0][1]
-        if prev_price is not None:
-            pq.previous_price = prev_price
-            pq.previous_price_unit = pq.price_unit
-            pq.days_ago_previous = 7  # 預設整整 7 天前；實際日期由使用者更正
-
-    # 市場：逐字掃描已知市場名
     for market in KNOWN_MARKETS:
         if market in text:
             pq.market_id = market
             break
 
-    # 觸發 missing 計算（不含副作用）
+    current_candidates = [m for m in mentions if m.when in ("today", "yesterday", "dated")]
+    past_candidates = [m for m in mentions if m.when in ("last_week", "last_week_dated", "last_time")]
+
+    usable_current = [
+        m for m in current_candidates
+        if m.unit in ("NTD_per_taiwan_jin", "NTD_per_kg") and m.value == m.value
+    ]
+    non_comparable_today = [m for m in current_candidates if m.unit == "per_piece_or_bunch"]
+    crops_seen = sorted({m.crop_id for m in usable_current if m.crop_id})
+    if len(crops_seen) > 1:
+        pq.ambiguous_crops = crops_seen
+    elif usable_current:
+        chosen = usable_current[0]
+        pq.crop_id = pq.crop_id or chosen.crop_id
+        pq.crop_text = chosen.crop_text or pq.crop_text
+        pq.current_price = chosen.value
+        pq.price_unit = chosen.unit
+        if chosen.when == "yesterday":
+            pq.observed_date = pq.today - timedelta(days=1)
+        elif chosen.when == "dated" and chosen.explicit_date:
+            pq.observed_date = chosen.explicit_date
+    elif non_comparable_today:
+        pq.unit_non_comparable = True
+        pq.crop_id = pq.crop_id or non_comparable_today[0].crop_id
+        pq.crop_text = pq.crop_text or non_comparable_today[0].crop_text
+
+    # 上週價未明示單位時，繼承今天價的單位（同店同規格同單位是產品預設；
+    # 若今天價單位也不明，仍要求補充）
+    if pq.price_unit:
+        for m in past_candidates:
+            if m.unit is None:
+                m.unit = pq.price_unit
+    past_usable = [
+        m for m in past_candidates
+        if m.unit in ("NTD_per_taiwan_jin", "NTD_per_kg") and m.value == m.value
+    ]
+    if past_usable:
+        chosen_past = past_usable[0]
+        if chosen_past.different_store:
+            pq.b_reject_reason = "上週價格來自另一家店，與本店不可比，僅提供 A 模式結果"
+        elif chosen_past.different_spec:
+            pq.b_reject_reason = "上週規格／品種不同，不可比，僅提供 A 模式結果"
+        elif chosen_past.when == "last_time" and chosen_past.explicit_date is None:
+            pq.b_reject_reason = "「上次」未提供實際日期，無法確認與今天相差天數，僅提供 A 模式；補充日期（如：上次 9/26）即可對照"
+        elif chosen_past.when == "last_week_dated" and chosen_past.explicit_date is not None:
+            pq.previous_price = chosen_past.value
+            pq.previous_price_unit = chosen_past.unit
+            pq.previous_date = chosen_past.explicit_date
+            pq.days_ago_previous = (pq.today - chosen_past.explicit_date).days
+        elif chosen_past.when == "last_week":
+            pq.previous_price = chosen_past.value
+            pq.previous_price_unit = chosen_past.unit
+            pq.previous_date = pq.today - timedelta(days=7)
+            pq.previous_date_assumed = True
+            pq.days_ago_previous = 7
+
     _ = pq.to_forecast_request()
     return pq
 

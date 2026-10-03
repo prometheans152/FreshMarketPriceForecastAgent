@@ -1,6 +1,6 @@
 # 期末報告初稿（T33）：現場菜價 7／14 天預測與分析代理人
 
-- 日期：2026-10-03。狀態：**初稿**（T33，依賴之 T27、T32 尚未完成，代理人與 SERVER 段落為設計與本機實作狀態）。
+- 日期：2026-10-03；狀態更新：2026-10-04（第二輪獨立審查後）。狀態：**初稿**（代理人本機規則層已實作；Qwen 實機、SERVER 與外網段落仍為設計／待驗證狀態）。
 - 當屆期末交付格式未確認（Notion 公告無法讀取，見 [DELIVERY_CHECKLIST](DELIVERY_CHECKLIST.md)），本章節結構為初稿；正式格式公告後再對齊。
 - 文中每個數字均標註來源文件或 JSON 檔；未取得證據的項目標「待確認」或「待補」，不編造。負向結果照實呈報。
 - 配套投影片大綱見 [FINAL_SLIDES.md](FINAL_SLIDES.md)，兩份文件引用同一組數字。
@@ -18,7 +18,7 @@
 | 課程要求 | 本案對應 | 目前狀態 |
 | --- | --- | --- |
 | 一定要有一個模型 | 公開市場菜價方向模型（已訓練、封存測試） | 已完成（本機） |
-| 領域資料分析代理人 | Qwen 候選＋有限工具呼叫 | 設計完成，SERVER 實測待連線 |
+| 領域資料分析代理人 | Qwen 候選＋有限工具呼叫 | 本機規則層完成；Qwen 實機待 SERVER |
 | 量化評估（訓練與展示不同資料） | 時間切分 train／val／test＋凍結清單 | 已完成（公開目標） |
 | 可上網操作的成果 | SERVER 部署＋手機網頁 | 本機原型完成，外網待 SERVER |
 
@@ -91,11 +91,11 @@ flowchart LR
 
 | 節點 | 工作 | 目前狀態（2026-10-03） |
 | --- | --- | --- |
-| TRAIN_LOCAL（本機 Windows，Ryzen 7 5800X／32GB，CPU 訓練） | 資料整理、特徵、訓練、選模、封存測試、打包、本機 API 與網頁整合 | 已完成 T01–T22（[GLM_PROGRESS](GLM_PROGRESS.md)） |
+| TRAIN_LOCAL（本機 Windows，Ryzen 7 5800X／32GB，CPU 訓練） | 資料整理、特徵、訓練、選模、封存測試、打包、本機 API 與網頁整合 | 本機資料→模型→API→網頁→代理人規則層已完成（98 項自動化測試；[GLM_PROGRESS](GLM_PROGRESS.md)） |
 | SERVER_3090（RTX 3090 24GB） | 載入已訓練工件推論、Qwen 代理人、API 對外服務、行情快取 | **待連線**（T23 HOLD：OS／位址／連線方式未提供，[SERVER_INVENTORY](SERVER_INVENTORY.md)） |
 | CLIENT_PHONE（手機網頁） | 填報今天店價、選填上週價、查看 7／14 天結果 | 本機原型已實測（390×844，[UI_FLOW](UI_FLOW.md)）；外網實測待 SERVER |
 
-查詢時只載入已訓練工件推論（`models/releases/0.1.0/`，manifest 含 hash／切分／能力邊界；fixtures 3 案例重現通過）；公開行情更新不等於重新訓練，模型更新先在本機測試再發佈工件，保留可回退版本（來源：[MODEL_CARD](MODEL_CARD.md)、[design.md](../design.md) 第 3、8 節）。本機 API 為 FastAPI（`GET /health`、`GET /metadata`、`POST /forecast`），重用同一推論引擎，12 項真模型包測試通過，推論延遲約 200 ms，目前僅綁 127.0.0.1（來源：[API_CONTRACT](API_CONTRACT.md)、[GLM_PROGRESS](GLM_PROGRESS.md)）。
+查詢時只載入已訓練工件推論（`models/releases/0.1.0/`，manifest 含 hash／切分／能力邊界；fixtures 3 案例重現通過）；公開行情更新不等於重新訓練，模型更新先在本機測試再發佈工件，保留可回退版本（來源：[MODEL_CARD](MODEL_CARD.md)、[design.md](../design.md) 第 3、8 節）。本機 API 為 FastAPI（`GET /health`、`GET /metadata`、`POST /forecast`），重用同一推論引擎，API 層 22 項測試通過（其中 forecast 端點 12 項），推論延遲約 200 ms，目前僅綁 127.0.0.1（來源：[API_CONTRACT](API_CONTRACT.md)、[GLM_PROGRESS](GLM_PROGRESS.md)）。
 
 ---
 
@@ -230,16 +230,16 @@ h=14（hgb_reg）：[[61, 39, 12], [205, 1237, 37], [74, 171, 23]]；down recall
 
 Qwen 代理人負責理解自然語言、呼叫工具與解釋結果；菜價模型負責訓練與推論。代理人不得自行編價格、概率、天氣原因、準確率或已完成的資料分析；工具失敗、資料不足或單位不可比時如實回覆（來源：[design.md](../design.md) 第 5 節）。
 
-### 8.2 工具設計（T26，狀態 TODO——設計凍結，實作可先對本機 API 開發，SERVER 實測待 T25）
+### 8.2 工具設計（T26：本機規則層完成；Qwen 實機待 SERVER）
 
 | 工具 | 功能 | 限制 |
 | --- | --- | --- |
 | `get_market_quote` | 取得可用公開行情（來源日、市場、品項覆蓋） | 唯讀；不提供私價 |
 | `post_forecast` | 以結構化參數呼叫 `POST /forecast`（品項、市場、今天價／單位／日期、選填上週紀錄、mode） | 有限工具名單、限端點、限呼叫次數與超時；不給任意 shell／任意 URL／修改模型權限 |
 
-自然語言入口 `POST /agent/query`：代理人提取菜名、價格與日期，缺必要資料先要求補充，不自行發明店價；真正執行工具後才回答（來源：[TASKS](../TASKS.md) T26、[design.md](../design.md) 第 6 節）。
+自然語言入口 `POST /agent/query`：代理人提取菜名、價格與日期，缺必要資料先要求補充，不自行發明店價；真正執行工具後才回答（來源：[TASKS](../TASKS.md) T26、[design.md](../design.md) 第 6 節）。目前本機已實作規則層（解析輸入→呼叫 ForecastEngine→依工具真值組字回答，規則回答引用模型輸出）；Qwen 實機的工具 schema／工具迴圈與 3090 實測待 SERVER 階段（第二輪審查 F08 亦指出此界線，T26 以本機層完成＋Qwen 待實機分別認定）。
 
-### 8.3 忠實原則（T27 忠實性測試，狀態 TODO）
+### 8.3 忠實原則（T27：本機測試已有、補強中；Qwen 實機待 SERVER）
 
 回答不能改變工具方向／數字、捏造原因／機率或將均價說成同店真值；Qwen 不可用時手機仍能顯示直接模型結果與說明——模型失敗時不能用 LLM 編一個替代預測（來源：[TASKS](../TASKS.md) T27、[design.md](../design.md) 第 8 節）。固定中文案例測試涵蓋菜名歧義、單位、無上週價、工具回傳不漲、來源過期、超時與惡意指示（來源：[TASKS](../TASKS.md) T27）。
 
@@ -249,7 +249,9 @@ Qwen 代理人負責理解自然語言、呼叫工具與解釋結果；菜價模
 
 ### 8.5 本機已實作部分
 
-手機網頁（`web/`，無 CDN 依賴）已在本機 API（127.0.0.1:8010）以 390×844 實測：A 模式 7/14 結果渲染、開上週價（28 元、2026-09-26）→ A/B 並排含實驗性警示與資料截止天數、南屯市場正確顯示 `stale_data_unusable` 錯誤；截圖 `outputs/e2e/ui_ab_mobile_390x844.png`。真手機外網操作留待 SERVER 階段（T32）（來源：[GLM_PROGRESS](GLM_PROGRESS.md)、[UI_FLOW](UI_FLOW.md)）。
+代理人本機規則層：`POST /agent/query` 已可在無 Qwen 時以規則模式解析中文輸入、呼叫真實推論引擎並引用模型輸出回答（Qwen 實機串接受 SERVER；規則層輸出防線依第二輪審查 F01／F02 補強中）。
+
+手機網頁（`web/`，無 CDN 依賴）已在本機 API（127.0.0.1:8010）以 390×844 實測：A 模式 7/14 結果渲染、開上週價（28 元、2026-09-26）→ A/B 並排含實驗性警示與資料截止天數、南屯市場正確顯示 `stale_data_unusable` 錯誤；截圖 `outputs/e2e/ui_ab_mobile_390x844.png`。代理人模式本機畫面見 `outputs/e2e/ui_agent_mobile.png`（本機瀏覽器手機尺寸，非外網真手機）。真手機外網操作留待 SERVER 階段（T32）（來源：[GLM_PROGRESS](GLM_PROGRESS.md)、[UI_FLOW](UI_FLOW.md)）。
 
 ---
 
@@ -271,7 +273,7 @@ Qwen 代理人負責理解自然語言、呼叫工具與解釋結果；菜價模
 | 項目 | 狀態 | 缺什麼 |
 | --- | --- | --- |
 | SERVER 部署（T23–T24、T29–T32） | HOLD／TODO | SERVER 的 OS、位址、連線方式、專案目錄、端口、外網方案（[SERVER_INVENTORY](SERVER_INVENTORY.md)） |
-| Qwen 代理人實測（T25–T27） | TODO | SERVER 連線後核實型號並實測工具呼叫與忠實性 |
+| Qwen 代理人實測（T25–T27） | 本機層完成／實機待 | 本機規則層與測試已實作；SERVER 連線後核實型號並實測 Qwen 工具呼叫與忠實性 |
 | 同店真值 A/B 驗證（T16） | HOLD | 使用者實際同店報價與 7／14 天到期真值（[STORE_DATA_PROTOCOL](STORE_DATA_PROTOCOL.md)） |
 | 期末影片（T35） | TODO | 當屆規格未確認；需錄真流程（雙模式、SERVER、量化與限制） |
 | 外網手機展示（T29、T32） | TODO | 依賴 SERVER；僅同 Wi-Fi／localhost／預錄影片不算完成 |
@@ -293,6 +295,7 @@ Qwen 代理人負責理解自然語言、呼叫工具與解釋結果；菜價模
 | 2026-10-03 | 資料下載與品質報告（T05–T06）、標籤契約與凍結切分（T07–T09）、店價紀錄協議（T10） | [DATA_CARD](DATA_CARD.md)、[DATA_QUALITY_REPORT](DATA_QUALITY_REPORT.md)、[LABEL_CONTRACT](LABEL_CONTRACT.md) |
 | 2026-10-03 | 基線與候選訓練（T11–T12）、選模（T13）、封存測試（T15）、錯誤分析（T17）、打包（T18） | [BASELINE_REPORT](BASELINE_REPORT.md)、[MODEL_SELECTION](MODEL_SELECTION.md)、[PUBLIC_MODEL_EVALUATION](PUBLIC_MODEL_EVALUATION.md)、[MODEL_CARD](MODEL_CARD.md) |
 | 2026-10-03 | A/B 店價適配（T14）、本機推論與 API（T19–T20）、手機網頁（T21）、預測紀錄（T22） | [STORE_ADAPTATION_METHOD](STORE_ADAPTATION_METHOD.md)、[API_CONTRACT](API_CONTRACT.md)、[UI_FLOW](UI_FLOW.md) |
+| 2026-10-04 | 代理人本機規則層、公開行情更新流程、期末報告／投影片初稿、可攜依賴鎖定與乾淨環境重現；經第二輪獨立審查（F01–F10 修復中） | [ROUND2_7fdb43b_REVIEW](reviews/ROUND2_7fdb43b_REVIEW.md)、[REPRODUCIBILITY](REPRODUCIBILITY.md)、`outputs/audits/2026-10-04_round2/clean_env_check.md` |
 | 待定 | SERVER 連線→部署→Qwen 實測→代理人→外網手機（T23–T32） | 依使用者提供 SERVER 資訊 |
 | 待定 | 同店 A/B 到期驗證（T16）、期末影片與發布（T35） | 依使用者記錄店價與當屆細則 |
 

@@ -27,6 +27,13 @@
 
 - 端點整合：`POST /agent/query` 亂碼查詢→要求補充（實測 curl 2026-10-03）。
 
+## 第三輪補強（2026-10-04，審查 F02/F03/F07；tests/agent/test_review_f02_f08.py）
+
+- **輸出真值對照驗證器上線**：Qwen 文字經 `validate_qwen_answer()` 對照工具真值——誇大詞（必定/機率/已驗證/可信度）、未驗證百分比/日期/價格、方向衝突、空回覆全部拒絕並降級規則回答（審查重現的「7天後必定上漲99%，售價999元」實測被擋）。系統提示不再是唯一防線。
+- **提示檔定位修復**：`src/configs/` 錯路徑改為專案根 `configs/agent_prompt.md`（641 字元實載）；缺檔時 Qwen 後端不上線（`strict` 載入），不默空提示。
+- **併發**：`/agent/query` 經 `run_in_threadpool` 執行；模擬 0.5s 延遲後端下 health 未被阻塞（審查重現的阻塞情境修正）。
+- **降級透明**：回應含 `backend_used`／`degraded`／`degraded_reason`／`forecast`（結構化真值）；規則結果不標 Qwen；前端顯示「Qwen 失敗→規則模式（原因）」。
+
 ## 待 SERVER 補測（HOLD 項）
 
 1. 真 Qwen 載入後：中文品項理解變體（口語/錯字）、工具參數正確率、回答延遲與顯存（T25 基準）。

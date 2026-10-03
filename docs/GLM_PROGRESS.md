@@ -1,8 +1,11 @@
 # GLM執行進度與交接紀錄
 
-更新日期：2026-10-04（GLM第二輪執行後）。
+更新日期：2026-10-04（GLM第三輪：依獨立審查修正 7fdb43b）。
 
 ## 當前狀態
+
+- **第三輪完成審查 F01–F10 全數處理**：[審查](reviews/ROUND2_7fdb43b_REVIEW.md)重現的錯誤逐項修正並以 36 項新行為測試釘死（測試 98→**134 項全過**）；模型與評估工件未動（public_test_results.json hash `2d28acd2…` 不變），負向結果與原選型時序保留。
+- T26 依審查 F08 改 **DOING**（本機規則層完成；架構為規則調度＋Qwen 解釋，Qwen 實機與 tool_calls 生成架構待 T24/T25）；T22 補前端保存流程（/records＋UI，瀏覽器實測）；T16/T23 維持 HOLD。
 
 - **第二輪（2026-10-03夜～10-04凌晨）新增：T26 PASS（代理人本機層）、T25/T27/T28/T30/T33/T34 DOING（本機/核實部分完成）、T16/T23 維持 HOLD。** 累計 98 項自動化測試全過。
 - **代理人已可用**：`POST /agent/query`（確定性提取＋2有限工具＋可插後端；本機規則模式、SERVER 插 Qwen、Qwen 失敗自動降級）；網頁新增「用問的也可以」入口（實測截圖 outputs/e2e/ui_agent_mobile.png）。
@@ -47,6 +50,13 @@ GLM先查TASKS與本紀錄，再從第一個依賴已滿足的TODO開始。**下
 | 2026-10-04 T33（subagent） | outputs JSON核對 | FINAL_REPORT.md（10章＋數字來源對照；含momentum基線與選定模型相當的負向並列）＋FINAL_SLIDES.md（15頁）；組員/期末格式標待補 | DOING：期末細則/組員/最終數據後定稿 | 公告後定稿 |
 | 2026-10-04 T30（subagent） | 真實下載＋本地模擬 | update_public_data.py（驗證/dry-run/refresh備份＋只追加＋寫後核對）＋update_policy.yaml＋OPERATIONS.md；四情境實測過（真實下載無新資料/模擬新資料/失效來源/schema變動），refresh在副本真實執行（12,288→12,309、原檔hash不變） | DOING：SERVER端流程待T24/T29 | T24後補 |
 | 2026-10-04 T34（subagent） | venv | REPRODUCIBILITY.md（全流程重現＋hash對照；實測fixtures 3/3、pytest 98過）；requirements-lock補fastapi/uvicorn/pyarrow/httpx | DOING：PUBLICATION_REVIEW與最終README待T32 | T32後收尾 |
+
+| 2026-10-04 第三輪 F01/F06 | venv | [tools.py](../src/aiot_price/agent/tools.py)解析器重寫為子句級綁定（價格×單位×日期×店家×規格）；[predict.py](../src/aiot_price/models/predict.py)受控驗證（布林/Infinity/缺時區422；上週欄位錯誤降級不500；規格可比接入入口）；app.py 8KB按實際串流位元組（chunked 9,198B實測413）。審查5案例＋多品項/負數/錯誤日期全過（test_review_f01_f06.py 18項） | 修正完成 | — |
+| 2026-10-04 第三輪 F02/F03/F07 | venv | prompt路徑修復（parents[3]＋strict載入，缺檔不上線）；Qwen輸出真值對照驗證器（誇大詞/未驗證數字日期價格/方向衝突/空回覆→降級規則）；/agent/query 丟threadpool（0.5s慢後端下health<0.4s）；回應含backend_used/degraded/degraded_reason/forecast（test_review_f02_f08.py 18項） | 修正完成；Qwen實機待T24/T25 | — |
+| 2026-10-04 第三輪 F04/F05（subagent） | 暫存副本 | update_public_data.py 0.2.0：下載路徑修復（saved變數）、原子替換＋核對失敗自動保舊檔/還原、schema強化（壞JSON/缺欄/Infinity/鍵唯一，exit 2/3/4區分）、--reload-check證明重啟後讀到新截止（同一實例確實讀舊）；正式工件10/11 hash不變（fixtures為主對話並行重生成）。報告outputs/update_tests/round3_* | 修正完成；真實新行情路徑待新資料日 | — |
+| 2026-10-04 第三輪 F07/F08（subagent＋主對話） | 瀏覽器390×844＋API:8013 | web：店號單一來源（tw01_ui_prefs_v1）、代理人結構化結果卡＋後端標示、保存/清單/匯出/刪除UI；後端/records四端點（ID防注入）；端到端實測：查詢→保存→清單、「上次無日期」顯示B拒絕提示＋A結果（截圖outputs/e2e/ui_agent_structured_round3.png） | 修正完成 | T32真手機補 |
+| 2026-10-04 第三輪 F09（subagent） | 官方來源複查 | Qwen結論修訂：27B官方BF16/FP8無法全放24GB，但**27B GGUF 4-bit（實作者16.5–17.6GB）列優先實測候選**（使用者候選不排除）；NVFP4需Blackwell不適用3090；實測優先序＋benchmark_plan（revision/量化檔/框架/context/併發/中文工具案例）寫入QWEN_SERVER_BENCHMARK與agent_model.yaml（default=null） | 結論修訂完成；3090實測HOLD | 使用者確認候選 |
+| 2026-10-04 第三輪 F10（subagent） | 專案外乾淨venv | lock去絕對路徑改`-e .`；pyproject補fastapi/uvicorn/pyarrow（dev加httpx）；%TEMP%乾淨環境全程驗證（安裝→import→真工件載入→pytest 98過）記錄於clean_env_check.md；README/PROJECT_CONTEXT/design/REPRODUCIBILITY/MODEL_CARD/FINAL_REPORT/FINAL_SLIDES同步（修正3處基線數字：0.0436/0.0748/0.2954）；TASKS開頭過時句修正 | 修正完成 | — |
 
 每完成／失敗／阻塞一項，新增紀錄並同步TASKS狀態。詳細機器資訊與日誌放忽略目錄`outputs/`，此處引用必要摘要，不貼金鑰或私人明細。
 

@@ -11,18 +11,115 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
 from .tools import AgentTools, ParsedQuery, ToolCallLimiter, parse_query
 
-DEFAULT_PROMPT_PATH = Path(__file__).resolve().parents[2] / "configs" / "agent_prompt.md"
+# F02 修正：service.py 在 src/aiot_price/agent/ 下，專案根是 parents[3]
+DEFAULT_PROMPT_PATH = Path(__file__).resolve().parents[3] / "configs" / "agent_prompt.md"
 
 
-def load_system_prompt(path: str | Path = DEFAULT_PROMPT_PATH) -> str:
-    if Path(path).exists():
-        return Path(path).read_text(encoding="utf-8")
-    return ""
+class PromptUnavailable(RuntimeError):
+    """提示檔缺失或不完整：QwenBackend 不得以空提示上線。"""
+
+
+def load_system_prompt(path: str | Path = DEFAULT_PROMPT_PATH, *, strict: bool = False) -> str:
+    """載入系統提示；strict=True 時缺失／空檔丟 PromptUnavailable（不默空）。"""
+    p = Path(path)
+    if not p.exists():
+        if strict:
+            raise PromptUnavailable(f"代理人系統提示檔不存在：{p}")
+        return ""
+    text = p.read_text(encoding="utf-8").strip()
+    if strict and len(text) < 100:
+        raise PromptUnavailable(f"代理人系統提示過短（{len(text)} 字），拒絕以空提示運作")
+    return text
+
+
+# ---------- F02：Qwen 輸出真值對照驗證（提示不能代替輸出驗證） ----------
+
+import re as _re
+
+_EXAGGERATION_RE = _re.compile(r"必定|保證|絕對會|機率是|的機率|可信度|準確率|已驗證|已經驗證|一定會")
+_PCT_RE = _re.compile(r"([+-]?\d+(?:\.\d+)?)\s*%")
+_DATE_RE = _re.compile(r"\d{4}-\d{2}-\d{2}")
+_PRICE_RE = _re.compile(r"(\d+(?:\.\d+)?)\s*元")
+_DIRECTION_WORDS = {
+    "up": ("上漲", "漲"),
+    "down": ("下跌", "跌"),
+    "flat": ("持平", "平"),
+}
+_OPPOSITE = {
+    "up": ("下跌", "跌"),
+    "down": ("上漲", "漲"),
+    # 工具說持平的期限，講「漲」或「跌」都是方向衝突
+    "flat": ("上漲", "漲", "下跌", "跌"),
+}
+
+
+def validate_qwen_answer(answer: str, tool_outputs: dict) -> tuple[bool, str]:
+    """對照工具真值驗證 Qwen 文字。回 (ok, reason)；失敗即丟棄改用規則回答。
+
+    檢查：誇大詞黑名單、百分比/日期/價格必須來自工具結果、
+    各期限句中不得出現與工具相反的方向詞。
+    """
+    if not answer or not answer.strip():
+        return False, "empty_answer"
+    forecast = tool_outputs.get("forecast") or {}
+    if forecast.get("error"):
+        return True, ""  # 工具失敗情境由規則回答處理，不經 Qwen
+
+    if _EXAGGERATION_RE.search(answer):
+        return False, "exaggeration_or_probability_claim"
+
+    # 允許數字集合：各結果的相對變化(%)、價格估計、公開截止年月日
+    allowed_pct: set[float] = set()
+    allowed_price: set[float] = set()
+    allowed_dates: set[str] = set()
+    horizon_dir: dict[int, str] = {}
+    for key in ("results", "results_without_last_week", "results_with_last_week"):
+        for r in forecast.get(key) or []:
+            pct = r.get("relative_change_estimate")
+            if isinstance(pct, (int, float)):
+                allowed_pct.add(round(pct * 100, 1))
+            pe = r.get("price_estimate")
+            if isinstance(pe, (int, float)):
+                allowed_price.add(round(float(pe), 1))
+            allowed_dates.add(str(r.get("target_date")))
+            h = r.get("horizon_days")
+            if h and key == "results":
+                horizon_dir[int(h)] = r.get("direction")
+    for d in (forecast.get("public_data_cutoff"),):
+        if d:
+            allowed_dates.add(str(d))
+    # 觀察起點日（含日期部分的字串）也允許出現在解釋文字
+    ioa = forecast.get("input_observed_at")
+    if ioa:
+        allowed_dates.add(str(ioa)[:10])
+
+    for m in _PCT_RE.finditer(answer):
+        v = round(float(m.group(1)), 1)
+        # 與任一允許值相差 <=0.15 視為同一數字的排版差
+        if not any(abs(v - a) <= 0.15 for a in allowed_pct):
+            return False, f"unverified_percentage:{v}"
+    for m in _DATE_RE.finditer(answer):
+        if m.group(0) not in allowed_dates:
+            return False, f"unverified_date:{m.group(0)}"
+    for m in _PRICE_RE.finditer(answer):
+        v = round(float(m.group(1)), 1)
+        if not any(abs(v - a) <= 0.15 for a in allowed_price):
+            return False, f"unverified_price:{v}"
+
+    # 方向一致性：含「N 天」的句子不得使用與工具相反的方向詞
+    for sent in _re.split(r"[。\n；;]", answer):
+        for h, d in horizon_dir.items():
+            if f"{h} 天" in sent or f"{h}天" in sent:
+                for opp in _OPPOSITE.get(d, ()):
+                    if opp in sent:
+                        return False, f"direction_conflict_h{h}"
+    return True, ""
 
 
 class AgentBackend(Protocol):
@@ -52,9 +149,13 @@ class RuleBackend:
             return f"目前無法提供預測：{err.get('message', '工具呼叫失敗')}。請確認品項與市場，或稍後再試。"
 
         crop_name = parsed.crop_text or parsed.crop_id
-        lines = [
+        lines = []
+        # F01：解析層已判定 B 不可比時，把原因與補充提示講清楚（明確回 A＋如何補）
+        if parsed.b_reject_reason:
+            lines.append(f"（{parsed.b_reject_reason}）")
+        lines.append(
             f"{crop_name}（參考市場：{forecast['market_id']}），從今天 {forecast['input_observed_at'][:10]} 起算："
-        ]
+        )
         results = forecast.get("results") or []
         ab = forecast.get("results_with_last_week") or []
         for r in results:
@@ -77,8 +178,24 @@ class RuleBackend:
         return "\n".join(lines)
 
 
+@dataclass
+class BackendResult:
+    """一次回覆的實際執行狀態（F07：規則結果不得標為 Qwen 成功）。"""
+
+    answer: str
+    backend_used: str  # "qwen" | "rule"——實際產出文字的後端
+    degraded: bool = False
+    degraded_reason: str | None = None
+
+
 class QwenBackend:
-    """SERVER Qwen 後端：OpenAI 相容 /chat/completions；只做解釋層。"""
+    """SERVER Qwen 後端：OpenAI 相容 /chat/completions；只做解釋層。
+
+    F02/F07 修正：
+    - 提示檔缺失／過短 → 不上線（available()=False，安全降級規則後端），不默空提示。
+    - Qwen 文字經 validate_qwen_answer() 對照工具真值；驗證失敗丟棄並降級。
+    - 降級時 BackendResult 明示 backend_used="rule" 與原因。
+    """
 
     name = "qwen"
 
@@ -87,22 +204,26 @@ class QwenBackend:
         base_url: str | None = None,
         model: str | None = None,
         api_key_env: str = "AIOT_QWEN_API_KEY",
-        timeout: float = 30.0,
+        timeout: float = 10.0,
         prompt_path: str | Path = DEFAULT_PROMPT_PATH,
     ):
         self.base_url = base_url or os.environ.get("AIOT_QWEN_BASE_URL", "")
         self.model = model or os.environ.get("AIOT_QWEN_MODEL", "")
         self.api_key_env = api_key_env
         self.timeout = timeout
-        self.system_prompt = load_system_prompt(prompt_path)
+        try:
+            self.system_prompt = load_system_prompt(prompt_path, strict=True)
+        except PromptUnavailable:
+            self.system_prompt = ""
 
     def available(self) -> bool:
-        return bool(self.base_url and self.model)
+        # F02：連線設定與提示檔都就緒才算可用
+        return bool(self.base_url and self.model and self.system_prompt)
 
-    def reply(self, parsed: ParsedQuery, tool_outputs: dict) -> str:
+    def reply_result(self, parsed: ParsedQuery, tool_outputs: dict) -> BackendResult:
         if not self.available():
-            return RuleBackend().reply(parsed, tool_outputs)
-        import urllib.error
+            reason = "qwen_not_configured" if not (self.base_url and self.model) else "qwen_prompt_unavailable"
+            return BackendResult(RuleBackend().reply(parsed, tool_outputs), "rule", True, reason)
         import urllib.request
 
         payload = {
@@ -132,10 +253,20 @@ class QwenBackend:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-            return data["choices"][0]["message"]["content"].strip()
-        except Exception:
-            # Qwen 失敗降級：手機仍顯示真實模型結果（T27 要求）
-            return RuleBackend().reply(parsed, tool_outputs)
+            answer = str(data["choices"][0]["message"]["content"]).strip()
+        except Exception as e:
+            return BackendResult(
+                RuleBackend().reply(parsed, tool_outputs), "rule", True, f"qwen_request_failed:{type(e).__name__}"
+            )
+        ok, why = validate_qwen_answer(answer, tool_outputs)
+        if not ok:
+            return BackendResult(
+                RuleBackend().reply(parsed, tool_outputs), "rule", True, f"qwen_output_rejected:{why}"
+            )
+        return BackendResult(answer, "qwen", False, None)
+
+    def reply(self, parsed: ParsedQuery, tool_outputs: dict) -> str:
+        return self.reply_result(parsed, tool_outputs).answer
 
 
 def handle_agent_query(
@@ -172,9 +303,17 @@ def handle_agent_query(
     else:
         tool_outputs["forecast"] = None
 
-    answer = backend.reply(parsed, tool_outputs)
+    # F02/F07：實際執行的後端與降級狀態；結構化 forecast 真值獨立回傳給前端
+    if hasattr(backend, "reply_result"):
+        br = backend.reply_result(parsed, tool_outputs)
+    else:
+        br = BackendResult(backend.reply(parsed, tool_outputs), getattr(backend, "name", "rule"))
     return {
         "backend": getattr(backend, "name", "unknown"),
+        "backend_used": br.backend_used,
+        "degraded": br.degraded,
+        "degraded_reason": br.degraded_reason,
+        "forecast": tool_outputs.get("forecast"),
         "parsed": {
             "crop_id": parsed.crop_id,
             "current_price": parsed.current_price,
@@ -186,5 +325,5 @@ def handle_agent_query(
             "unit_non_comparable": parsed.unit_non_comparable,
         },
         "tool_trace": trace,
-        "answer": answer,
+        "answer": br.answer,
     }

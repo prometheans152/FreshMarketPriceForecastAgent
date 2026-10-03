@@ -34,17 +34,32 @@ def save_prediction(response: dict, request: dict, out_dir: str | Path = DEFAULT
 
 
 def load_records(out_dir: str | Path = DEFAULT_DIR) -> list[dict]:
-    """讀回全部預測紀錄（供到期核對／T16 配對）。"""
+    """讀回全部預測紀錄（供到期核對／T16 配對）；每筆附 record_id（檔名衍生）。"""
     out_dir = Path(out_dir)
     if not out_dir.exists():
         return []
     records = []
     for p in sorted(out_dir.glob("prediction_*.json")):
         try:
-            records.append(json.loads(p.read_text(encoding="utf-8")))
+            rec = json.loads(p.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue  # 壞檔跳過但保留原檔，不靜默刪除
+        rec["record_id"] = p.stem.replace("prediction_", "")
+        records.append(rec)
     return records
+
+
+def delete_record(record_id: str, out_dir: str | Path = DEFAULT_DIR) -> bool:
+    """刪除單筆紀錄（F08：使用者刪除權）。ID 僅允許安全字元，防路徑注入。"""
+    import re
+
+    if not re.match(r"^[A-Za-z0-9_-]+$", record_id or ""):
+        return False
+    target = Path(out_dir) / f"prediction_{record_id}.json"
+    if not target.exists():
+        return False
+    target.unlink()
+    return True
 
 
 def export_anonymous_summary(out_path: str | Path, out_dir: str | Path = DEFAULT_DIR) -> Path:

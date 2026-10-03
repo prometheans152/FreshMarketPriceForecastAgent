@@ -18,12 +18,18 @@ dependencies = [
     "pyyaml>=6,<7",
     "requests>=2.31,<3",
     "jsonschema>=4.18,<5",
+    # API 層（FastAPI 含 starlette/pydantic 等傳遞依賴）與 parquet 行情存取
+    "fastapi>=0.142,<1",
+    "uvicorn>=0.54,<1",
+    "pyarrow>=25,<26",
 ]
 
 [project.optional-dependencies]
 # pip 相容的 dev extra：安裝方式 .venv/Scripts/python.exe -m pip install -e ".[dev]"
 dev = [
     "pytest>=7,<9",
+    # httpx 供 fastapi.testclient（TestClient）與測試用 HTTP 傳輸
+    "httpx>=0.28,<1",
 ]
 
 [tool.setuptools.packages.find]

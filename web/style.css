@@ -498,11 +498,162 @@ footer {
   }
 }
 
+/* ---------- 保存這次預測（T22） ---------- */
+
+.save-bar {
+  margin-top: 12px;
+}
+
+.save-bar .hint {
+  margin-top: 6px;
+}
+
+.save-status {
+  margin: 8px 0 0;
+  font-size: 0.88rem;
+}
+
+.save-status-ok {
+  color: var(--down);
+}
+
+.save-status-err {
+  color: var(--error-line);
+}
+
+/* ---------- 已保存紀錄（T22） ---------- */
+
+.records-box {
+  margin-top: 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.records-box summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.records-box .hint {
+  margin-top: 6px;
+}
+
+.records-toolbar {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.records-list {
+  display: grid;
+  gap: 8px;
+}
+
+.records-empty {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.record-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.record-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.record-title {
+  margin: 0 0 2px;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.record-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.record-horizons {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+}
+
+.record-item .danger {
+  flex: none;
+}
+
+.records-status {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ---------- 次要／危險操作按鈕 ---------- */
+
+button.secondary,
+.link-btn {
+  display: inline-block;
+  min-height: 42px;
+  padding: 6px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--primary);
+  background: var(--card);
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+button.secondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+button.small,
+.link-btn.small {
+  min-height: 36px;
+  padding: 3px 12px;
+  font-size: 0.88rem;
+}
+
+button.danger {
+  color: var(--error-line);
+  background: var(--card);
+  border: 1px solid var(--error-line);
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.danger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ---------- 代理人問答 ---------- */
-.agent-box { margin-top: 24px; padding: 16px; border: 1px solid var(--border, #d8d8d8); border-radius: 12px; }
+.agent-box { margin-top: 24px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
 .agent-box h2 { font-size: 1.05rem; margin: 0 0 4px; }
 .agent-row { display: flex; gap: 8px; }
 .agent-row input { flex: 1; min-width: 0; }
-.agent-result { margin-top: 12px; white-space: pre-wrap; line-height: 1.6; }
+.agent-result { margin-top: 12px; line-height: 1.6; }
 .agent-head { margin: 0 0 4px; font-weight: 600; }
-.agent-answer { }
+.agent-head-degraded { color: var(--error-line); }
+.agent-answer { white-space: pre-wrap; }
+.agent-forecast-label { margin: 10px 0 0; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.agent-forecast { margin-top: 6px; display: grid; gap: 10px; }
+.agent-forecast .req-echo { margin-bottom: 0; }
+.agent-forecast-missing { margin: 8px 0 0; font-size: 0.82rem; color: var(--muted); }

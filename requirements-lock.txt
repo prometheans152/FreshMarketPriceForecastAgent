@@ -1,5 +1,7 @@
-# Editable Git install with no remote (aiot-price==0.1.0)
--e c:\users\prometheans\documents\aiot_finishproject
+# Editable install of aiot-price==0.1.0 (portable form)
+# 注意：`-e .` 以「目前工作目錄」為安裝目標，必須從專案根目錄執行：
+#   python -m pip install -e ".[dev]" -r requirements-lock.txt
+-e .
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1

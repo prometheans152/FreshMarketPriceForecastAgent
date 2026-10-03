@@ -5,10 +5,15 @@
  * 純靜態、無外部 CDN 依賴、無追蹤。
  * API 為同源相對路徑（部署時 API server 直接 serve web/）。
  * 欄位語意依 contracts/forecast.schema.json。
+ * 代理人回應欄位 backend_used／degraded／degraded_reason／forecast
+ * 與 /records 保存端點，依後端契約實作（ROUND2 審查 F07/F08 修復）。
  * =======================================================*/
 
 // API 路徑（同源、相對路徑；不加前導斜線，頁面與 API 同目錄即可作用）
 const API_FORECAST = 'forecast';
+const API_AGENT_QUERY = 'agent/query';
+const API_RECORDS = 'records';
+const API_RECORDS_EXPORT = 'records/export';
 
 // 內建品項（對應 configs/project.yaml crops.first_version）
 const CROPS = [
@@ -120,6 +125,26 @@ function cropLabel(cropId) {
   return found ? found.label : cropId;
 }
 
+// 共用 fetch＋JSON 解析；連線失敗統一轉為 ApiError（使用者可懂訊息）
+async function fetchJson(url, options) {
+  let res;
+  try {
+    res = await fetch(url, options);
+  } catch (err) {
+    throw new ApiError('無法連線到伺服器，請確認服務已啟動或網路狀況。', null);
+  }
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      data = null;
+    }
+  }
+  return { res: res, data: data };
+}
+
 /* ---------- localStorage（只記選項與匿名店號，不記價格） ---------- */
 
 function loadPrefs() {
@@ -144,6 +169,16 @@ function savePrefs() {
   } catch (err) {
     /* 無痕模式等情境寫入失敗時忽略，不影響查詢 */
   }
+}
+
+/* ---------- 店號單一來源（F07） ----------
+ * 表單 #storeId 是唯一來源（初始值來自 tw01_ui_prefs_v1）；
+ * 主表單與代理人請求共用，不再使用 vp_store_id。 */
+function currentStoreId() {
+  const input = $('storeId');
+  const value = input ? input.value.trim() : '';
+  if (value) return value;
+  return loadPrefs().store_id || DEFAULT_STORE_ID;
 }
 
 /* ---------- 表單初始化 ---------- */
@@ -188,6 +223,7 @@ function init() {
   });
 
   $('predictForm').addEventListener('submit', onSubmit);
+  bindSaveAndRecords();
   bindAgent();
 }
 
@@ -277,6 +313,7 @@ async function onSubmit(event) {
   event.preventDefault();
   clearError();
   $('result').innerHTML = '';
+  hideSaveBar();
 
   const built = buildRequest();
   if (built.errors) {
@@ -322,11 +359,13 @@ async function onSubmit(event) {
 
     renderResponse(data);
     savePrefs();
+    lastRun = { request: built.body, response: data };
+    resetSaveBar();
   } catch (err) {
     if (err instanceof ApiError) {
       showError(err.message, err.code);
     } else {
-      showError('無法連線到伺服器，請確認服務已啟動或網路狀態。');
+      showError('無法連線到伺服器，請確認服務已啟動或網路狀況。');
     }
   } finally {
     setLoading(false);
@@ -372,8 +411,8 @@ function horizonCard(result, modeTag) {
     '</article>';
 }
 
-function renderResponse(data) {
-  const box = $('result');
+// 把 ForecastResponse 渲染成 HTML 字串（主表單與代理人結構化結果卡共用；全部經 esc()）
+function forecastHtml(data) {
   const parts = [];
 
   // 查詢條件回顧
@@ -464,10 +503,272 @@ function renderResponse(data) {
     parts.push('<p class="meta">' + metaBits.map(esc).join('｜') + '</p>');
   }
 
-  box.innerHTML = parts.join('');
+  return parts.join('');
+}
+
+function renderResponse(data) {
+  $('result').innerHTML = forecastHtml(data);
+}
+
+/* ---------- 預測保存與紀錄（T22；使用者自願，預設不自動保存） ---------- */
+
+let lastRun = null;        // 最近一次成功查詢：{ request, response }
+let recordsLoaded = false; // 紀錄清單是否已載入過（展開面板時惰性載入）
+
+function setSaveStatus(message, isError) {
+  const el = $('saveStatus');
+  if (!el) return;
+  if (!message) {
+    el.hidden = true;
+    el.textContent = '';
+    el.className = 'save-status';
+    return;
+  }
+  el.textContent = message;
+  el.className = 'save-status ' + (isError ? 'save-status-err' : 'save-status-ok');
+  el.hidden = false;
+}
+
+function hideSaveBar() {
+  lastRun = null;
+  const bar = $('saveBar');
+  if (!bar) return;
+  bar.hidden = true;
+  const btn = $('saveRecordBtn');
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = '保存這次預測';
+  }
+  setSaveStatus(null);
+}
+
+function resetSaveBar() {
+  const bar = $('saveBar');
+  if (!bar) return;
+  const btn = $('saveRecordBtn');
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = '保存這次預測';
+  }
+  setSaveStatus(null);
+  bar.hidden = false;
+}
+
+async function saveCurrentRecord() {
+  if (!lastRun || !lastRun.response) {
+    setSaveStatus('沒有可保存的預測，請先完成一次查詢。', true);
+    return;
+  }
+  const btn = $('saveRecordBtn');
+  btn.disabled = true;
+  btn.textContent = '保存中…';
+  try {
+    const { res, data } = await fetchJson(API_RECORDS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        forecast_response: lastRun.response,
+        request: lastRun.request
+      })
+    });
+    if (!res.ok || !data || data.ok !== true) {
+      const msg = data && data.error && data.error.message
+        ? data.error.message
+        : '保存失敗（HTTP ' + res.status + '）；這次查詢結果不受影響。';
+      setSaveStatus(msg, true);
+      btn.disabled = false;
+      btn.textContent = '保存這次預測';
+      return;
+    }
+    setSaveStatus('已保存（編號 ' + (data.record_id || '—') + '，時間 ' + (data.saved_at || '—') + '）。', false);
+    btn.textContent = '已保存';
+    if (recordsLoaded) loadRecords();
+  } catch (err) {
+    setSaveStatus(err instanceof ApiError ? err.message : '保存失敗；這次查詢結果不受影響。', true);
+    btn.disabled = false;
+    btn.textContent = '保存這次預測';
+  }
+}
+
+function setRecordsStatus(message) {
+  const el = $('recordsStatus');
+  if (!el) return;
+  if (!message) {
+    el.hidden = true;
+    el.textContent = '';
+    return;
+  }
+  el.textContent = message;
+  el.hidden = false;
+}
+
+function recordModeLabel(mode) {
+  const map = {
+    without_last_week: '模式 A',
+    with_last_week: '模式 B',
+    both: 'A／B 對照',
+    fallback_without_last_week: '上週不可比，自動改用 A'
+  };
+  return map[mode] || ('模式：' + mode);
+}
+
+function renderRecords(records) {
+  const box = $('recordsList');
+  if (!Array.isArray(records) || !records.length) {
+    box.innerHTML = '<p class="records-empty">目前沒有已保存的紀錄。</p>';
+    return;
+  }
+  box.innerHTML = records.map((r) => {
+    const horizonBits = (r.horizons || []).map((h) => {
+      const known = Object.prototype.hasOwnProperty.call(DIRECTION_INFO, h.direction);
+      const dir = known ? DIRECTION_INFO[h.direction] : { label: String(h.direction), arrow: '？' };
+      return h.horizon_days + ' 天後 ' + dir.arrow + dir.label + '（到期 ' + h.target_date + '）';
+    }).join('・');
+    return '' +
+      '<article class="record-item">' +
+        '<div class="record-main">' +
+          '<p class="record-title">' + esc(r.crop_id ? cropLabel(r.crop_id) : '未知品項') +
+            '・' + esc(r.market_id || '未記市場') + '</p>' +
+          '<p class="record-meta">保存於 ' + esc(r.saved_at || '—') +
+            '｜' + esc(recordModeLabel(r.mode_executed)) + '</p>' +
+          (horizonBits ? '<p class="record-horizons">' + esc(horizonBits) + '</p>' : '') +
+          (r.model_version ? '<p class="record-meta">模型版本 ' + esc(r.model_version) + '</p>' : '') +
+        '</div>' +
+        '<button type="button" class="danger small" data-record-id="' + esc(r.record_id) + '">刪除</button>' +
+      '</article>';
+  }).join('');
+}
+
+async function loadRecords() {
+  const box = $('recordsList');
+  if (!box) return;
+  setRecordsStatus('');
+  box.innerHTML = '<p class="records-empty">載入中…</p>';
+  try {
+    const { res, data } = await fetchJson(API_RECORDS, { method: 'GET' });
+    if (!res.ok) {
+      const msg = data && data.error && data.error.message
+        ? data.error.message
+        : '無法載入紀錄（HTTP ' + res.status + '）。';
+      throw new ApiError(msg, null);
+    }
+    if (!data || !Array.isArray(data.records)) {
+      throw new ApiError('伺服器回應格式不正確，無法解讀紀錄清單。', null);
+    }
+    recordsLoaded = true;
+    renderRecords(data.records);
+  } catch (err) {
+    box.innerHTML = '';
+    setRecordsStatus((err instanceof ApiError ? err.message : '無法載入紀錄，請稍後再試。') +
+      '（查詢預測功能不受影響）');
+  }
+}
+
+async function deleteRecord(recordId, btn) {
+  if (!recordId) return;
+  if (!window.confirm('要刪除這筆保存紀錄嗎？刪除後無法復原。')) return;
+  btn.disabled = true;
+  try {
+    const { res, data } = await fetchJson(
+      API_RECORDS + '/' + encodeURIComponent(recordId),
+      { method: 'DELETE' }
+    );
+    if (!res.ok || !data || data.ok !== true) {
+      const msg = data && data.error && data.error.message
+        ? data.error.message
+        : '刪除失敗（HTTP ' + res.status + '）。';
+      throw new ApiError(msg, null);
+    }
+    await loadRecords();
+  } catch (err) {
+    btn.disabled = false;
+    setRecordsStatus(err instanceof ApiError ? err.message : '刪除失敗，請稍後再試。');
+  }
+}
+
+function bindSaveAndRecords() {
+  const saveBtn = $('saveRecordBtn');
+  if (saveBtn) saveBtn.addEventListener('click', saveCurrentRecord);
+
+  const panel = $('recordsPanel');
+  if (panel) {
+    // 第一次展開「已保存紀錄」才載入（後端尚未提供端點時不影響其他功能）
+    panel.addEventListener('toggle', () => {
+      if (panel.open && !recordsLoaded) loadRecords();
+    });
+    const refresh = $('refreshRecords');
+    if (refresh) refresh.addEventListener('click', loadRecords);
+  }
+
+  const list = $('recordsList');
+  if (list) {
+    list.addEventListener('click', (e) => {
+      const btn = e.target && e.target.closest ? e.target.closest('button[data-record-id]') : null;
+      if (!btn) return;
+      deleteRecord(btn.getAttribute('data-record-id'), btn);
+    });
+  }
 }
 
 /* ---------- 代理人問答（T26 /agent/query） ---------- */
+
+// 依 backend_used／degraded／degraded_reason 產生標示；
+// 規則結果不得顯示為 Qwen 成功執行（F07）。
+function backendLabel(data) {
+  const d = data || {};
+  const used = d.backend_used || d.backend || null;
+  const degraded = d.degraded === true;
+  let text;
+  if (degraded) {
+    text = 'Qwen 失敗→規則模式' + (d.degraded_reason ? '（原因：' + d.degraded_reason + '）' : '');
+  } else if (used === 'rule') {
+    text = '代理人（規則模式）';
+  } else if (used === 'qwen') {
+    text = 'Qwen 代理人';
+  } else {
+    text = used ? '代理人（' + used + '）' : '代理人';
+  }
+  return { text: text, degraded: degraded };
+}
+
+function renderAgentResult(out, data) {
+  out.textContent = '';
+
+  const label = backendLabel(data);
+
+  const head = document.createElement('p');
+  head.className = 'agent-head' + (label.degraded ? ' agent-head-degraded' : '');
+  head.textContent = label.text + '：';
+  out.appendChild(head);
+
+  // (a) 回答文字：textContent，不注入 HTML
+  const answer = document.createElement('div');
+  answer.className = 'agent-answer';
+  answer.textContent = (data && data.answer) || '（沒有回應）';
+  out.appendChild(answer);
+
+  // (b) 結構化結果卡：後端附上的工具真值 forecast（ForecastResponse）
+  const fc = data && data.forecast;
+  const hasResults = !!fc && typeof fc === 'object' &&
+    (Array.isArray(fc.results) || Array.isArray(fc.results_without_last_week));
+  if (hasResults) {
+    const cardsLabel = document.createElement('p');
+    cardsLabel.className = 'agent-forecast-label';
+    cardsLabel.textContent = '工具預測結果（7／14 天）：';
+    out.appendChild(cardsLabel);
+
+    const cards = document.createElement('div');
+    cards.className = 'agent-forecast';
+    // forecastHtml 內所有動態字串均經 esc()，與主表單同一套渲染（含單位顯示）
+    cards.innerHTML = forecastHtml(fc);
+    out.appendChild(cards);
+  } else {
+    const note = document.createElement('p');
+    note.className = 'agent-forecast-missing';
+    note.textContent = '（本次回應未附結構化預測結果，上方文字僅供參考。）';
+    out.appendChild(note);
+  }
+}
 
 function bindAgent() {
   const btn = document.getElementById('agentBtn');
@@ -482,12 +783,17 @@ function bindAgent() {
       out.textContent = '請輸入問題，例如「高麗菜 一斤32」。';
       return;
     }
+    // F07：店號與主表單共用同一來源（#storeId／tw01_ui_prefs_v1）
+    const storeId = currentStoreId();
+    if (!STORE_ID_RE.test(storeId)) {
+      out.textContent = '匿名店號格式不正確（僅英文、數字、- 與 _），請先修正上方表單的店號再問代理人。';
+      return;
+    }
     btn.disabled = true;
     btn.textContent = '查詢中…';
     out.textContent = '代理人查詢中…';
     try {
-      const storeId = localStorage.getItem('vp_store_id') || 'store-a';
-      const res = await fetch('agent/query', {
+      const res = await fetch(API_AGENT_QUERY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: text, store_id: storeId })
@@ -498,18 +804,9 @@ function bindAgent() {
         out.textContent = msg;
         return;
       }
-      const backend = data.backend === 'qwen' ? 'Qwen 代理人' : '代理人（規則模式）';
-      out.textContent = '';
-      const head = document.createElement('p');
-      head.className = 'agent-head';
-      head.textContent = backend + '：';
-      const body = document.createElement('div');
-      body.className = 'agent-answer';
-      body.textContent = data.answer || '（沒有回應）';
-      out.appendChild(head);
-      out.appendChild(body);
+      renderAgentResult(out, data);
     } catch (err) {
-      out.textContent = '無法連線到伺服器，請稍後再試。';
+      out.textContent = '無法連線到伺服器，請確認服務已啟動或網路狀況。';
     } finally {
       btn.disabled = false;
       btn.textContent = '問代理人';

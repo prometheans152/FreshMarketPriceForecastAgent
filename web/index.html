@@ -95,6 +95,23 @@
 
       <section id="result" aria-live="polite"></section>
 
+      <div id="saveBar" class="save-bar" hidden>
+        <button type="button" id="saveRecordBtn" class="secondary">保存這次預測</button>
+        <p id="saveStatus" class="save-status" hidden></p>
+        <p class="hint">自願保存這次預測到伺服器，之後可單筆刪除或全部匯出；不保存、關閉頁面都不影響查詢。</p>
+      </div>
+
+      <details id="recordsPanel" class="records-box">
+        <summary>已保存紀錄</summary>
+        <p class="hint">只有按過「保存這次預測」的查詢才會出現在這裡（匿名摘要）。</p>
+        <div class="records-toolbar">
+          <button type="button" id="refreshRecords" class="secondary small">重新整理</button>
+          <a id="exportRecords" class="link-btn small" href="records/export" download="tw01_prediction_records.json">匯出全部</a>
+        </div>
+        <div id="recordsList" class="records-list" aria-live="polite"></div>
+        <p id="recordsStatus" class="records-status" hidden></p>
+      </details>
+
       <section id="agentSection" class="agent-box">
         <h2>用問的也可以</h2>
         <p class="hint">直接打「高麗菜 一斤32」，代理人會幫你查。</p>

@@ -33,7 +33,7 @@
 
 ## 任務狀態與產出規則
 
-本檔 **36 項全部為 TODO**；這是待執行清單，不是完成紀錄。以下程式、設定與報告路徑是要建立的產出，未表示已存在。根目錄 `design.md`、本檔與接手／驗證文件的初稿，不能代替下列任務的實測證據。
+本檔是任務狀態主要來源。**2026-10-04 第三輪後現況：T01–T15、T17–T22、T26 前 22 項 PASS／DOING（T26 本機規則層完成、Qwen 實機待 SERVER）；T16（真店到期價）、T23（SERVER 資訊）HOLD；T24–T36 依 SERVER／公告等待。** 各項實際狀態與證據見下方逐項記錄；產出已存在者以其驗收證據為準。根目錄 `design.md`、本檔與接手／驗證文件的初稿，不能代替下列任務的實測證據。
 
 每項狀態使用 `TODO`、`DOING`、`PASS`、`FAIL`、`HOLD` 或 `BLOCKED`，通過後勾選核對項並填日期與證據。`HOLD` 是真價、公告、標籤成熟或必要主機資訊等外部依賴未成立；`BLOCKED` 是當前執行路徑受阻且無法在該任務內續做。兩者都須寫出具體原因、影響的任務及仍可並行完成的工作；資料不足的同店驗證保持 `HOLD`，不能因公開模型完成而勾成 PASS。每次接手維護 `docs/GLM_PROGRESS.md`，記錄本次完成、失敗、下一項與待使用者提供資訊；原始大量執行紀錄放 `outputs/`。
 
@@ -234,6 +234,8 @@
 **狀態：PASS（2026-10-03）｜依賴：T18；T14可用時納入店價兩模式｜產出：** `src/aiot_price/models/predict.py`、`scripts/predict_local.py`、`tests/model/test_inference.py`。
 2026-10-03 實際證據：[predict.py](src/aiot_price/models/predict.py)、[scripts/predict_local.py](scripts/predict_local.py)；真模型7/14查詢輸出符合schema（別名解析、A/B/降級、延遲~200ms）；--check-fixtures 3/3。
 
+2026-10-04 第三輪（審查 F01/F06）：規格可比性接入推論入口（specification/previous_specification 不一致→B 拒）；上週欄位（價格/日期/單位）錯誤全部受控降級不丟例外；布林/Infinity/負值價格、缺時區日期受控 422；「上次無日期」的代理人請求正確走 A。
+
 - [x] 實作共享推論入口，使用design.md的 `ForecastRequest`／`ForecastResponse` 定義與 `contracts/forecast.schema.json` 語意；輸入標準化品項／規格、今日報價時間、今日價／單位、可選上週價／日期與公開資料版本，回傳模式、期限、目標類型、資料日期與模型版本。起點為使用者今日，與公開資料截止時間分開。
 - [x] 支援A、B、兩模式比較以及資料不足，推論不重新訓練；檢查同輸入可重現、錯誤模型包與缺資料處理。
 - [x] T14未完成時先驗收公開核心與直接推論，把店價適配／B支援狀態明列未提供，不因此拖住公開模型。雙模式的最後驗收仍依T14、T16各自的實作與實際證據。
@@ -244,6 +246,8 @@
 
 **狀態：PASS（2026-10-03）｜依賴：T19｜產出：** `src/aiot_price/api/app.py`、`contracts/forecast.schema.json`、`docs/API_CONTRACT.md`、`tests/api/test_forecast_api.py`。
 2026-10-03 實際證據：[api/app.py](src/aiot_price/api/app.py)、[API_CONTRACT.md](docs/API_CONTRACT.md)、[test_forecast_api.py](tests/api/test_forecast_api.py)12項全過（真模型包：成功/422拒絕/503資料不足/B降級並列）。
+
+2026-10-04 第三輪修正（審查 F06）：8KB 改按實際串流讀取位元組執行（chunked／無 Content-Length 的 9,198B 請求實測回 413，不再只信標頭）；previous_observed_at 格式錯誤受控降級 B（不再 500）；布林／Infinity 價格、缺時區日期皆受控 422。
 
 - [x] 固定 `POST /forecast`：含品項／規格、公開市場對應、今日日期／價／單位、可選上週紀錄；`mode` 使用 `without_last_week`、`with_last_week`、`both`，輸出每個7／14天結果、狀態、目標類型、來源時間、模型版本與限制。`GET /health` 回報就緒與版本，`GET /metadata` 回報可用來源／品項／單位／模式及其支援狀態，皆不含秘密。
 - [x] API重用T19推論，不在API另造轉換；驗證正價格、日期、單位、未知品項、過大輸入及缺B資料，錯誤有清楚代碼與使用者可懂訊息。
@@ -256,6 +260,8 @@
 
 2026-10-03 實際證據：[web/index.html](web/index.html)＋app.js＋style.css（無CDN依賴）與[UI_FLOW.md](docs/UI_FLOW.md)；node --check 過、http 200 過；本機 API（127.0.0.1:8010）同源整合實測：手機尺寸390×844填入32元/台斤查詢→A模式7/14結果渲染、開上週開關（28元、2026-09-26）→A/B並排對照含實驗性警示與資料截止天數、南屯市場→錯誤訊息正確顯示（stale_data_unusable）、切回中義恢復查詢；截圖 outputs/e2e/ui_ab_mobile_390x844.png。空值/鍵盤細節為前端代碼審查（buildRequest驗證），未逐一實機操作——真手機操作留待SERVER階段（T32）補。
 
+2026-10-04 第三輪修正（審查 F07/F08）：代理人店號改與表單同源（tw01_ui_prefs_v1，廢 vp_store_id）；代理人區塊顯示結構化 7/14 結果卡（含單位）與實際後端標示（規則結果不標 Qwen）；「保存這次預測／已保存紀錄／匯出／刪除」流程上線（瀏覽器端到端實測，截圖 outputs/e2e/ui_agent_structured_round3.png）。
+
 - [x] 提供單品、今天價格／單位、上週價格選填與實際日期；市場／規格盡量可選，匿名店家可記憶於使用者端，避免多填與整籃流程。
 - [x] 有上週資料可並排顯示兩模式的7／14天結果；沒有也能查詢。清楚顯示市場來源、店價估計與未驗證部分，單位不可比時先說明而非默默換算。
 
@@ -265,6 +271,8 @@
 
 **狀態：PASS（2026-10-03）｜依賴：T10、T20、T21｜產出：** `src/aiot_price/api/prediction_records.py`、`docs/PREDICTION_RECORDS.md`、`private/predictions/`。
 2026-10-03 實際證據：[prediction_records.py](src/aiot_price/api/prediction_records.py)、[PREDICTION_RECORDS.md](docs/PREDICTION_RECORDS.md)、[test_prediction_records.py](tests/api/test_prediction_records.py)全過（roundtrip保留版本/單位、模擬拒收、匿名匯出）。
+
+2026-10-04 第三輪補齊（審查 F08：函式層→一般使用者完整流程）：API `/records` 四端點（POST 保存/GET 摘要清單/GET export 完整匯出/DELETE 單筆刪除，ID 防注入）＋網頁「保存這次預測」「已保存紀錄（刪除/匯出）」UI；瀏覽器端到端實測（查詢→保存→清單顯示；outputs/e2e/ui_agent_structured_round3.png 同場景）。自願保存、不影響查詢；紀錄在 SERVER 端 private/predictions/（本機測試以暫存目錄替換）。
 
 - [x] 提供由使用者選擇保存／匯出的簡單紀錄，保存當時輸入、A／B、7／14天、資料與模型版本，供日後到期價核對；不強制帳號或上傳店家原始紀錄。
 - [x] 保護保存位置、去識別、匯出與刪除流程；同店驗證需事前模型輸出，不許到期後重算冒充原預測。
@@ -304,9 +312,11 @@
 
 ### T26 實作代理人工具與呼叫流程
 
-**狀態：PASS（2026-10-03，本機層；SERVER 端 Qwen 整合於 T24 後補實測）｜依賴：T20、T24、T25｜產出：** `src/aiot_price/agent/tools.py`、`src/aiot_price/agent/service.py`、`configs/agent_prompt.md`、`tests/agent/test_tools.py`。
+**狀態：DOING（2026-10-04 第三輪依獨立審查 F08 調整：本機規則層完成且經審查後修復；架構為「規則調度＋Qwen 解釋」而非 Qwen 生成 tool_calls，SERVER 端 Qwen 實機待 T24/T25）｜依賴：T20、T24、T25｜產出：** `src/aiot_price/agent/tools.py`、`src/aiot_price/agent/service.py`、`configs/agent_prompt.md`、`tests/agent/test_tools.py`。
 
 2026-10-03 實際證據：分層代理人（確定性規則提取＋2 有限工具與API同源＋可插後端：RuleBackend/QwenBackend 降級安全）；`POST /agent/query` 上線（web「問代理人」入口實測截圖 outputs/e2e/ui_agent_mobile.png）；test_tools 12 項過；單次查詢工具呼叫上限 3。
+
+2026-10-04 第三輪修正（審查 F01/F02/F03/F07，證據 tests/agent/test_review_f01_f06.py＋test_review_f02_f08.py 共 36 項行為測試）：子句級價格綁定（單位/日期/店家/規格）、明示日期優先、「昨天」如實、「上次」無日期不補 t-7、另一店/換規格拒 B、Qwen 輸出真值對照驗證器（誇大詞/未驗證數字日期價格/方向衝突全擋）、提示檔缺失不上線、`/agent/query` 丟執行緒池（慢後端不阻塞 health）、回應含 backend_used/degraded/degraded_reason/forecast 結構化真值。**架構差異明示（未冒充）**：本設計 Qwen 只做解釋層，工具參數由確定性規則產生；若採 Qwen 自行生成 tool_calls 的架構需在 SERVER 實測後另驗（T25）。
 
 - [ ] 定義取得可用公開行情、呼叫 `POST /forecast` 的有限工具及參數schema，建立 `POST /agent/query` 接收自然語言查詢；代理人提取菜名、價格與日期，缺必要資料先要求補充，不自行發明店價。
 - [ ] 真正執行工具再回答；限制工具名、端點、呼叫次數與超時，不給代理人任意shell、任意URL或修改模型的權限。

@@ -25,14 +25,12 @@
 
 ```bash
 python -m venv .venv                                   # Python 3.12.10
-.venv/Scripts/python.exe -m pip install -e ".[dev]"     # 開發安裝（含 pytest）
-# 或精確重現：
-.venv/Scripts/python.exe -m pip install -r requirements-lock.txt
+.venv/Scripts/python.exe -m pip install -e ".[dev]"     # 開發安裝（含 pytest＋httpx）
+# 或精確重現（lock 的 editable 行為 `-e .`，必須從專案根目錄執行）：
+.venv/Scripts/python.exe -m pip install -e ".[dev]" -r requirements-lock.txt
 ```
 
-預期結果：`aiot-price 0.1.0`（editable，指向 `src/aiot_price`）、pandas 2.3.3、numpy 2.5.3、scikit-learn 1.9.1、PyYAML 6.0.3、jsonschema 4.26.0、pytest 8.4.2。乾淨環境重現曾於 2026-10-03 實測成功（`outputs/local_env/clean_venv_install.txt`）。
-
-**已知缺口（誠實聲明）**：`requirements-lock.txt` 目前**未含** API 層的 fastapi 0.142.2／uvicorn 0.54.0／starlette 1.7.0（T20 之後加入的依賴尚未回寫鎖版檔）。跑 §7 的 API 前需另執行 `.venv/Scripts/python.exe -m pip install fastapi uvicorn`。待辦：更新鎖版檔與 pyproject dependencies（見文末遺留項）。
+預期結果：`aiot-price 0.1.0`（editable，指向 `src/aiot_price`）、pandas 2.3.3、numpy 2.5.3、scikit-learn 1.9.1、PyYAML 6.0.3、jsonschema 4.26.0、pytest 8.4.2、httpx 0.28.1，以及 API／parquet 層的 fastapi 0.142.2、uvicorn 0.54.0、starlette 1.7.0、pyarrow 25.0.1（均已列入 lock 與 `pyproject.toml` dependencies／dev extra）。乾淨環境重現：2026-10-03 實測成功（`outputs/local_env/clean_venv_install.txt`）；2026-10-04 於專案外暫存 venv 以可攜 `-e .` 再次驗證成功（安裝、import、真工件載入、API 測試 12 passed、全套 98 passed），完整命令與輸出見 [outputs/audits/2026-10-04_round2/clean_env_check.md](../outputs/audits/2026-10-04_round2/clean_env_check.md)。
 
 ## 2. 資料取得（公開行情快照）
 
@@ -80,11 +78,13 @@ PYTHONPATH=src .venv/Scripts/python.exe -m aiot_price.models.evaluate --parquet 
 預期輸出（2026-10-03 執行證據：`outputs/evaluation/public/public_test_results.json`；凍結清單 hash 校驗先跑）：
 
 ```
-h=7 rf_reg n= 2085 acc= 0.7655 macroF1= 0.4218 MAE= 0.0664 | flat MAE= 0.0441 flat F1= 0.3092
-h=14 hgb_reg n= 1859 acc= 0.7106 macroF1= 0.4169 MAE= 0.0983 | flat MAE= 0.0745 flat F1= 0.2951
+h=7 rf_reg n= 2085 acc= 0.7655 macroF1= 0.4218 MAE= 0.0664 | flat MAE= 0.0436 flat F1= 0.3092
+h=14 hgb_reg n= 1859 acc= 0.7106 macroF1= 0.4169 MAE= 0.0983 | flat MAE= 0.0748 flat F1= 0.2954
 ```
 
-解讀：方向 macro-F1 **優於**持平基線；點回歸 MAE **未優於**不變價基線（如實標示的限制，不做點預測宣稱）。重跑前注意：這是封存測試的一次性評估，正式結果只認第一次；重跑僅供核對可重算性（逐列檔 `test_predictions.csv` 可獨立重算）。
+（2026-10-04 依 `public_test_results.json` 逐項核對修正：h=7 flat MAE 0.0441→0.0436、h=14 flat MAE 0.0745→0.0748、h=14 flat F1 0.2951→0.2954，先前為手抄筆誤。）
+
+解讀：方向 macro-F1 **優於全預測持平基線**，但**未勝過 momentum（簡單趨勢）基線**（測試集 momentum macro-F1：h=7 0.4226、h=14 0.4306，與選定模型相當甚至略高；選定標準是在驗證集凍結的，不挑事後較佳者）；點回歸 MAE **未優於**不變價基線（如實標示的限制，不做點預測宣稱）。重跑前注意：這是封存測試的一次性評估，正式結果只認第一次；重跑僅供核對可重算性（逐列檔 `test_predictions.csv` 可獨立重算）。
 
 ## 6. 模型包封裝
 
@@ -141,6 +141,6 @@ PYTHONPATH=src .venv/Scripts/python.exe -m uvicorn aiot_price.api.app:app --host
 ## 9. 遺留項（初版如實列出）
 
 1. SERVER 端重現（模型包傳輸、hash 校驗、fixtures 重播、服務啟停）：**待 T24/T29**（T23 HOLD：缺 SERVER 連線資訊）。
-2. `requirements-lock.txt` 缺 fastapi／uvicorn／starlette：需更新鎖版檔與 pyproject 後重跑乾淨環境驗證。
+2. ~~`requirements-lock.txt` 缺 fastapi／uvicorn／starlette~~：**已解決（2026-10-04）**——lock 改為可攜 `-e .`、pyproject 補齊 fastapi／uvicorn／pyarrow（httpx 入 dev），並於專案外乾淨 venv 驗證通過（見 §1 與 [clean_env_check](../outputs/audits/2026-10-04_round2/clean_env_check.md)）。
 3. 發布延遲（觀測日 vs 可下載日）未實測：重現者拿到的最新日期可能落後，屬來源特性非流程錯誤（MODEL_VALIDATION_PLAN 3.3）。
 4. 同店 A/B（T16 HOLD）與自動排程更新（依 policy 不建）：不影響上述公開模型全流程重現。

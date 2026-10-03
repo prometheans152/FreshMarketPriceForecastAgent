@@ -49,8 +49,8 @@
 ## 第 6 頁　系統架構
 
 - 三節點：TRAIN_LOCAL（本機訓練，CPU）→ SERVER_3090（推論＋Qwen 代理人）→ 手機網頁（[design.md](../design.md) 第 3 節）
-- 模型工件 `models/releases/0.1.0/`（manifest＋hash＋fixtures 3/3 重現）；本機 FastAPI `/health`／`/metadata`／`/forecast`（12 項測試通過、延遲約 200ms）
-- 現況：本機已完成；SERVER 待連線（T23 HOLD）
+- 模型工件 `models/releases/0.1.0/`（manifest＋hash＋fixtures 3/3 重現）；本機 FastAPI `/health`／`/metadata`／`/forecast`（API 層 22 項測試通過、延遲約 200ms）
+- 現況：本機已完成（含代理人規則層）；SERVER 待連線（T23 HOLD）
 - 建議圖表：架構圖（沿用 [design.md](../design.md) 第 3 節 mermaid 圖重繪）
 
 ## 第 7 頁　方法（一）：標籤契約
@@ -102,14 +102,14 @@
 ## 第 13 頁　代理人設計
 
 - 責任分界：Qwen 理解、呼叫工具、解釋；菜價模型負責預測；代理人不得編價格／機率／原因／準確率（[design.md](../design.md) 第 5 節）
-- 有限工具：`get_market_quote`（取得可用公開行情）、`post_forecast`（呼叫 `POST /forecast`）；入口 `POST /agent/query`；限工具名／端點／次數／超時（[TASKS](../TASKS.md) T26，TODO）
-- 忠實原則：回答不改變工具方向與數字；Qwen 失敗時顯示真實模型結果，模型失敗不用 LLM 編替代預測（[TASKS](../TASKS.md) T27，TODO）
+- 有限工具：`get_market_quote`（取得可用公開行情）、`post_forecast`（呼叫 `POST /forecast`）；入口 `POST /agent/query`；限工具名／端點／次數／超時（[TASKS](../TASKS.md) T26：**本機規則層完成、Qwen 實機待 SERVER**）
+- 忠實原則：回答不改變工具方向與數字；Qwen 失敗時顯示真實模型結果，模型失敗不用 LLM 編替代預測（[TASKS](../TASKS.md) T27：本機測試補強中）
 - Qwen 候選：使用者指定 Qwen3.8，型號／量化／框架待官方核實與 3090 實測（T25，TODO）
 - 建議圖表：代理人工具呼叫時序圖（使用者→Qwen→工具→API→回覆）
 
 ## 第 14 頁　本機實作成果與限制
 
-- 已完成（本機，2026-10-03，63 項自動化測試全過，[GLM_PROGRESS](GLM_PROGRESS.md)）：資料管線、訓練與封存測試、模型打包（fixtures 3/3）、本機 API（12 項測試）、手機網頁（390×844 實測 A/B 並排與錯誤處理）
+- 已完成（本機，2026-10-04 狀態，98 項自動化測試全過，[GLM_PROGRESS](GLM_PROGRESS.md)）：資料管線、訓練與封存測試、模型打包（fixtures 3/3）、本機 API（API 層 22 項測試）、手機網頁（390×844 實測 A/B 並排與錯誤處理）、公開行情更新與代理人本機規則層
 - 限制：點 MAE 未優於不變價基線；up 召回低；僅一年臺中資料；市場均價非單店真值；發布延遲假設 1 日未實測；機率／區間不輸出（[MODEL_CARD](MODEL_CARD.md)）
 - 邊界外：囤貨省錢保證、跨年度／颱風行情泛化、同店效果宣稱（[ERROR_ANALYSIS](ERROR_ANALYSIS.md)）
 - 建議圖表：本機成果截圖（網頁 A/B 並排）＋限制清單

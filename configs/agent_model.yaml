@@ -1,43 +1,124 @@
-# TW01 代理人模型候選設定（T25 型號核實，2026-10-03）
-# 僅列官方來源（github.com/QwenLM、huggingface.co/Qwen）查核過的候選；顯存為參數量推算值，非官方數字。
-# 預設候選在 SERVER（RTX 3090 24GB）實測後鎖定；本檔不等於已載入驗證通過。
+# TW01 代理人模型候選設定（T25 型號核實；第一輪 2026-10-03，F09 修訂輪 2026-10-03）
+# 證據分三類並逐項標示：official（QwenLM GitHub／HF Qwen org）、
+#   implementer（Unsloth 指南與 GGUF 工件——實作者資料，非 Qwen 官方權重）、
+#   estimate（參數量推算／未驗證估計）。
+# 顯存除標明來源者外均為推算或檔案大小，非官方 VRAM 需求數字，更非 3090 實測。
+# 依第二輪獨立審查 F09 修訂：原「Qwen3.8 跑不動 3090」結論過度概括；
+#   27B GGUF 4-bit（實作者資料 16–19GB）列為優先實測候選，使用者候選不排除。
 
 verification:
-  checked_at: "2026-10-03"
-  sources:
-    - "https://github.com/QwenLM/Qwen3.8"
-    - "https://huggingface.co/collections/Qwen/qwen38"
-    - "https://huggingface.co/Qwen"
+  checked_at: "2026-10-03（第一輪＋F09 修訂輪）"
+  revision_reason: >
+    第二輪獨立審查（docs/reviews/ROUND2_7fdb43b_REVIEW.md F09）指出原結論
+    「Qwen3.8 官方權重超24GB、不列入3090首選」被概括為「Qwen3.8 跑不動 3090」。
+    本輪重新讀取官方 repo 與 Unsloth 來源，修訂結論並擴充候選；未下載任何權重。
+  sources_official:
+    - url: "https://github.com/QwenLM/Qwen3.8"
+      read_status: "完整（F09 輪）"
+      finding: "Local Use 段明列 llama.cpp（GGUF）並連結 unsloth.ai/docs/models/qwen3.8；開源檢查點僅 2.4T-A95B 與 27B"
+    - url: "https://huggingface.co/Qwen/Qwen3.8-27B"
+      read_status: "完整（F09 輪）"
+      finding: "BF16 總檔 55,563,118,992 bytes（約55.6GB、18分片）；262,144 native context；Apache-2.0"
+    - url: "https://huggingface.co/Qwen/Qwen3.8-27B-FP8"
+      read_status: "完整（F09 輪）"
+      finding: "總檔 30,867,004,263 bytes（約30.9GB ≈ 28.7GiB）；F8_E4M3 block 128；卡片未列硬體需求"
+    - url: "https://huggingface.co/Qwen/Qwen3.5-9B"
+      read_status: "完整（F09 輪）"
+      finding: "--language-model-only 可跳過視覺編碼器釋出 KV cache；BF16 約19.3GB；vLLM/SGLang 需 main 分支"
+    - url: "https://huggingface.co/collections/Qwen/qwen38"
+      read_status: "完整（第一輪）；本輪未重抓"
+      finding: "Qwen3.8 開源檢查點僅 2.4T-A95B 與 27B（各自 BF16/FP8）"
+    - url: "https://huggingface.co/Qwen/Qwen3.5-4B"
+      read_status: "完整（第一輪）；本輪未重抓"
+      finding: "約4.66B、BF16 約9.3GB、Apache-2.0"
+    - url: "https://huggingface.co/Qwen/Qwen3-8B"
+      read_status: "完整（第一輪）；本輪未重抓"
+      finding: "8.2B、BF16 約16.4GB、Apache-2.0、agent 能力明文"
+  sources_implementer:
+    - url: "https://unsloth.ai/docs/models/qwen3.8"
+      read_status: "完整（F09 輪）"
+      finding: "27B 4-bit 需求16-19GB；『For older GPUs, our GGUFs work well!』；NVFP4 需 Blackwell（RTX 50X/B200/B300）；MTP 另需1-2GB"
+    - url: "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF"
+      read_status: "完整（F09 輪）"
+      finding: "UD-Q4_K_M.gguf 16.5GB／UD-Q4_K_XL.gguf 17.6GB；mmproj 視覺檔另計；Apache-2.0；llama.cpp 執行；架構 qwen35 需較新版本"
   qwen38_finding: >
-    Qwen3.8 為官方系列（2026-08），但開源檢查點僅 Qwen3.8-2.4T-A95B（MoE 旗艦）與
-    Qwen3.8-27B（dense 約27.78B）；無 4B-14B 尺寸。27B 官方權重 BF16 約55.5GB／FP8 約28GB，
-    超過單卡24GB，不列入3090首選。詳見 docs/QWEN_SERVER_BENCHMARK.md。
+    Qwen3.8 為官方系列（2026-08），最小開源檢查點 27B dense。官方 BF16（約55.6GB）與
+    官方 FP8（約30.9GB ≈ 28.7GiB）無法全放單卡24GB；但 27B GGUF 4-bit（實作者資料
+    16-19GB；工件 UD-Q4_K_M 16.5GB／UD-Q4_K_XL 17.6GB）是值得 3090 實機測試的候選，
+    尚未實測。使用者候選不排除，列為優先實測對象。NVFP4 需 Blackwell，3090（Ampere）
+    不適用其數字。詳見 docs/QWEN_SERVER_BENCHMARK.md。
 
-default_candidate: "qwen3.5-9b"   # 建議首選；3090 實測後鎖定，不視為已驗證
-default_note: "3090 實測（載入／峰值顯存／延遲／中文品項理解／工具參數正確率）完成前不鎖定版本。"
+# F09 修訂：不預先鎖定 default_candidate；原 "qwen3.5-9b" 建議值移除，
+# 改以 candidates[].test_priority 表達實測優先順序，最終由使用者確認＋3090 實測後鎖定。
+default_candidate: null
+default_note: >
+  待使用者確認型號意向（Qwen3.8 系列之 GGUF 路線 vs 8B 級官方權重）＋3090 實測
+  （載入／峰值顯存／延遲／有限context／併發1／中文品項理解／工具參數正確率）
+  完成後鎖定；實測優先順序見各候選 test_priority 與 benchmark_plan。
 
 candidates:
+  qwen3.8-27b-gguf-q4:
+    test_priority: 1
+    priority_reason: "使用者指定 Qwen3.8 系列；官方 repo 明列 llama.cpp 路線；實作者估 16-19GB 可入 24GB；未實測前不定論"
+    artifact: "unsloth/Qwen3.8-27B-GGUF 的 Qwen3.8-27B-UD-Q4_K_M.gguf（16.5GB）"
+    alternative_variant: "Qwen3.8-27B-UD-Q4_K_XL.gguf（17.6GB，Unsloth 建議之 4-bit 變體）"
+    source: "unsloth community quant（實作者量化；非 Qwen 官方權重）"
+    base_model:
+      name: "Qwen/Qwen3.8-27B"
+      license: "Apache-2.0"
+      params: "約27.78B（27,781,427,952）"
+      released: "2026-08-14"
+      official_weights_bf16: "約55.6GB（55,563,118,992 bytes、18分片）"
+      official_fp8: "Qwen/Qwen3.8-27B-FP8 約30.9GB（≈28.7GiB）→ 皆超24GB，不排單卡全放"
+    context: "262,144 native（YaRN 至 1,000,000）；實際以 llama.cpp 設定為準"
+    tool_calling:
+      supported: true
+      evidence: "基底模型卡 <tool_call> chat template 與 agentic 基準；llama.cpp 下之工具呼叫正確率待實測"
+    vram_estimate:
+      value: "4-bit 16-19GB"
+      source: "implementer（Unsloth 指南 27B 量化表，2026-10-03 完整讀取）"
+      verified_on_3090: false
+    official_repo_evidence: >
+      https://github.com/QwenLM/Qwen3.8 Local Use 段明列 llama.cpp
+      （「Look for models ending with GGUF on Hugging Face Hub」）並連結
+      https://unsloth.ai/docs/models/qwen3.8（「the Qwen3.8 guide」）。
+      注意：官方指引 llama.cpp 路線 ≠ 官方發布 GGUF；量化檔為 unsloth 社群工件。
+    nvfp4_note: "NVFP4 需 Blackwell（RTX 50X、DGX Spark、B200、B300）；3090 為 Ampere，NVFP4 速度／顯存數字不適用"
+    framework_candidates: "llama.cpp（架構標籤 qwen35，需較新版本；實測記錄 build／commit 版本號）"
+    source_urls:
+      official_repo: "https://github.com/QwenLM/Qwen3.8"
+      unsloth_guide: "https://unsloth.ai/docs/models/qwen3.8"
+      gguf_artifact: "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF"
+      base_model_card: "https://huggingface.co/Qwen/Qwen3.8-27B"
+    status: "3090 實測 HOLD（候選，未實測）"
+
   qwen3.5-9b:
-    recommended: true
+    test_priority: 2
+    priority_reason: "官方權重直跑（不需社群量化）之最近 8B 級候選；作為 Qwen3.8 GGUF 之對照組"
     official_name: "Qwen/Qwen3.5-9B"
-    params: "9.65B（BF16 safetensors 約19.3GB）"
+    params: "9.65B（BF16 safetensors 19,306,390,537 bytes ≈ 19.3GB）"
     architecture: "dense-hybrid（Gated DeltaNet + Gated Attention）；視覺語言 image-text-to-text"
     released: "2026-03-02"
     license: "Apache-2.0"
     context: "262,144 native（YaRN 至 1,010,000）"
     tool_calling:
       supported: true
-      evidence: "模型卡明文 \"Qwen3.5 excels in tool calling capabilities\"；建議 Qwen-Agent 與 MCP；chat template 內建 tools 區段"
+      evidence: "模型卡明文 \"Qwen3.5 excels in tool calling capabilities\"；建議 Qwen-Agent 與 MCP；chat template 內建 tools 區段；--tool-call-parser qwen3_coder"
     quantization_options:
       official: "無（官方僅 BF16 權重，isQuantized 標示為 false）"
       community: "FP8／GGUF 等社群量化存在，非官方，採用須另行驗證"
-    vram_estimate: "BF16 約19.3GB（24GB 可放，緊）；vLLM --language-model-only 可略過視覺編碼器省顯存"
+    vram_estimate:
+      value: "權重約19.3GB＋KV cache 另計"
+      source: "official（模型卡檔案大小）＋estimate（KV／框架開銷推算）"
+      caveat: "權重檔 <24GB 不等於已能運行；完整峰值顯存與延遲未量測。--language-model-only 可跳過視覺編碼器釋出 KV cache（官方模型卡），為待驗證緩解選項"
+      verified_on_3090: false
     source_urls:
       huggingface: "https://huggingface.co/Qwen/Qwen3.5-9B"
-    notes: "首選：官方提供中最接近 8B 級的最新中型模型，工具呼叫與長 context 明確支援。"
+    status: "3090 實測 HOLD"
 
   qwen3.5-4b:
-    recommended: false
+    test_priority: 3
+    priority_reason: "同代同授權、顯存寬裕、延遲更低；9B 或 GGUF 實測不足時之降級退路"
     official_name: "Qwen/Qwen3.5-4B"
     params: "約4.66B（BF16 約9.3GB）"
     architecture: "dense-hybrid（Gated DeltaNet，行銷描述含 sparse MoE）；視覺語言 image-text-to-text"
@@ -50,13 +131,17 @@ candidates:
     quantization_options:
       official: "無"
       community: "GGUF 等社群量化存在，非官方"
-    vram_estimate: "BF16 約9.3GB（寬裕，KV 空間大）"
+    vram_estimate:
+      value: "約9.3GB＋KV（寬裕）"
+      source: "estimate（推算）"
+      verified_on_3090: false
     source_urls:
       huggingface: "https://huggingface.co/Qwen/Qwen3.5-4B"
-    notes: "備選：9B 實測 KV 不足或延遲不足時降級用。"
+    status: "3090 實測 HOLD"
 
   qwen3-8b:
-    recommended: false
+    test_priority: 4
+    priority_reason: "較舊但純文字、工具呼叫生態最成熟（vLLM tool parser、Qwen-Agent 文件齊）；Qwen3.5 hybrid 架構框架版本不合時的退路"
     official_name: "Qwen/Qwen3-8B"
     params: "8.2B（BF16 約16.4GB）"
     architecture: "dense；純文字"
@@ -69,15 +154,18 @@ candidates:
     quantization_options:
       official: "無（官方僅 BF16）"
       community: "452 個社群量化（llama.cpp／Ollama 用），非官方"
-    vram_estimate: "BF16 約16.4GB（可行）"
+    vram_estimate:
+      value: "約16.4GB＋KV"
+      source: "estimate（推算）"
+      verified_on_3090: false
     source_urls:
       huggingface: "https://huggingface.co/Qwen/Qwen3-8B"
-    notes: "備選：較舊但工具呼叫生態最成熟；Qwen3.5 hybrid 架構框架版本不合時的退路。"
+    status: "3090 實測 HOLD"
 
   qwen3.8-27b:
-    recommended: false
+    test_priority: null   # 官方權重超卡，不排實測；保留此鍵供官方檢查點資訊對照
     official_name: "Qwen/Qwen3.8-27B"
-    params: "約27.78B（BF16 約55.5GB）"
+    params: "約27.78B（BF16 55,563,118,992 bytes ≈ 55.6GB、18分片）"
     architecture: "dense；視覺語言 image-text-to-text（原生影像與影片理解）"
     released: "2026-08-14"
     license: "Apache-2.0"
@@ -86,13 +174,18 @@ candidates:
       supported: true
       evidence: "模型卡 agentic 基準（Terminal Bench 2.1、SWE-bench Pro 等）與 tool_call chat template；vLLM serve 參數 --tool-call-parser qwen3_coder --enable-auto-tool-choice"
     quantization_options:
-      official: "Qwen/Qwen3.8-27B-FP8（官方 FP8）"
-      community: "INT4 GGUF（約15-16GB，可入24GB）等社群量化，非官方"
-    vram_estimate: "BF16 約55.5GB、官方FP8 約28GB → 皆超過24GB；僅社群INT4 可放入單卡"
+      official: "Qwen/Qwen3.8-27B-FP8（官方 FP8，約30.9GB ≈ 28.7GiB）"
+      community: "unsloth/Qwen3.8-27B-GGUF（UD-Q4_K_M 16.5GB／UD-Q4_K_XL 17.6GB 等，Apache-2.0）——見 qwen3.8-27b-gguf-q4 候選"
+    vram_estimate:
+      value: "BF16 約55.6GB／官方FP8 約30.9GB → 皆超過24GB，無法全放單卡"
+      source: "official（模型卡檔案大小）"
+      verified_on_3090: false
     source_urls:
       huggingface: "https://huggingface.co/Qwen/Qwen3.8-27B"
+      fp8: "https://huggingface.co/Qwen/Qwen3.8-27B-FP8"
       collection: "https://huggingface.co/collections/Qwen/qwen38"
-    notes: "使用者所稱 Qwen3.8 的最小官方成員；官方權重在3090不可行，不列入首選。若使用者堅持需回報顯存衝突或考慮社群量化另行驗證。"
+      github: "https://github.com/QwenLM/Qwen3.8"
+    status: "官方權重不排 3090 單卡；3090 路線改看 qwen3.8-27b-gguf-q4（社群量化候選）"
 
 excluded:
   - name: "Qwen3.8-2.4T-A95B / -FP8"
@@ -102,18 +195,23 @@ excluded:
   - name: "Qwen3.5-397B-A17B、Qwen3.5-122B-A10B、Qwen3.5-35B-A3B、Qwen3.6-35B-A3B、Qwen3-Coder-30B-A3B"
     reason: "MoE 總參數使 BF16／FP8 權重皆超過24GB"
   - name: "Qwen3.5-27B、Qwen3.6-27B"
-    reason: "dense 27B，同 Qwen3.8-27B 超卡"
+    reason: "dense 27B 官方權重超卡；若比照 GGUF 路線另議，非本輪範圍"
+  - name: "NVFP4 量化路線（所有候選）"
+    reason: "NVFP4 需 Blackwell（RTX 50X／DGX Spark／B200／B300，Unsloth 指南）；3090 為 Ampere，其速度／顯存數字不適用"
 
 inference_frameworks:
   vllm:
     official: true
     tool_call: "--tool-call-parser qwen3_coder --enable-auto-tool-choice（QwenLM/Qwen3.8 README serving 段）"
-    note: "Qwen3.5-9B 需 main 分支版本（模型卡）"
+    note: "Qwen3.5-9B 需 main 分支版本（模型卡）；Qwen3.5-9B 另可 --language-model-only 跳過視覺編碼器"
   sglang:
     official: true
     tool_call: "官方 README 列為生產建議；Qwen3.5-9B 需 main 分支版本"
   llama_cpp:
-    official: "部分：Qwen3.5 系列有 GGUF 支援（README）；官方權重非 GGUF，實際檔案為社群量化"
+    official: >
+      部分：官方 repo Local Use 段明列 llama.cpp（「Look for models ending with GGUF on
+      Hugging Face Hub」）並連結 Unsloth Qwen3.8 指南（F09 輪重新讀取確認）；
+      但官方權重非 GGUF，實際檔案為社群量化（unsloth 等）
     tool_call: "未在官方頁載明工具呼叫細節，採用前需實測"
   ollama:
     official: false
@@ -122,4 +220,38 @@ inference_frameworks:
     official: true
     tool_call: "Qwen3.5／Qwen3 模型卡建議的官方 agent 框架（含 MCP）"
 
-status: "型號核實完成（2026-10-03）；3090 實測 HOLD 待 SERVER（OS／CUDA／位址未知），實測後鎖定 default_candidate"
+benchmark_plan:
+  status: "HOLD（待 SERVER；OS／位址／CUDA 未知；不登入未知 SERVER、不下載權重為本輪界線）"
+  record_before_test:
+    - "模型 revision hash：下載時以 HF 頁面／API 記錄 unsloth/Qwen3.8-27B-GGUF 與基底 Qwen/Qwen3.8-27B（及 Qwen3.5-9B 等）的 commit；本輪頁面未顯示 revision，不預填"
+    - "量化檔與大小：UD-Q4_K_M.gguf 16.5GB（首選）／UD-Q4_K_XL.gguf 17.6GB（備選）；mmproj 視覺檔是否載入另記（純文字代理人可先不載）"
+  framework_candidates:
+    - name: "llama.cpp"
+      use: "GGUF（qwen3.8-27b-gguf-q4）"
+      record: "build／commit 版本號；架構標籤 qwen35 需較新版本"
+    - name: "vLLM"
+      use: "官方 BF16（qwen3.5-9b／qwen3.5-4b／qwen3-8b）"
+      record: "版本號（Qwen3.5 需 main）；--tool-call-parser qwen3_coder --enable-auto-tool-choice；Qwen3.5-9B 加 --language-model-only"
+    - name: "SGLang"
+      use: "備查"
+      record: "版本號"
+  context_plan: "分段 8K→16K→32K，記錄各段 KV 佔用與峰值 VRAM；以代理人實際需求（少量中文＋結構化工具參數）截斷"
+  concurrency: 1
+  measurements:
+    - "峰值 VRAM（nvidia-smi；載入後與推論中，含 KV cache）"
+    - "載入／啟動時間"
+    - "首 token 延遲與生成速度（tokens/s）"
+    - "完整回應時間"
+    - "有限 context（8K/16K/32K）下行為"
+    - "併發 1 之穩定性與資源回收"
+  test_cases:
+    - "中文菜名別名抽取：甘藍＝高麗菜、空心菜、小白菜等；規格（顆／半顆／斤）；單位（元/臺斤 vs 元/公斤）"
+    - "工具參數生成：POST /forecast 之 JSON（品項、今天價、選填上週價與日期、7/14 天）"
+    - "不相關輸入之拒答或降級行為"
+  acceptance: "真權重載入＋實際請求輸出（版本、量化、顯存、延遲、工具案例）才可 PASS；僅官方頁可讀不算實測通過"
+  output_dir: "outputs/server/qwen_benchmark/"
+
+status: >
+  F09 修訂完成（2026-10-03）：結論修正（官方 BF16/FP8 超24GB；27B GGUF 4-bit 為待實測候選，
+  使用者候選不排除）、候選擴充（新增 qwen3.8-27b-gguf-q4）、default_candidate 改 null、
+  新增 benchmark_plan。3090 實測 HOLD 待 SERVER；最終型號待使用者確認＋實測後鎖定。

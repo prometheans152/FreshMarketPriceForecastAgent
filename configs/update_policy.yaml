@@ -1,46 +1,71 @@
 # 公開行情更新策略（T30）
 # 本檔是「策略聲明」：實際行為由 scripts/update_public_data.py 實作，兩者需同步修改。
 # 對應設計原則（design.md §8）：行情刷新、模型發布、Qwen 載入是不同操作。
-# 2026-10-04 初版；四情境實測證據見 docs/OPERATIONS.md 與 outputs/update_tests/。
+# 2026-10-04 初版（0.1.0）；同日第二輪審查後改版（0.2.0）：修 F04（下載路徑中斷）、
+# F05（原子替換／schema 加強／重載驗證／日期語意）。證據見 docs/OPERATIONS.md 與
+# outputs/update_tests/round3_*.json。
 
-policy_version: "0.1.0"
+policy_version: "0.2.0"
 effective_date: "2026-10-04"
+change_log:
+  - "0.2.0（2026-10-04 第二輪審查修復）：退出碼重新編號（3=下載、4=寫入／核對，
+     1 改為參數／設定錯誤）；parquet 更新改暫存＋逐列核對＋os.replace 原子替換＋
+     失敗自動還原；schema 加強（三品項欄存在、有限值、鍵唯一、壞 JSON 受控）；
+     新增 --reload-check 與服務重載步驟；報告區分快照截止日／特徵實際可見日／資料版本。"
+  - "0.1.0（2026-10-04 初版）：四情境實測。"
 
 trigger:
   mode: manual                # 手動觸發，不建排程、不用 Codex/agent 提醒代跑
   command: >-
     PYTHONPATH=src .venv/Scripts/python.exe scripts/update_public_data.py
-  standard_flags: [--dry-run, --refresh-release-history, --url, --input, --report]
+  standard_flags: [--dry-run, --refresh-release-history, --reload-check, --url, --input, --report]
   rationale: >
     發布延遲未實測（MODEL_VALIDATION_PLAN 3.3）、SERVER 尚未部署（T23 HOLD），
     先以人工可核對的單次流程運行；若日後確需自動化，依當時部署環境另案評估，
     不因本檔存在而授權任何長期背景工作。
 
 data_gate:                   # 取得資料的驗證閘門；任何一關不過＝不採用該檔
-  http: HTTP 狀態必為 2xx；非 2xx 視為下載失敗
+  http: HTTP 狀態必為 2xx；非 2xx 視為下載失敗（exit 3）
   sha256: 每次都計算並寫進報告；與既有最新快照相同＝內容未更新
-  schema:
-    required_fields: [市場名稱, 訪價日期]
+  schema:                    # 0.2.0 加強版（F05b）
+    json_parse: 壞 JSON／編碼錯 → 受控 schema 錯誤（exit 2），不噴 traceback
+    required_fields: [市場名稱, 訪價日期, 甘藍（平地高麗菜）, 青江白菜, 絲瓜]
+    required_fields_scope: 每一列都必須有這些欄位（值可為空＝缺測，欄位不可缺席）
     row_count_min: 1
-    date_format: YYYYMMDD（8 位數字且可解析為日曆日）
-    reference: src/aiot_price/data/fetch_public.py analyze_snapshot
+    date_format: YYYYMMDD（8 位數字且可解析為日曆日，每一列）
+    supported_crop_values: >
+      三個支援品項欄值必須可轉 float 且有限：空值／None／NaN＝缺測（允許）、
+      0＝無價格依契約轉缺測（允許）、Infinity／-Infinity／負值／無法解析＝拒絕（exit 2）。
+    unique_keys: (市場名稱, 訪價日期) 鍵在快照內必須唯一
+    reference: src/aiot_price/data/fetch_public.py analyze_snapshot（統計）＋
+      scripts/update_public_data.py validate_schema（閘門）
   comparison: 與 data/raw/ 最新快照（內容 max_date 最大者）比對，列出新增觀測日期
 
 no_new_data:                 # 無新資料＝不動
   rule: 新檔 SHA256 與最新快照相同，或新增觀測日期為 0
   action: 只寫報告（status=no_new_data），不存新快照、不碰 release、不重訓
-  evidence: outputs/update_tests/scenario_a1_real_download.json（真實下載、0 新日期）
+  evidence: outputs/update_tests/scenario_a1_real_download.json（真實下載、0 新日期；2026-10-04 原證據保留）
 
-failure:
+failure:                     # 0.2.0：退出碼重新編號；全部寫報告 JSON、保留舊檔
+  usage: >
+    參數／設定錯誤（--input 與 --url 互斥、--input 檔不存在、設定檔無法決定 URL、
+    其他未預期但受控回報的失敗）→ status=failed、exit code 1。
   download: >
-    下載失敗（逾時／連線拒絕／HTTP 錯誤）→ 報告 status=failed、exit code 1、
+    下載失敗（逾時／連線拒絕／HTTP 錯誤）→ status=failed、exit code 3、
     舊檔全部保留；不得把失敗當成「價格不變」或「無新資料」回給使用者。
   schema: >
-    schema 驗證失敗（缺欄／壞日期／空檔）→ status=failed、exit code 2、
-    該檔不落地；錯誤訊息須指名缺什麼（例：缺少必要欄位：市場名稱）。
+    schema 驗證失敗（壞 JSON／缺欄／壞日期／Infinity／負值／重複鍵／空檔）→
+    status=failed、exit code 2、該檔不落地；錯誤訊息須指名缺什麼、壞幾格
+    （例：缺少必要欄位：甘藍（平地高麗菜）；絲瓜：非有限值（Infinity））。
   write: >
-    release 寫入後核對失敗（列數或舊列內容不一致）→ 以更新前的自動備份還原。
-  evidence: outputs/update_tests/scenario_c_dead_source.json、scenario_d_schema_change.json
+    寫入／核對失敗（暫存寫入中斷、逐列核對不符、os.replace 原子替換失敗、
+    替換後驗證失敗、備份還原失敗、reload-check 失敗）→ status=failed、exit code 4；
+    快照已保存者保留並在報告 partial_state 說明「歷史未刷新」；
+    release parquet 一律保護為舊內容（必要時自動從備份還原並驗證）。
+  evidence: >
+    outputs/update_tests/round3_repair_scenarios.json（0.2.0：模擬下載全程、
+    寫入中斷、核對失敗、壞 JSON、缺甘藍欄、Infinity、reload-check）；
+    scenario_c_dead_source.json／scenario_d_schema_change.json（0.1.0 原證據保留）。
 
 snapshot_retention:
   naming: retail_prices_YYYYMMDD.json（衝突自動加 _HHMMSS，永不覆蓋舊檔）
@@ -50,12 +75,23 @@ snapshot_retention:
 
 refresh_release_history:     # --refresh-release-history：只刷新推論特徵來源
   target: models/releases/<version>/public_history.parquet
-  append_only: true          # 只追加 release 截止日之後的新日期；舊列一列不改（寫後逐列核對）
+  append_only: true          # 只追加 release 截止日之後的新日期；舊列一列不改
   crop_mapping: src/aiot_price/data/schema.py CROP_MAPPINGS（甘藍/青江白菜/絲瓜）
   excluded_markets_pattern: "(停)"   # 與 scripts/prepare_data.py 完全一致（T06 決策）
   zero_handling: 0＝無價格→缺測（load_taichung_long 既有規則，不另寫）
   dedupe: 已存在於 release 的 (市場,品項,日期) 鍵不重複追加
-  backup: 寫入前複製 public_history.backup_YYYYMMDD_HHMMSS.parquet 至同目錄
+  atomic_write:              # 0.2.0（F05a）：校驗後原子替換，不再直接覆寫目標
+    steps: >
+      1) 複製備份 public_history.backup_YYYYMMDD_HHMMSS.parquet 至同目錄 →
+      2) 新內容寫入同目錄暫存檔 .public_history.tmp_*.parquet（絕不直接寫目標）→
+      3) 逐列核對暫存檔：列數＝舊＋新、舊區段逐列相同、新區段＝預期追加內容 →
+      4) os.replace 原子替換目標 → 5) 重新讀取目標驗證。
+    on_failure: >
+      任一步失敗 → 確認目標仍為完整可讀的舊內容；不是就自動從備份還原並驗證，
+      清除暫存檔，exit 4 並在報告記錄 target_is_old_content／restored_from_backup。
+  backup_retention: >
+    備份不自動刪除（同名不覆蓋）；積累過多時由人下指令清理並記錄於 DECISIONS。
+    還原也可手動：把備份複製回 public_history.parquet 後重跑本流程驗證。
   untouched_files:           # 行情刷新絕不修改的檔案
     - model_h7.joblib        # 模型權重
     - model_h14.joblib
@@ -65,9 +101,35 @@ refresh_release_history:     # --refresh-release-history：只刷新推論特徵
     追加新日期只讓推論引擎（ForecastEngine）讀到較新的歷史特徵；
     模型本身仍是舊訓練快照訓練的，manifest 的 observation_end 維持訓練當時日期。
 
+engine_reload:               # 0.2.0 新增（F05c）：更新如何對已啟動的服務生效
+  fact: >
+    ForecastEngine 只在初始化時讀 public_history.parquet；行情更新「磁碟檔」後，
+    已啟動的引擎／API 服務不會自動看到新行情（本輪已實測：同一實例刷新後仍回舊
+    截止日，見 round3_repair_scenarios.json t5）。
+  required_steps: >
+    刷新後必須重啟服務或重建引擎：本機＝重新建立 ForecastEngine（--reload-check
+    即以此證明，印出刷新前後 public_cutoff）；API（src/aiot_price/api/app.py）＝
+    重啟 Uvicorn行程；SERVER 部署後＝重啟推論服務行程（T24/T29 另補）。
+    Qwen 不需要重載（與菜價行情無關）。
+  verification: --reload-check 的報告 reload_check.cutoff_after 必須等於新日期才算生效。
+
+date_semantics:              # 0.2.0 新增（F05d）：三個概念不得混用
+  snapshot_cutoff: >
+    快照截止日＝JSON／parquet 的全域最大觀測日（跨所有市場／品項）；
+    報告欄位 snapshot_comparison.baseline_max_date、stats.max_date。
+  feature_visible_date: >
+    特徵實際可見日＝預測特徵經 visible_delay_days（目前 1）回看後，該市場／品項
+    實際用到的最新價格日；因市場／品項而異且可能早於快照截止日，由推論端計算。
+    「全域快照截止」不得當成「該市場品項最新可見價格日」對使用者解釋
+    （predict.py 端的 evidence_summary／price_last_age 文字由 src/ 修正，另案處理）。
+  data_version: >
+    資料版本＝manifest 的訓練快照 SHA256／observation_end，行情刷新不改變；
+    parquet 最後日期可能較新，兩者差異在報告 release_history 區段對照
+    （release_cutoff_date／last_date_after_refresh vs manifest_observation_end）。
+
 boundary_market_refresh_vs_retrain:   # 行情刷新 ≠ 模型重訓（重要分界）
   market_refresh: >
-    本腳本：下載新快照＋（選配）追加 release 推論歷史 parquet。
+    本腳本：下載新快照＋（選配）追加 release 推論歷史 parquet（原子替換）。
     幾秒鐘、不需 GPU、模型權重不動、可隨時重跑。
   model_retrain: >
     只在 TRAIN_LOCAL（Windows 本機）執行：新快照 → scripts/prepare_data.py
@@ -81,6 +143,11 @@ boundary_market_refresh_vs_retrain:   # 行情刷新 ≠ 模型重訓（重要�
 
 reporting:
   every_run: 呼叫端用 --report 指定 JSON 路徑；報告含 HTTP、SHA256、schema 統計、
-    新增日期、release 前後列數、備份路徑、dry_run 標記
+    新增日期、release 前後列數、備份路徑、dry_run 標記、date_semantics 三概念
   honesty: 報告須標明來源（download 或 local_file）；本地模擬測試不得寫成真實下載
-  exit_codes: {0: 成功（含無新資料）, 1: 下載失敗, 2: schema 驗證失敗, 3: release 刷新失敗}
+  exit_codes:                 # 0.2.0 重新編號（3 與 4 為新語意）
+    0: 成功（含無新資料）
+    1: 參數／設定錯誤，或其他未預期但受控回報的失敗
+    2: schema 驗證失敗（含壞 JSON）
+    3: 下載失敗
+    4: 寫入／核對失敗（含原子替換、備份還原、reload-check）
