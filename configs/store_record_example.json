@@ -1,0 +1,141 @@
+{
+  "_note": "模擬範例（simulated）：本檔所有紀錄均為虛構示範資料，不是任何真實店家的報價或預測結果，不得當作私人真值、訓練資料或評估證據。每筆紀錄均以 simulated:true 標記；真實紀錄省略該欄位，且模擬紀錄永遠不可匯入 private/store_quotes/ 或 private/predictions/。",
+  "schema": "configs/store_record_schema.json",
+  "store_quotes": [
+    {
+      "simulated": true,
+      "store_id": "store-A",
+      "crop_id": "cabbage",
+      "specification": "平地高麗菜，半顆切面",
+      "observed_at": "2026-10-03T10:12:00+08:00",
+      "price": 38,
+      "unit": "NTD_per_taiwan_jin",
+      "is_promotion": false,
+      "price_source": "shelf_tag",
+      "notes": "價籤標示每台斤38元"
+    },
+    {
+      "simulated": true,
+      "store_id": "store-A",
+      "crop_id": "cabbage",
+      "specification": "平地高麗菜，半顆切面",
+      "observed_at": "2026-09-26T09:40:00+08:00",
+      "price": 35,
+      "unit": "NTD_per_taiwan_jin",
+      "is_promotion": false,
+      "price_source": "receipt",
+      "notes": "上週購買收據明細"
+    },
+    {
+      "simulated": true,
+      "store_id": "store-B",
+      "crop_id": "sponge_gourd",
+      "observed_at": "2026-10-03T16:05:00+08:00",
+      "price": 45,
+      "unit": "per_bunch",
+      "is_promotion": false,
+      "price_source": "verbal",
+      "notes": "每把3條，無重量資訊；non_comparable，僅記錄不可供預測比較"
+    }
+  ],
+  "prediction_records": [
+    {
+      "simulated": true,
+      "record_id": "pr-20261003-storeA-cabbage-001",
+      "store_id": "store-A",
+      "crop_id": "cabbage",
+      "specification": "平地高麗菜，半顆切面",
+      "unit": "NTD_per_taiwan_jin",
+      "current_price": 38,
+      "current_observed_at": "2026-10-03T10:12:00+08:00",
+      "previous_price": 35,
+      "previous_observed_at": "2026-09-26T09:40:00+08:00",
+      "saved_at": "2026-10-03T10:13:30+08:00",
+      "outputs": [
+        {
+          "mode": "without_last_week",
+          "model_version": "public-core-0.1.0",
+          "public_data_cutoff": "2026-10-02",
+          "horizons": {
+            "7": { "direction": "up", "price_estimate": 41 },
+            "14": { "direction": "flat", "price_estimate": 39 }
+          }
+        },
+        {
+          "mode": "with_last_week",
+          "model_version": "public-core-0.1.0+ruleB-0.1-experimental",
+          "public_data_cutoff": "2026-10-02",
+          "horizons": {
+            "7": { "direction": "up", "price_estimate": 42 },
+            "14": { "direction": "up", "price_estimate": 40 }
+          }
+        }
+      ],
+      "maturity": {
+        "7": { "outcome": "not_yet" },
+        "14": { "outcome": "not_yet" }
+      }
+    },
+    {
+      "simulated": true,
+      "record_id": "pr-20261003-storeB-loofah-002",
+      "store_id": "store-B",
+      "crop_id": "sponge_gourd",
+      "unit": "NTD_per_kg",
+      "current_price": 75,
+      "current_observed_at": "2026-10-03T16:07:00+08:00",
+      "b_reject_reason": "使用者提供的上週紀錄為每把價，無重量不可比（reject_b_keep_a）",
+      "saved_at": "2026-10-03T16:08:10+08:00",
+      "outputs": [
+        {
+          "mode": "without_last_week",
+          "model_version": "public-core-0.1.0",
+          "public_data_cutoff": "2026-10-02",
+          "horizons": {
+            "7": { "direction": "insufficient_data" },
+            "14": { "direction": "down", "price_estimate": 71 }
+          }
+        }
+      ],
+      "maturity": {
+        "7": { "outcome": "not_yet" },
+        "14": { "outcome": "not_yet" }
+      }
+    },
+    {
+      "simulated": true,
+      "record_id": "pr-20260912-storeA-bokchoy-003",
+      "store_id": "store-A",
+      "crop_id": "bok_choy",
+      "unit": "NTD_per_taiwan_jin",
+      "current_price": 52,
+      "current_observed_at": "2026-09-12T09:30:00+08:00",
+      "saved_at": "2026-09-12T09:31:00+08:00",
+      "outputs": [
+        {
+          "mode": "without_last_week",
+          "model_version": "public-core-0.1.0",
+          "public_data_cutoff": "2026-09-11",
+          "horizons": {
+            "7": { "direction": "down", "price_estimate": 48 },
+            "14": { "direction": "flat", "price_estimate": 51 }
+          }
+        }
+      ],
+      "maturity": {
+        "7": {
+          "outcome": "matured",
+          "matured_price": 47,
+          "matured_at": "2026-09-19T09:55:00+08:00",
+          "matured_price_source": "paid",
+          "matured_is_promotion": false,
+          "outcome_note": "同店同規格實付"
+        },
+        "14": {
+          "outcome": "out_of_stock",
+          "outcome_note": "到期日店家缺貨，非漲跌"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+# Classroom source retained locally
+/會議錄音 10.txt
+
+# Raw, private, large, or generated project material
+/data/
+/private/
+/recordings/
+/models/
+/outputs/
+
+# Credentials and local environments
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+node_modules/
+
+# Tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+*.log
+Thumbs.db
+.DS_Store
+
+# Python build artifacts
+*.egg-info/
+build/
+dist/

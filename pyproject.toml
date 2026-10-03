@@ -1,0 +1,30 @@
+# TW01 菜價預測專案：TRAIN_LOCAL 訓練端 Python 套件定義（T03）
+# 本檔不含任何秘密；秘密一律用環境變數，見 .env.example 與 docs/LOCAL_ENVIRONMENT.md。
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiot-price"
+version = "0.1.0"
+description = "TW01 現場菜價 7/14 天預測與分析代理人：資料、特徵與模型訓練套件"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0,<3",
+    "numpy>=1.24,<3",
+    "scikit-learn>=1.3,<2",
+    "pyyaml>=6,<7",
+    "requests>=2.31,<3",
+    "jsonschema>=4.18,<5",
+]
+
+[project.optional-dependencies]
+# pip 相容的 dev extra：安裝方式 .venv/Scripts/python.exe -m pip install -e ".[dev]"
+dev = [
+    "pytest>=7,<9",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,18 @@
+# 時間切分設定（T08）
+# 規則實作於 src/aiot_price/data/splits.py；凍結清單輸出於 outputs/splits/。
+# 本檔比例與清除天數在凍結最終測試清單後不得變更；變更須記錄 DECISIONS.md 並重驗。
+
+split:
+  # 依 t 日期排序切分：較早 train、中間 validation、最新 test；同日多市場同區。
+  train_frac: 0.6
+  val_frac: 0.2          # test = 其餘 0.2
+  # 成熟清除：訓練/驗證案例的 label_mature_at 須早於下一切分起點。
+  # 15 = 最大期限 14 + 發布延遲假設 1（LABEL_CONTRACT.md publish_delay_days）。
+  purge_days: 15
+  random_row_split: false   # 禁止逐列隨機切分
+
+freeze:
+  # 最終測試封存：清單 CSV + SHA-256；看過測試後改模型需另找新的獨立測試。
+  output_dir: outputs/splits
+  list_name: split_list
+  include_purged_in_report: true   # 報告須列被清除案例數與原因，不得靜默丟棄

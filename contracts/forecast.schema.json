@@ -1,0 +1,173 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/aiot-finishproject/contracts/forecast.schema.json",
+  "title": "TW01 預測請求與回應契約",
+  "description": "本機推論、HTTP API、Qwen 工具與網頁共用的輸入輸出語意。版本隨 configs/project.yaml config_version 更新；欄位只增不刪（來源與驗證邊界欄位不得移除）。",
+  "definitions": {
+    "PriceUnit": {
+      "type": "string",
+      "enum": ["NTD_per_taiwan_jin", "NTD_per_kg", "per_piece", "per_bunch", "per_bag", "unknown"],
+      "description": "per_* 與 unknown 為不可比單位：不可換算進每斤模型，只能記錄。"
+    },
+    "Mode": {
+      "type": "string",
+      "enum": ["without_last_week", "with_last_week", "both"],
+      "description": "A=without_last_week（只今天店價+公開歷史）；B=with_last_week（加上上週同店可比價）；both=並列兩者。"
+    },
+    "Direction": {
+      "type": "string",
+      "enum": ["up", "flat", "down", "insufficient_data"]
+    },
+    "TargetScope": {
+      "type": "string",
+      "enum": ["market_mean", "store_price_estimate"],
+      "description": "market_mean=公開市場均價目標；store_price_estimate=以現價錨定的店價估計（跨場景推估，非同店已驗證）。"
+    },
+    "ValidationScope": {
+      "type": "string",
+      "enum": ["public_market_test", "store_pilot", "unvalidated"],
+      "description": "該結果實際在什麼資料上驗證過；不得把 market_mean 自動標成 store_pilot。"
+    },
+    "HorizonResult": {
+      "type": "object",
+      "required": ["horizon_days", "target_date", "direction", "target_scope", "validation_scope"],
+      "properties": {
+        "horizon_days": { "type": "integer", "enum": [7, 14] },
+        "target_date": {
+          "type": "string",
+          "format": "date",
+          "description": "預測到期日＝使用者今天 t + h 日曆日；不是公開資料日期 + h。"
+        },
+        "direction": { "$ref": "#/definitions/Direction" },
+        "relative_change_estimate": {
+          "type": ["number", "null"],
+          "description": "預估相對變化 r_h（如 0.08＝+8%）；未知為 null，不得以 0 代替未知。"
+        },
+        "price_estimate": {
+          "type": ["number", "null"],
+          "description": "對應 scope 的價格估計（元／輸入單位換算後標準單位）；未知為 null。"
+        },
+        "price_estimate_unit": { "$ref": "#/definitions/PriceUnit" },
+        "target_scope": { "$ref": "#/definitions/TargetScope" },
+        "validation_scope": { "$ref": "#/definitions/ValidationScope" },
+        "probability": {
+          "type": ["number", "null"],
+          "description": "僅在完成獨立校準驗證後提供；未驗證一律 null。"
+        },
+        "interval_low": { "type": ["number", "null"] },
+        "interval_high": { "type": ["number", "null"] },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "資料過舊、單位換算、市場參考差異等使用者可懂警示。"
+        },
+        "evidence_summary": {
+          "type": "string",
+          "description": "依據摘要：使用哪段公開歷史、市場參考、資料截止日。"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "$defs_comment_request": "──────── ForecastRequest ────────",
+  "properties": {
+    "ForecastRequest": {
+      "type": "object",
+      "required": ["crop_id", "market_id", "current_price", "price_unit", "observed_at", "mode"],
+      "properties": {
+        "request_id": { "type": "string", "description": "由服務端產生；客戶端不填。" },
+        "crop_id": {
+          "type": "string",
+          "description": "標準化品項 ID（configs/project.yaml crops）；無合法對應必須回 unsupported_crop，不得猜品種。"
+        },
+        "market_id": {
+          "type": "string",
+          "description": "公開參考市場 ID（臺中來源市場名稱標準化）。"
+        },
+        "store_id": {
+          "type": ["string", "null"],
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "description": "匿名店家/家庭識別；不收真名或地址。"
+        },
+        "current_price": { "type": "number", "exclusiveMinimum": 0 },
+        "price_unit": { "$ref": "#/definitions/PriceUnit" },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "今天報價時間（ISO8601 含時區，Asia/Taipei）；預測起點 t 取此日期。"
+        },
+        "previous_price": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0,
+          "description": "上週同店同規格同單位價；可為 null，禁止以 0 或市場均價代填。"
+        },
+        "previous_observed_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "上週價實際日期；須在 t-9～t-5 內（7±2 天，configs mode_b）且單位/規格可比，否則 B 不可用回 A。"
+        },
+        "previous_price_unit": { "$ref": "#/definitions/PriceUnit" },
+        "mode": { "$ref": "#/definitions/Mode" },
+        "specification": {
+          "type": ["string", "null"],
+          "description": "規格/品種描述（如：高山高麗菜、有機）；未知為 null，不得當完全相同。"
+        },
+        "promotion": {
+          "type": ["string", "null"],
+          "description": "促銷狀態描述；null=未知。"
+        }
+      }
+    },
+    "ForecastResponse": {
+      "type": "object",
+      "required": ["request_id", "mode_executed", "model_version", "data_version", "public_data_cutoff", "results"],
+      "properties": {
+        "request_id": { "type": "string" },
+        "mode_executed": {
+          "type": "string",
+          "enum": ["without_last_week", "with_last_week", "both", "fallback_without_last_week"],
+          "description": "fallback_without_last_week=B 資料不可比時的自動降級，附 warnings 說明。"
+        },
+        "model_version": { "type": "string" },
+        "data_version": { "type": "string", "description": "公開資料快照版本/hash 前綴。" },
+        "input_observed_at": { "type": "string", "format": "date-time" },
+        "public_data_cutoff": {
+          "type": "string",
+          "format": "date",
+          "description": "公開行情最新觀測日；與預測起點 t 分開，不因資料舊而改起點。"
+        },
+        "public_data_age_days": { "type": "integer", "description": "t - public_data_cutoff。" },
+        "crop_id": { "type": "string" },
+        "market_id": { "type": "string" },
+        "store_id": { "type": ["string", "null"] },
+        "results": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/HorizonResult" },
+          "description": "7 與 14 天各一筆；mode=both 時以 horizon_results 分模式（見 A/B 欄位）。"
+        },
+        "results_without_last_week": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/HorizonResult" },
+          "description": "mode=both 時的 A 模式結果。"
+        },
+        "results_with_last_week": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/HorizonResult" },
+          "description": "mode=both 時的 B 模式結果；B 不可用時為空並附原因。"
+        },
+        "b_unavailable_reason": { "type": ["string", "null"] },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "error": {
+          "type": ["object", "null"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": ["unsupported_crop", "unsupported_market", "non_comparable_unit", "invalid_price", "invalid_date", "stale_data_unusable", "model_unavailable", "bad_request"]
+            },
+            "message": { "type": "string", "description": "使用者可懂繁體中文訊息。" }
+          }
+        }
+      }
+    }
+  }
+}

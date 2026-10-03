@@ -1,0 +1,4 @@
+interface:
+  display_name: "AIoT 專題資料與差異查核"
+  short_description: "查核公開訓練資料、既有作品與個人化驗證，支援選題及本案執行"
+  default_prompt: "使用 $aiot-topic-review 核對最新專案範圍下的資料適配、已有作品與可驗證差異；已進入執行時依TASKS繼續，不重開選題。"

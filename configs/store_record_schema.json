@@ -1,0 +1,260 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "configs/store_record_schema.json",
+  "title": "TW01 同店報價與預測紀錄 schema（T10）",
+  "description": "定義兩種紀錄：store_quote（單筆現場店價觀測）與 prediction_record（預測當時凍結的A/B輸出與7/14天到期回填）。任何一筆 JSON 紀錄必須符合其中一種。規則與採集協議見 docs/STORE_DATA_PROTOCOL.md；品項與單位對應 configs/project.yaml。匿名範例見 configs/store_record_example.json（全為模擬資料）。帶 simulated:true 的紀錄是市場模擬或示範資料，永遠不得作為私人真值匯入 private/ 下的正式紀錄。",
+  "oneOf": [
+    { "$ref": "#/definitions/store_quote" },
+    { "$ref": "#/definitions/prediction_record" }
+  ],
+  "definitions": {
+    "simulated_flag": {
+      "type": "boolean",
+      "const": true,
+      "description": "選填；只能出現為 true。出現即代表本筆是模擬／示範資料，不是真實店家報價或真實預測。真實紀錄必須省略此欄位。"
+    },
+    "rfc3339_datetime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$",
+      "description": "RFC3339 日期時間，必須含時區（臺灣為 +08:00）。pattern 確保時區必填，不依賴驗證器是否安裝 rfc3339-validator。"
+    },
+    "crop_id": {
+      "oneOf": [
+        { "enum": ["cabbage", "bok_choy", "sponge_gourd"] },
+        { "type": "string", "pattern": "^x-[a-z0-9_]+$" }
+      ],
+      "description": "標準化品項代號，對應 configs/project.yaml crops.first_version（cabbage=甘藍/平地高麗菜、bok_choy=青江白菜、sponge_gourd=絲瓜）。新增品項先以 x- 前綴試記（如 x-napa_cabbage），正式納入時須同步更新 project.yaml 與本 enum 並記入 docs/DECISIONS.md。"
+    },
+    "unit": {
+      "anyOf": [
+        {
+          "enum": ["NTD_per_taiwan_jin", "NTD_per_kg"],
+          "description": "可比單位：元/台斤、元/公斤；依 1台斤=0.6公斤（標準檢驗局衡器規範4.8）換算。"
+        },
+        {
+          "enum": ["per_piece", "per_bunch", "per_bag"],
+          "description": "non_comparable：顆/把/袋等無重量單位。允許記錄保留現場資訊，但不可與每斤/每公斤價比較、換算或合併，也不可作為模型輸入或B模式上週價。"
+        }
+      ],
+      "description": "計價單位。可比單位才可供預測與A/B比較使用。"
+    },
+    "price_source_enum": {
+      "enum": ["shelf_tag", "verbal", "receipt", "paid"],
+      "description": "報價來源：shelf_tag=價籤、verbal=店家口頭、receipt=收據明細、paid=實付金額。"
+    },
+    "horizon_result": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "enum": ["up", "flat", "down", "insufficient_data"],
+          "description": "凍結當時的方向輸出；insufficient_data 表示工具當時回報資料不足，不可事後改寫。"
+        },
+        "price_estimate": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "選填；凍結當時的可用價格估計。無估計時省略，不用0代替未知。"
+        }
+      },
+      "required": ["direction"],
+      "additionalProperties": false
+    },
+    "frozen_output": {
+      "type": "object",
+      "description": "預測當時凍結的單一模式輸出。凍結後不可重算或改寫；到期後才回填 maturity。",
+      "properties": {
+        "mode": {
+          "enum": ["without_last_week", "with_last_week"],
+          "description": "without_last_week=A（無上週店價）、with_last_week=B（有上週店價），與 design.md／contracts 的 mode 語意一致。"
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "產生此輸出的模型/方法版本（含B為規則候選時的實驗性標記），A與B可用不同版本。"
+        },
+        "public_data_cutoff": {
+          "type": "string",
+          "format": "date",
+          "description": "預測當時實際使用的最新公開資料日期（臺中零售訪價日）；與使用者查詢日 t 分開保存。"
+        },
+        "horizons": {
+          "type": "object",
+          "properties": {
+            "7": { "$ref": "#/definitions/horizon_result" },
+            "14": { "$ref": "#/definitions/horizon_result" }
+          },
+          "required": ["7", "14"],
+          "additionalProperties": false,
+          "description": "兩個期限一律從使用者查詢日 t 起算的日曆日 t+7／t+14。"
+        }
+      },
+      "required": ["mode", "model_version", "public_data_cutoff", "horizons"],
+      "additionalProperties": false
+    },
+    "maturity_entry": {
+      "type": "object",
+      "description": "單一期限（t+7或t+14）的到期回填。只能回填同店、同品項、同規格、同單位的實價；結賬總額、他店價或公開市場均價不可替代。",
+      "properties": {
+        "outcome": {
+          "enum": ["matured", "out_of_stock", "spec_changed", "store_closed", "not_yet"],
+          "default": "not_yet",
+          "description": "matured=已取得到期實價；out_of_stock=到期日店家缺該品項；spec_changed=規格/單位/包裝改變致不可比；store_closed=到期日店家未營業或停業；not_yet=尚未到期或尚未回填。非價格結果一律附 outcome_note 說明原因，不當作漲跌。"
+        },
+        "matured_price": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "到期實價；僅 outcome=matured 時填寫，與預測時同一單位。"
+        },
+        "matured_at": {
+          "$ref": "#/definitions/rfc3339_datetime",
+          "description": "取得到期實價的觀測時間（含時區）。"
+        },
+        "matured_price_source": {
+          "$ref": "#/definitions/price_source_enum"
+        },
+        "matured_is_promotion": {
+          "type": "boolean",
+          "description": "到期實價是否為促銷價；與預測時促銷狀態不同時必在 outcome_note 註明。"
+        },
+        "outcome_note": {
+          "type": "string",
+          "description": "原因與備註（缺貨原因、規格如何改變、最終無觀測等）。"
+        }
+      },
+      "required": ["outcome"],
+      "additionalProperties": false,
+      "if": {
+        "required": ["outcome"],
+        "properties": { "outcome": { "const": "matured" } }
+      },
+      "then": { "required": ["matured_price", "matured_at"] },
+      "else": {
+        "not": {
+          "anyOf": [
+            { "required": ["matured_price"] },
+            { "required": ["matured_at"] }
+          ]
+        }
+      }
+    },
+    "store_quote": {
+      "type": "object",
+      "description": "單筆現場店價觀測紀錄。原始檔只存 private/store_quotes/（Git忽略）；公開報告僅用匿名彙總。",
+      "properties": {
+        "simulated": { "$ref": "#/definitions/simulated_flag" },
+        "store_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "description": "匿名店家代號（如 store-A）。禁止真實店名、地址、電話或其他可識別資訊；同一實體店對應固定代號。"
+        },
+        "crop_id": { "$ref": "#/definitions/crop_id" },
+        "specification": {
+          "type": "string",
+          "description": "選填；規格/品種/包裝描述（如：平地高麗菜半顆、絲瓜中型3條/袋）。比較或回填必須同規格；無法確認時於 notes 說明。"
+        },
+        "observed_at": {
+          "$ref": "#/definitions/rfc3339_datetime",
+          "description": "報價日期/時間，RFC3339 含時區（臺灣 +08:00）。"
+        },
+        "price": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "單價，必須為正數；0代表無價，不可記為0元。"
+        },
+        "unit": { "$ref": "#/definitions/unit" },
+        "is_promotion": {
+          "type": "boolean",
+          "description": "是否為促銷價。促銷價與常態價不可直接當同一行情比較。"
+        },
+        "price_source": { "$ref": "#/definitions/price_source_enum" },
+        "notes": {
+          "type": "string",
+          "description": "選填；品質、來源細節或其他備註。"
+        }
+      },
+      "required": ["store_id", "crop_id", "observed_at", "price", "unit", "is_promotion", "price_source"],
+      "additionalProperties": false
+    },
+    "prediction_record": {
+      "type": "object",
+      "description": "預測當時凍結的輸入、A/B輸出與各期限到期回填。凡查詢帶有可比B輸入時，必須同時凍結A與B兩份輸出；無B輸入只凍結A。凍結後不可事後重算冒充原預測（依T22）。儲存位置依T20/T22為 private/predictions/。",
+      "properties": {
+        "simulated": { "$ref": "#/definitions/simulated_flag" },
+        "record_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "description": "紀錄唯一代號（建議含日期與店/品項，如 pr-20261003-storeA-cabbage-001）。"
+        },
+        "store_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "description": "匿名店家代號，規則同 store_quote。"
+        },
+        "crop_id": { "$ref": "#/definitions/crop_id" },
+        "specification": {
+          "type": "string",
+          "description": "選填；與本次查詢輸入一致的規格描述。"
+        },
+        "unit": { "$ref": "#/definitions/unit" },
+        "current_price": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "今天（t）同店報價 p(t)，正數。"
+        },
+        "current_observed_at": {
+          "$ref": "#/definitions/rfc3339_datetime",
+          "description": "今天報價的觀測時間（含時區），期限由此日曆日計 t+7／t+14。"
+        },
+        "previous_price": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "上週同店同品項同規格同單位價 p(t-7) 帶實際日期；只在B實際被採用時填寫，選填。不可用0或公開均價代替。"
+        },
+        "previous_observed_at": {
+          "$ref": "#/definitions/rfc3339_datetime",
+          "description": "上週價的實際觀測日期/時間；非整7日時依容忍規則處理並保留實際日期。"
+        },
+        "b_reject_reason": {
+          "type": "string",
+          "description": "選填；使用者有提供上週輸入但依可比性規則被拒（換店/換規格/換單位/日期超出容忍）而僅出A時記錄原因。被拒的原始輸入仍以 store_quote 保存。"
+        },
+        "saved_at": {
+          "$ref": "#/definitions/rfc3339_datetime",
+          "description": "輸出凍結時間（含時區），必須在到期回填之前。"
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/frozen_output" },
+          "description": "凍結的輸出清單；B被採用時必含A與B各一筆。"
+        },
+        "maturity": {
+          "type": "object",
+          "properties": {
+            "7": { "$ref": "#/definitions/maturity_entry" },
+            "14": { "$ref": "#/definitions/maturity_entry" }
+          },
+          "required": ["7", "14"],
+          "additionalProperties": false,
+          "description": "兩個期限分別回填；t+7先成熟、t+14後成熟，狀態獨立記錄。"
+        }
+      },
+      "required": ["record_id", "store_id", "crop_id", "unit", "current_price", "current_observed_at", "saved_at", "outputs", "maturity"],
+      "additionalProperties": false,
+      "if": { "required": ["previous_price"] },
+      "then": {
+        "allOf": [
+          { "required": ["previous_observed_at"] },
+          { "properties": { "outputs": { "contains": { "properties": { "mode": { "const": "without_last_week" } } } } } },
+          { "properties": { "outputs": { "contains": { "properties": { "mode": { "const": "with_last_week" } } } } } }
+        ]
+      },
+      "else": {
+        "allOf": [
+          { "not": { "required": ["previous_observed_at"] } },
+          { "properties": { "outputs": { "not": { "contains": { "properties": { "mode": { "const": "with_last_week" } } } } } } }
+        ]
+      }
+    }
+  }
+}

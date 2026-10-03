@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/aiot-finishproject/contracts/model-manifest.schema.json",
+  "title": "TW01 模型包 Manifest 契約",
+  "description": "自足模型包的中繼資料；載入端必須驗 artifact sha256 與依賴相容後才標 ready。",
+  "type": "object",
+  "required": ["manifest_version", "model_version", "created_at", "source", "labels", "features", "models", "evaluation", "capability"],
+  "properties": {
+    "manifest_version": { "type": "string" },
+    "model_version": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "required": ["dataset_id", "json_sha256", "observation_start", "observation_end", "license", "unit", "zero_means"],
+      "properties": {
+        "dataset_id": { "type": "string" },
+        "json_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "observation_start": { "type": "string", "format": "date" },
+        "observation_end": { "type": "string", "format": "date" },
+        "license": { "type": "string" },
+        "unit": { "type": "string" },
+        "zero_means": { "type": "string" },
+        "excluded_markets": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "labels": {
+      "type": "object",
+      "required": ["horizons_days", "target", "flat_threshold", "publish_delay_days", "contract_doc"],
+      "properties": {
+        "horizons_days": { "type": "array", "items": { "type": "integer", "enum": [7, 14] } },
+        "target": { "type": "string" },
+        "flat_threshold": { "type": "number" },
+        "publish_delay_days": { "type": "integer" },
+        "contract_doc": { "type": "string" }
+      }
+    },
+    "splits": {
+      "type": "object",
+      "properties": {
+        "train_end": { "type": "string" },
+        "val_end": { "type": "string" },
+        "test_end": { "type": "string" },
+        "frozen_list_sha256": { "type": "string" },
+        "config": { "type": "object" }
+      }
+    },
+    "features": {
+      "type": "object",
+      "required": ["numeric_columns", "categorical_columns", "visible_delay_days", "module"],
+      "properties": {
+        "numeric_columns": { "type": "array", "items": { "type": "string" } },
+        "categorical_columns": { "type": "array", "items": { "type": "string" } },
+        "visible_delay_days": { "type": "integer" },
+        "module": { "type": "string" }
+      }
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "horizon_days", "file", "sha256", "kind", "params", "seed"],
+        "properties": {
+          "name": { "type": "string" },
+          "horizon_days": { "type": "integer", "enum": [7, 14] },
+          "file": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "kind": { "type": "string" },
+          "params": { "type": "object" },
+          "seed": { "type": "integer" },
+          "feature_columns_in": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "required": ["report_doc", "results_file"],
+      "properties": {
+        "report_doc": { "type": "string" },
+        "results_file": { "type": "string" },
+        "public_test": { "type": "object" }
+      }
+    },
+    "capability": {
+      "type": "object",
+      "required": ["modes", "validated_scope", "not_validated"],
+      "properties": {
+        "modes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["market_mean", "store_price_estimate_A", "store_price_estimate_B_experimental"] }
+        },
+        "validated_scope": { "type": "string" },
+        "not_validated": { "type": "array", "items": { "type": "string" } },
+        "probability_output": { "type": "boolean" }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "python": { "type": "string" },
+        "packages": { "type": "object" }
+      }
+    },
+    "fixtures": {
+      "type": "object",
+      "properties": {
+        "file": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

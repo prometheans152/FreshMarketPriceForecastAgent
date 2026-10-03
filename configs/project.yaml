@@ -1,0 +1,66 @@
+# TW01 First Version Project Convergence Configuration (T02)
+# Engineering choices decided during design convergence; changes requiring data support (items, sanity range) will be updated after T06 and recorded in DECISIONS.md.
+# Flat threshold and related rules must be frozen before seeing final test results (MODEL_VALIDATION_PLAN §3.2).
+
+project:
+  name: aiot-price
+  display_name: On-site Vegetable Price 7/14-Day Forecast and Analysis Agent
+  working_title: TW01
+  config_version: "0.1.0"
+
+forecast:
+  horizons_days: [7, 14]
+  horizon_basis: calendar_day        # target_date = user today (t) + h calendar days; not public data date + h
+  direction_classes: [up, flat, down]
+  insufficient_data_class: insufficient_data
+  # Rationale for flat threshold: source prices are integer NT$/catty, first version items are typically 25-60 NT$/catty,
+  # 1 NT$ change is about 2-4%; relative change within ±5% has no substantive meaning for on-site purchase decisions, treat as flat.
+  flat_threshold_relative: 0.05
+  label_target: relative_change      # r_h = m(t+h)/m(t) - 1; flat if |r_h| <= flat_threshold_relative
+
+crops:
+  # First version from MODEL_VALIDATION_PLAN recommendation; T06 will recheck per item for missing values / price carryover / continuity,
+  # final support list subject to DATA_QUALITY_REPORT; removal or addition requires recording the reason in DECISIONS.md.
+  first_version:
+    - crop_id: cabbage
+      display_name: Cabbage (flatland cabbage)
+      source_column: "Cabbage (flatland cabbage)"
+      aliases: [highland cabbage, cabbage, la la]
+    - crop_id: bok_choy
+      display_name: Bok choy
+      source_column: "Bok choy"
+      aliases: [a-choy, small bok choy]
+    - crop_id: sponge_gourd
+      display_name: Loofah
+      source_column: "Loofah"
+      aliases: [angled loofah, sponge gourd]
+
+units:
+  source_unit: NTD_per_taiwan_jin            # Taichung public source: market average price, NT$/catty
+  taiwan_jin_to_kg: 0.6                        # BSMI metric specifications 1 Taiwan catty = 0.6 kg (index checked 2026-10-03)
+  accepted_input_units: [NTD_per_taiwan_jin, NTD_per_kg]
+  # Per piece / per bunch / per bag etc. without weight are not comparable with per-catty average price; do not convert or merge, reject with explanation.
+  non_comparable_units: [per_piece, per_bunch, per_bag, per_pack, unknown]
+
+mode_b:
+  # Mode B (with last week) requires previous_observed_at within [t-9, t-5] (7±2 days); actual date and interval are still recorded.
+  previous_week_tolerance_days: 2
+  out_of_tolerance_action: fallback_mode_a_with_warning
+  different_store_or_spec_action: reject_b_keep_a   # switch store / change spec / change unit → B is not comparable
+
+price_sanity:
+  method: train_percentile_per_crop   # 1st and 99th percentiles per item, fitted only from training partition data
+  manual_review: true
+  values: "pending_T06"               # DATA_QUALITY_REPORT decides on initial values; frozen before model selection
+
+data:
+  region: Taichung City
+  source_dataset_id: "data.gov.tw/84539"
+  market_scope: "subject to T06 quality check; markets (discontinued) with disabled or carryover prices may be excluded"
+  zero_means: no_price                # 0 means this item has no price that day → missing value, never treated as 0 NT$
+
+response_policy:
+  unsupported_crop: "Sorry, the first version does not yet support this item. Currently supported: cabbage (flatland cabbage), bok choy, loofah."
+  non_comparable_unit: "Prices in per piece / per bunch etc. cannot be compared with per-catty market price. Please enter price per catty or price per kilogram, or see the explanation."
+  stale_public_data_warning: "Latest public market price date is {{date}} ({{days}} days ago); forecast still counts 7/14 days from today."
+  b_unavailable: "Last week's price date is more than {{tolerance}} days off from today, or specifications are not comparable; showing result without last week's price (A)."
