@@ -3,7 +3,9 @@
 日期：2026-10-04（Asia/Taipei）。依據 [PROPOSAL_DELIVERY_PLAN.md](PROPOSAL_DELIVERY_PLAN.md) 的六工作包驗收。
 證據目錄：`outputs/proposal_delivery/run1_20261004/`。
 
-**總結：P1–P6 六包全部通過。** 本輪交付的是研究文稿、設計藍圖、規格管理與正式簡報；真店 A/B、代理人後端整合、SERVER 部署、影片與外網展示維持各自原有狀態（T16/T23–T32/T35–T36 不因此輪 PASS）。
+> **2026-10-04 修訂輪公告**：本檔下方的 D44 首輪「六包全部通過」結論已被獨立審查（`outputs/audits/d44_independent_6eb4adf/REVIEW_6eb4adf.md`）要求修訂——新聞日期、前作措辭、數字口徑、主稿敘事、設計圖與講稿同步等六項（R01–R06）當時未達標。同日 GLM 已完成 D44-R01–R06 修訂並自驗，**修訂內容與證據見 [D44_REVISION_REPORT.md](D44_REVISION_REPORT.md)**（v2 成品：`slides/TW01_菜價預測_研究提案與初步成果_v2.pptx`＋PDF；證據 `outputs/proposal_delivery/run2_20261004_01/`）。本檔首輪記錄保留為歷史；**最新驗收狀態以修訂報告＋ChatGPT 後續獨立複審為準**，GLM 自驗不等於複審通過。
+
+**總結（D44 首輪自驗，歷史記錄）：P1–P6 六包全部通過。** 本輪交付的是研究文稿、設計藍圖、規格管理與正式簡報；真店 A/B、代理人後端整合、SERVER 部署、影片與外網展示維持各自原有狀態（T16/T23–T32/T35–T36 不因此輪 PASS）。
 
 | 包 | 交付物 | 判定 | 關鍵證據 |
 |---|---|---|---|

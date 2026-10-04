@@ -1,73 +1,96 @@
-# AIoT 期末專題
+# TW01 現場菜價 7／14 天預測與分析代理人
 
-## 最新工作批次：研究提案與正式投影片（D44）
+**AIoT 應用與資料分析期末專題・研究提案與初步成果（2026-10-04，D44-R01–R06 修訂版）**
+組員：待填（≤4 人，組長待填）｜正式發表日期：待填｜[本機重現入口](#本機使用與重現)見文末
 
-2026-10-04 使用者暫緩代理人整合，先保留現有介面；本輪執行 [六個研究／交付工作包](docs/PROPOSAL_DELIVERY_PLAN.md)，教授 L4-1 已由 COS 重新讀取，見 [來源核對](docs/PROPOSAL_SOURCE_AUDIT_20261004.md)。**六包已全數完成並通過驗收（[PROPOSAL_ACCEPTANCE.md](docs/PROPOSAL_ACCEPTANCE.md)）**：研究動機與 RQ（[RESEARCH_MOTIVATION](docs/RESEARCH_MOTIVATION.md)）、前作矩陣與缺口（[RELATED_WORK_MATRIX](docs/RELATED_WORK_MATRIX.md)、[RESEARCH_GAP](docs/RESEARCH_GAP.md)、[REFERENCES](docs/REFERENCES.md)）、三貢獻與 A–Z 研究稿（[CONTRIBUTIONS](docs/CONTRIBUTIONS.md)、[PROPOSAL_REPORT](docs/PROPOSAL_REPORT.md)）、設計藍圖（[design.md](design.md)）、真 OpenSpec 管理（[OPENSPEC_WORKFLOW](docs/OPENSPEC_WORKFLOW.md)，validate --strict 通過），以及正式可編輯投影片 `slides/TW01_菜價預測_研究提案與初步成果_v1.pptx`＋同名 PDF（19 頁；逐頁渲染視覺驗收 19/19 PASS，講稿見 [SLIDE_NOTES](docs/SLIDE_NOTES.md)）。未等待金鑰／SERVER；模型與封存評估未變（保護檔 SHA256 六項核對一致）。
+## 一句話情境
 
-本工作區用來完成TW01「現場菜價7／14天預測與分析代理人」期末專題，並保留先前選題與資料查核紀錄。
+消費者站在蔬果行，看到今天甘藍一台斤 32 元——**未來 7／14 天，這個價格相對今天是漲、平還是跌？** 使用者輸入今天單品價格（上週同店同規格價選填），系統以臺中公開市場均價模型預測方向、以現價錨定估計店價，並附來源、期限與驗證狀態標示。
 
-初始化／交接更新日期：2026-10-03；狀態更新：2026-10-04（**第五輪完成：S01–S09 全修，Hermes 0.19.0 真介面整合，227 項測試通過，詳[第五輪報告](docs/ROUND5_REPAIR_REPORT.md)**。本機已有資料管線、公開模型與封存評估、模型包 v0.1.0、HTTP API、手機網頁（含保存流程）、行情更新，以及三層可切換代理人：`rule`（預設）／`glm_zai`/`glm_bigmodel`（OpenAI 相容真 tool-calling 迴圈）／`qwen_local`（本機 Qwen3.8-27B 端點，不自動切雲端）；框架可選官方 `hermes-agent` 0.19.0（白名單隔離、輸出同過真值驗證器）。真 GLM 呼叫待金鑰設定；真店 A/B 待到期價；SERVER／外網手機待相應條件。模型分數與負向結果未變。
+## 研究問題
 
-**D41：本機模型已確定 Qwen3.8-27B；代理人 GLM API 先行、可切換本機端點。Hermes 已整合（hermes-agent 0.19.0，白名單僅開兩個菜價工具）。** 菜價訓練仍在這台工作機，Qwen 自架目標仍是另一台 RTX 3090 SERVER；只把本機 Qwen／跨主機部署留待 SERVER，不再讓全部代理人工作等待主機資訊。詳見 [代理人方向與 GLM 先行交接](docs/AGENT_RUNTIME_DIRECTION.md)。
+| # | 問題 | 狀態 |
+| --- | --- | --- |
+| RQ1 | 臺中公開市場均價的固定 7／14 天方向預測，相對「不變價」與「動量」強基線表現如何？ | 已有封存測試答案（含負向結果） |
+| RQ2 | 現價錨定（A）與選填上週同店價（B）的增益，如何以真店到期價驗證？ | 協議就緒；增益零證據，待驗證 |
+| RQ3 | 低輸入負擔與可追溯呈現能否兼顧？ | 原型就緒；人因未測 |
 
-模型要點（2026-10-03 封存測試，臺中市場均價目標）：7 天方向 macro-F1 0.422、14 天 0.417（全預測持平基線為 0.309/0.295）；未勝過簡單趨勢（momentum）基線（0.423/0.431），點估計 MAE 亦未優於不變價基線（均如實警示，不做點預測或更準宣稱）。見 [MODEL_CARD](docs/MODEL_CARD.md) 與 [PUBLIC_MODEL_EVALUATION](docs/PUBLIC_MODEL_EVALUATION.md)。
+## 三項貢獻（誠實標狀態）
 
-原 50 題清單保留作歷史對照。現行篩選要求：以台灣公開訓練資料為主，實際查找既有作品，剔除沒有實質差異的方向。個人／家庭資料優先；公開資料限定也可，但需有可驗證的特色。
+1. **C1（已驗證）**：固定 7/14 日曆期限、強基線對照、含負向結果的臺中零售方向預測評估——材料可重現，預計隨課程交付公開。
+2. **C2（待驗證）**：A/B 現價／上週價輸入與**真店到期配對驗證協議**（B 目前為 α=0.3 固定實驗規則，未訓練）。
+3. **C3（初步）**：主張狀態可追溯的消費者端研究流程與原型（使用者效益未驗證）。
 
-## 文件入口
+## 方法概覽
 
-| 文件 | 用途 |
+- **資料**：data.gov.tw 84539 臺中 13 市場每日零售均價（2025-10-04～2026-10-02；元/台斤；0=無價）。
+- **標籤契約（凍結）**：r_h = m(t+h)/m(t) − 1；±5% 含邊界為持平；期限從使用者今天 t 起算之精確日曆日 t+7/t+14。
+- **防洩漏**：時間切分＋成熟清除（兩段共 1,386 列）＋封存測試一次性。
+- **模型**：驗證集 macro-F1 選型→7 天 RandomForest、14 天 HistGradientBoosting；輸入＝12 個數值特徵＋品項 one-hot。
+- **A/B**：A 現價錨定（p>0 時 [p(1+r̂)−p]/p=r̂，同一 ±5% 分類器方向不變）；B 加上週價差動量（α=0.3 實驗規則）。
+
+## 初步結果（正向與負向並列）
+
+- 方向 macro-F1：7 天 **0.4218**、14 天 **0.4169**——勝全持平基線（0.3092/0.2954）、**未勝動量基線**（0.4226/0.4306）。
+- 點估計 MAE **未勝不變價**（0.0664 vs 0.0436；0.0983 vs 0.0748）→ 點估計僅供參考。
+- 上漲召回僅約 10%：模型偏保守報持平。無檢定不寫「顯著」。
+- 誠實結論：我們交付的不是「很準的預測」，而是一個**誠實、可驗證**的預測與增益評估框架。
+
+## 正式交付入口（本輪 v2）
+
+| 交付物 | 位置 |
 | --- | --- |
-| [TASKS.md](TASKS.md) | 完成本案的全套TASK、依賴、產出與驗收；本機階段多數已完成，SERVER／真店項目待條件 |
-| [design.md](design.md) | 使用需求、雙主機分工、模型／代理人界線與工具契約草案 |
-| [GLM_HANDOFF.md](docs/GLM_HANDOFF.md) | 可交給GLM的完整啟動提示詞及證據規則 |
-| [GLM_PROGRESS.md](docs/GLM_PROGRESS.md) | 實際執行與接手紀錄；已記錄兩輪本機執行與獨立審查 |
-| [MODEL_VALIDATION_PLAN.md](docs/MODEL_VALIDATION_PLAN.md) | 市場模型、同店A／B、時間切分、發布延遲、模型工件與驗證 |
-| [AGENTS.md](AGENTS.md) | 工作區代理人的接手規則與證據邊界 |
-| [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md) | 使用者條件、目前進度及尚未提供的資訊 |
-| [COURSE_REQUIREMENTS.md](docs/COURSE_REQUIREMENTS.md) | 老師逐字稿與課程網頁的要求、原文位置、確認程度 |
-| [ORDINARY50_TOPIC_CATALOG.md](docs/ORDINARY50_TOPIC_CATALOG.md) | 現行一般使用者／一般上班族U01–U50：用途、本人輸入、公開資料、前作與差異 |
-| [GENERAL50_TOPIC_CATALOG.md](docs/GENERAL50_TOPIC_CATALOG.md) | 獨立覆核版G01–G50：4題新發想＋46題重驗採用的U題，附備案與淘汰證據 |
-| [H16_TOPIC_CATALOG.md](docs/H16_TOPIC_CATALOG.md) | 第三批H01–H16：新發想＋N輪重驗＋TW重驗後僅存16題，含為何不足50的說明 |
-| [WORK50_TOPIC_CATALOG.md](docs/WORK50_TOPIC_CATALOG.md) | W01–W50歷史研究：使用者已全數拒絕，不再供挑選 |
-| [NEW50_TOPIC_CATALOG.md](docs/NEW50_TOPIC_CATALOG.md) | 上一輪N01–N50：保留編號與證據，使用者保留N18供比較 |
-| [TAIWAN_TOPIC_SHORTLIST.md](docs/TAIWAN_TOPIC_SHORTLIST.md) | 前一輪TW01–TW05；保留來源與比較，不代表使用者選定 |
-| [TW01需求與歷史](docs/ideas/TW01_VEGETABLE_BASKET.md) | 現行菜價需求、D33後執行方向與歷史討論；原菜籃流程已淘汰 |
-| [TW01菜價重查](docs/research/TW01_RELATED_WORK_RECHECK.md) | 一週公共／私人預測、零售趨勢與AI產品的具體證據及現場報價差異限制 |
-| [TW01零售公開資料](docs/research/TW01_PUBLIC_RETAIL_DATA.md) | 臺中近一年市場每日均價已下載／讀取，臺北月份CSV與高雄失效來源分開記 |
-| [N18保留筆記](docs/ideas/N18_BEDROOM_MIN_TEMPERATURE.md) | 使用者保留的臥室清晨最低溫構想；尚未定題 |
-| [G02保留筆記](docs/ideas/G02_TYPHOON_DAY_OFF.md) | 使用者保留紀錄維持；直接前作已查到，一般版推薦撤回，尚未定題 |
-| [G41保留筆記](docs/ideas/G41_TRAVEL_BUDGET_RANGE.md) | 使用者保留紀錄維持；基本功能已有，私人校正差異待查核，尚未定題 |
-| [G02／G41重查](docs/research/G02_G41_RELATED_WORK_RECHECK.md) | 使用者要求實查後的作品、讀取狀態、重疊判定與原稿勘誤 |
-| [TOPIC_CATALOG.md](docs/TOPIC_CATALOG.md) | 原 50 題歷史清單；不是現行推薦 |
-| [DECISIONS.md](docs/DECISIONS.md) | 已接受條件、助理建議與尚未定案事項 |
-| [選題查核 SKILL.md](.agents/skills/aiot-topic-review/SKILL.md) | 評估選題、資料適配、查重與個人化的專題技能 |
+| **投影片（可編輯）** | `slides/TW01_菜價預測_研究提案與初步成果_v2.pptx`（主講 15＋附錄 4＝19 頁） |
+| **投影片 PDF** | `slides/TW01_菜價預測_研究提案與初步成果_v2.pdf`（19 頁，與 PPTX 同源） |
+| **逐頁講稿（約 10–11 分鐘設計）** | [docs/SLIDE_NOTES.md](docs/SLIDE_NOTES.md)（與 PPT 內嵌備註同一底稿 `slides/source/notes_v2.json`） |
+| **研究提案全文（A–Z）** | [docs/PROPOSAL_REPORT.md](docs/PROPOSAL_REPORT.md) |
+| **設計藍圖** | [design.md](design.md)（架構①–⑤／資料流／公式／切分與驗證） |
+| **研究動機與 RQ** | [docs/RESEARCH_MOTIVATION.md](docs/RESEARCH_MOTIVATION.md) |
+| **相關研究** | [矩陣](docs/RELATED_WORK_MATRIX.md)｜[缺口](docs/RESEARCH_GAP.md)｜[引用清單](docs/REFERENCES.md) |
+| **三貢獻** | [docs/CONTRIBUTIONS.md](docs/CONTRIBUTIONS.md) |
+| **規格管理** | `openspec/`（OpenSpec 1.14.0 局部安裝；validate --strict 通過）｜[工作流說明](docs/OPENSPEC_WORKFLOW.md) |
+| **主張→證據追溯** | `outputs/proposal_delivery/run2_20261004_01/claims_master.csv`（27 列） |
+| **本輪修訂報告** | [docs/D44_REVISION_REPORT.md](docs/D44_REVISION_REPORT.md)（R01–R06 逐項） |
+| **驗收狀態** | [docs/PROPOSAL_ACCEPTANCE.md](docs/PROPOSAL_ACCEPTANCE.md) |
 
-## 下一步
+## 已完成／待驗證／暫緩（如實分列）
 
-1. 依第三輪 `44dabe3` 審查修 R01–R08，先處理真值、輸入、可信紀錄及 API 錯誤；再依 D41 接可替換供應商的代理人，以 GLM API 先行驗證。
-2. SERVER 連線資訊到位後部署模型包與 Qwen3.8-27B 自架推論，切換同一代理人工具契約重驗；GLM 通過不代替 Qwen 通過。
-3. 使用者依協議記錄同店報價，7／14 天到期後做真店 A/B 驗證（T16）。
-4. 分開完成外網手機、期末交付與獨立驗收；缺資料的項目保留HOLD／BLOCKED，不能冒充全案完成。
+**已完成（本機、可重現）**：公開資料管線、模型訓練與封存評估（含負向結果）、模型包 v0.1.0、HTTP API、手機網頁原型（A/B 並列＋保存到期核對）、規則代理人（展示載體）、研究提案全套文稿與 v2 簡報。
 
-完整順序、依賴及產出以TASKS為準。組員、截止日期、SERVER存取與OS、確切技術版本及自家資料仍需補齊；可先推進不依賴它們的任務。N18／G02／G41保留為歷史備案，其他清單不納入當前實作。
+**待驗證（有協議、未執行）**：真店 A/B 到期增益（T16，缺真店到期價）；B 之 α=0.3 未訓練；使用者人因評估；參數敏感度與近期方法同資料比較。
 
-## 原始資料與版本管理
+**暫緩（D44 決議不修不驗）**：GLM API／Qwen3.8-27B／SERVER_3090 部署與外網展示（T23–T32）；代理人語言模型後端整合（保留已知缺口，見 [代理人方向](docs/AGENT_RUNTIME_DIRECTION.md)）。
 
-- 原始逐字稿 `會議錄音 10.txt` 保留原位；因為是課堂原始內容，預設不納入 Git。
-- 本機目前已提交至 `44dabe3`；D41 本轮是尚未提交的需求／文件更新，不推送公開遠端。
-- `data/`、`private/`、`recordings/`、`models/`、`outputs/` 及環境檔預設忽略；需要時再建立目錄。
-- 技能保存在本工作區的 `.agents/skills/`，沒有安裝到全域技能目錄。可要求代理人讀取上方技能文件；若執行環境提供技能選單，可依其實際探索結果使用 `$aiot-topic-review`。
+**未完成交付**：**影片未錄製**；**GitHub／YouTube／課程提交未發布**（待授權）；組員／組長／正式日期待填。
 
-## 課程來源
+## 本機使用與重現
 
-- [期末 Proposal 指導](https://app.notion.com/p/AIoT-DA-L4-1-Proposal-1-3ebc4752981180d8842fd7e253962c4e)
-- [課程首頁與歷屆入口](https://app.notion.com/p/O-AIoT-DA-2026-9-30-67148cb998b3405b91b83cc995dd0588)
+- 環境：Windows＋`.venv`（pandas 2.3.3、pyarrow 25.0.1、scikit-learn、python-pptx 1.0.2、matplotlib 3.11.2、pywin32 312、pypdf 6.19.0；PowerPoint（COM 匯出用）與微軟正黑體）。本清單為現有環境盤點，未做乾淨環境重建驗證。
+- 啟動 API（規則模式展示）：`.venv\Scripts\python.exe -m uvicorn aiot_price.api.app:app`（詳 [design.md](design.md)）。
+- 重建 v2 簡報（全部參數化、防覆寫）：
+  1. `.venv/Scripts/python.exe slides/source/build_stats_master.py --out <新run>/stats_master.json`
+  2. `.venv/Scripts/python.exe slides/source/make_assets.py --out <新素材目錄> --stats <新run>/stats_master.json`
+  3. `.venv/Scripts/python.exe slides/source/make_pptx.py --pptx <新pptx> --assets <素材> --notes slides/source/notes_v2.json --stats <新run>/stats_master.json`
+  4. `.venv/Scripts/python.exe slides/source/export_and_render.py --pptx <新pptx> --render <新run>/render`
+- 製作工具測試：`.venv/Scripts/python.exe -m pytest slides/source/test_make_tools.py -q`（15 項）。
+- 版本管理：本地 Git（未推送）；`data/`、`private/`、`models/`、`outputs/` 不入庫。
 
-文件中的資料集及網頁結果是研究快照；選題進入實作時，應再查核選中來源及可用樣本。
+---
 
-U清單已整理50張研究卡，尚未訓練或驗證效果。U45的深蹲片段、U46的完整延遲未見題標籤、U50的人聲嘴型區間仍待補；其他逐題限制見詳卡與[整合查核](docs/research/ORDINARY50_INTEGRATION_CHECK.md)。
+## 歷史與輔助文件（選題已完成，以下僅供追溯）
 
-G清單是第二輪獨立發想與覆核（2026-10-03）：21個新發想中4題入選、3題備案、14題淘汰；47個U題重驗後46題入選，留下U10欄位名、U18前作連結、U26計數、U28管道變動、U39前作對照等勘誤，8張深入卡在建議之前。證據見[新發想查核](docs/research/GENERAL50_FRESH_CHECK.md)、[U覆核](docs/research/GENERAL50_U_RECHECK.md)與[深入卡](docs/research/GENERAL50_DEEP_DIVE.md)；未訓練、未採集自家資料、未定題。
+本專題選題已定為 TW01，不再重新選題；舊規則與清單僅屬歷史。執行狀態主入口是 [TASKS.md](TASKS.md) 與 [docs/GLM_PROGRESS.md](docs/GLM_PROGRESS.md)；決策紀錄見 [docs/DECISIONS.md](docs/DECISIONS.md)。
 
-H批是第三輪（2026-10-03，回應「再找50個」）：新發想15題＋N輪18題重驗＋TW02/TW03＋開放探勘後，誠實成立的只有16題（H01會考難度最佳）；陣風、雨斷、浪況被官方產品侵蝕，姓名、車牌、收容、素食、寵物名、家庭收支微資料等死於資料閘門。證據見[H批查核](docs/research/H16_CHECK.md)；未以同配方換變數湊數。
+| 類別 | 文件 |
+| --- | --- |
+| 執行與審查 | [TASKS.md](TASKS.md)｜[GLM_PROGRESS.md](docs/GLM_PROGRESS.md)｜[D44 修訂報告](docs/D44_REVISION_REPORT.md)｜[來源核對](docs/PROPOSAL_SOURCE_AUDIT_20261004.md)｜[修訂工作單](docs/GLM_D44_R01_R06_REVISION_20261004.md) |
+| 工程與模型 | [MODEL_VALIDATION_PLAN.md](docs/MODEL_VALIDATION_PLAN.md)｜[MODEL_CARD](docs/MODEL_CARD.md)｜[公開評估](docs/PUBLIC_MODEL_EVALUATION.md)｜[資料卡](docs/DATA_CARD.md)｜[資料品質](docs/DATA_QUALITY_REPORT.md)｜[標籤契約](docs/LABEL_CONTRACT.md) |
+| 課程與背景 | [課程要求](docs/COURSE_REQUIREMENTS.md)｜[專案背景](docs/PROJECT_CONTEXT.md)｜[AGENTS.md](AGENTS.md)｜[代理人方向](docs/AGENT_RUNTIME_DIRECTION.md)｜[交付清單](docs/DELIVERY_CHECKLIST.md)｜[TW01 需求與歷史](docs/ideas/TW01_VEGETABLE_BASKET.md) |
+| 選題歷史（全數已結案） | [U01–U50](docs/ORDINARY50_TOPIC_CATALOG.md)｜[G01–G50](docs/GENERAL50_TOPIC_CATALOG.md)｜[H01–H16](docs/H16_TOPIC_CATALOG.md)｜[W01–W50](docs/WORK50_TOPIC_CATALOG.md)｜[N01–N50](docs/NEW50_TOPIC_CATALOG.md)｜[臺灣短名單](docs/TAIWAN_TOPIC_SHORTLIST.md)｜[原 50 題](docs/TOPIC_CATALOG.md)｜[保留備案 N18/G02/G41](docs/DECISIONS.md) |
+| 前作查核（歷史輪） | [TW01 菜價重查](docs/research/TW01_RELATED_WORK_RECHECK.md)｜[TW01 零售公開資料](docs/research/TW01_PUBLIC_RETAIL_DATA.md)｜[G02/G41 重查](docs/research/G02_G41_RELATED_WORK_RECHECK.md) |
+
+## 版本管理附註
+
+- 原始逐字稿 `會議錄音 10.txt` 保留原位，不入 Git（課堂原始內容）。
+- `data/`、`private/`、`recordings/`、`models/`、`outputs/` 及環境檔預設忽略。
+- 歷史提交：`6eb4adf`（D44 首輪六包）← `2f7199e`（第五輪 S01–S09 自驗）← 更早各輪；修訂輪提交見 Git log。各輪獨立審查報告在 `outputs/audits/`（本機）。

@@ -1,18 +1,24 @@
 # 相關研究引用清單（REFERENCES）
 
-更新：2026-10-04（P2）。編號 [R01…] 為全案共用：PROPOSAL_REPORT、design.md、投影片與講者備註一致引用。讀取層級：full=全文、abstract=摘要/目次、page=產品頁/repo頁/商店文案、report=報導全文。
+更新：2026-10-04（D44-R02 修訂：最接近前作實讀摘要／官網／商店頁；R08/R09 降待查線索；新增 R11 書目）。編號 [R01…] 為全案共用：PROPOSAL_REPORT、design.md、投影片與講者備註一致引用。讀取層級：full=全文、abstract=摘要/目次、page=產品頁/repo頁/商店文案、report=報導全文、bibliographic=僅書目。
 
 | ID | 書目 | 類型 | 入口 | 讀取層級／日期 |
 | --- | --- | --- | --- | --- |
-| R01 | 陳泯宏（2024）。《國產大宗蔬菜價格預測模型之比較》。臺灣大學碩士論文。 | 學位論文 | https://tdr.lib.ntu.edu.tw/handle/123456789/92775 | abstract（書目+摘要；2029解禁前無全文）／2026-10-03 |
-| R02 | 李岱鑫（2015）。高麗菜批發價格預測（公開＋中盤商私人紀錄）。清華大學碩士論文。 | 學位論文 | https://etd.lib.nycu.edu.tw/cgi-bin/gs32/hugsweb.cgi?o=dnthucdr&s=id%3D%22GH02102077503%22.&searchmode=basic | abstract（中英文摘要+目次）／2026-10-03 |
+| R01 | 陳泯宏（2024）。《國產大宗蔬菜價格預測模型之比較》（A Comparative Analysis of Price Forecasting Models for Major Vegetables in Taiwan）。臺灣大學統計碩士學位學程碩士論文（指導：陳郁蕙；DOI 10.6342/NTU202400875）。 | 學位論文 | https://tdr.lib.ntu.edu.tw/handle/123456789/92775 | abstract（**摘要全文實讀**；2029-06-07 解禁前無全文）／2026-10-04 |
+| R02 | 李岱鑫（2015）。《高雄果菜運銷公司高麗菜批發價格預測之研究—蒐集私有資料的價值》（Forecasting Weekly Cabbage Price in Kaohsiung, Taiwan: The Value of Private Data）。清華大學國際專業管理碩士班碩士論文（指導：徐茉莉）。 | 學位論文 | https://etd.lib.nycu.edu.tw/cgi-bin/gs32/hugsweb.cgi?o=dnthucdr&s=id%3D%22GH02102077503%22.&searchmode=basic | abstract（**書目+摘要實讀**）／2026-10-04 |
 | R03 | 林沂臻（2017）。應用希爾伯特-黃變換之菜價預測。中山醫學大學碩士論文。 | 學位論文 | https://ndltd.ncl.edu.tw/cgi-bin/gs32/gsweb.cgi/login?o=dnclcdr&s=id%3D%22105CSMU5585004%22.&searchmode=basic | abstract（索引摘要）／2026-10-03 |
-| R04 | 農委會×財政資訊中心（2018）。農業大數據平台：電子發票農產品零售價格估計與預測。農傳媒報導。 | 官方平台（報導） | https://www.agriharvest.tw/archives/12897 | report（報導全文；平台未登入）／2026-10-03 |
-| R05 | flux6lab。白菜即時（App：批發行情＋AI走勢預測＋零售換算）。2026-08-31 更新。 | 產品/App | https://play.google.com/store/apps/details?id=com.flux6lab.cabbagelive&hl=zh-TW ／ https://cabbagelive.com/ | page（官網+商店文案；未安裝）／2026-10-03 |
-| R06 | 鹿中創客。農產分析（App：輸入購買價→換算→比對當日行情）。2026-07-30 更新。 | 產品/App | https://play.google.com/store/apps/details?id=com.bvc_dev_team.androidapp | page（商店文案；未安裝）／2026-10-03 |
+| R04 | 農委會×財政資訊中心（2018）。農業大數據平台：電子發票農產品零售價格估計與預測。農傳媒報導《從29億張電子發票撈蛛絲馬跡，農業大數據平台如何反映產銷脈動？》。 | 官方平台（報導） | https://www.agriharvest.tw/archives/12897 | report（報導全文；平台未登入）／2026-10-03 |
+| R05 | flux6lab。白菜即時（台灣菜價行情查詢與 AI 蔬菜批發價格預報；官網©2026；v1.1.0）。 | 產品/App | https://cabbagelive.com/ ／ Google Play `com.flux6lab.cabbagelive` | page（**官網實讀**+商店文案；未安裝；行情資料至 2026-10-03）／2026-10-04 |
+| R06 | 鹿中創客（林俐如）。農產分析－全台第一作物價格分析（輸入購買價→智能換算→對比當日行情）。 | 產品/App | https://play.google.com/store/apps/details?id=com.bvc_dev_team.androidapp&hl=zh-TW | page（**商店文案實讀**；未安裝；更新 2026-07-30，更新日非研究年份）／2026-10-04 |
 | R07 | YuehChun（2025）。NCHU-Data-Mining-Project：氣候×台灣蔬菜價格探勘。GitHub repo（2025-05 更新）。 | 開源（課程專題） | https://github.com/YuehChun/NCHU-Data-Mining-Project | page（repo+README）／2026-10-03 |
-| R08 | 洪士育（年份未確認）。基於發掘氣候資料來預測蔬菜價格。臺北科技大學。 | 學位論文 | NDLTD 檢索（遇驗證碼，書目頁未取得；第三方索引 zhupiter 摘要） | abstract（片段）／2026-10-03 |
-| R09 | 陳澤維（約2017，年份表述待統一）。臺灣蔬果批發市場價格預測模型。政治大學碩士論文。 | 學位論文 | https://thesis.lib.nccu.edu.tw（系統摘要） | abstract（摘要片段）／2026-10-03 |
-| R10 | 農糧署（2026）。115年度補助計畫公告：結合生成式AI與預測式機器學習於農產品產銷決策支援架構之先導研究（115農科-4.4.1-糧-02）。 | 官方徵件公告 | https://www.afa.gov.tw/cht/index.php?act=download&ids=47334 | full（PDF全文；本機 data/recheck_t04/afa_ai_pilot.pdf）／2026-10-03 |
+| R11 | 廖啜翔（2021）。《以深度學習方式探討臺灣結球白菜之價格》。臺灣大學農業經濟學系碩士論文。 | 學位論文 | 書目錄自陳泯宏（2024）參考文獻；典藏入口待查 tdr | bibliographic（僅書目，摘要未讀）／2026-10-04 |
+| R10 | 農糧署（2026）。115年度補助計畫公告：結合生成式AI與預測式機器學習於農產品產銷決策支援架構之先導研究（115農科-4.4.1-糧-02）。 | 官方徵件公告（非成果） | https://www.afa.gov.tw/cht/index.php?act=download&ids=47334 | full（PDF全文；本機 data/recheck_t04/afa_ai_pilot.pdf）／2026-10-03 |
 
-**檢索範圍與限制**（2026-10-03 查核輪）：WebSearch、GitHub API、Google Play 商店頁、官方文章/PDF；NDLTD 全文檢索受限驗證碼；未安裝 App、未執行他人程式碼。「未查到」僅指該輪檢索範圍，不代表不存在。其他已查但未入關鍵清單之作品（查價工具、颱風CPI研究、搜尋量預測等）見[既有作品查核矩陣](RELATED_WORK_MATRIX.md)末段檢索記錄。
+### 待查線索（不作核心論證引用）
+
+| ID | 內容 | 狀態（2026-10-04） |
+| --- | --- | --- |
+| R08 | 洪士育（北科大，年份未確認）「基於發掘氣候資料來預測蔬菜價格」 | 未尋得可定位書目（NDLTD 驗證碼；本輪再查無入口）→ 待查線索 |
+| R09 | 陳澤維（政大，約2017）臺灣蔬果批發市場價格預測 | 政大系統 404/500，正式書目頁未取得；僅存原摘要片段 → 待查線索 |
+
+**檢索範圍與限制**（2026-10-03 首查＋2026-10-04 修訂輪）：WebSearch/WebFetch/webReader、GitHub API、Google Play 商店頁、官方文章/PDF；NDLTD 全文檢索受限驗證碼；未安裝 App、未執行他人程式碼。「未查到」僅指該輪檢索範圍，不代表不存在；文案/摘要未載明的欄位標 UNKNOWN，不寫「沒有」。其他已查但未入關鍵清單之作品見[既有作品查核矩陣](RELATED_WORK_MATRIX.md)末段檢索記錄。

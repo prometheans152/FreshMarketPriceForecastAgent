@@ -1,0 +1,8 @@
+{
+  "volatility": "動機：分品項 |r|>5% 比例，來源 run2 stats_master.json（features_labels.parquet 正式 direction；合併 h7=1149/10952=10.5%、h14=1773/10680=16.6%）",
+  "f1_vs_baselines": "封存測試 macro-F1 對比，來源 public_test_results.json（SHA256 2d28acd2…）",
+  "mae_negative": "負向結果：return MAE 對比，來源 public_test_results.json",
+  "time_split": "切分＋真實 purge：features_labels.parquet purge_reason 唯讀重算（run2 stats_master.json purge）",
+  "by_crop": "分品項成績，來源 public_test_results.json 頂層 by_crop",
+  "confusion_h7": "混淆矩陣，來源 public_test_results.json confusion（封存）"
+}

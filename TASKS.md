@@ -1,6 +1,21 @@
 # TW01 菜價預測專題執行任務
 
-## D44 本輪工作包：研究／設計／OpenSpec／正式投影片
+## D44-R01–R06 修訂輪（2026-10-04；最新）
+
+依 `outputs/audits/d44_independent_6eb4adf/REVIEW_6eb4adf.md` 之 Request changes 完成**研究內容與交付校正**，全部由 GLM 自驗通過，待 ChatGPT 獨立複審；詳 [D44_REVISION_REPORT.md](docs/D44_REVISION_REPORT.md)（原問題／改檔／證據／驗證／剩餘限制逐項）。工作單 [GLM_D44_R01_R06_REVISION_20261004.md](docs/GLM_D44_R01_R06_REVISION_20261004.md)；證據 `outputs/proposal_delivery/run2_20261004_01/`（stats_master＋claims_master 27 列＋r01/r02 查核卡＋v2 渲染 19/19＋openspec CLI）。
+
+| 修訂項 | 內容 | 狀態 |
+|---|---|---|
+| R01 | 公視日期（實為 2025-08-13 楊柳）、王鎬杰 2010/2004–2009 批發範圍、2026-07 兩則撤回、機率→歷史比例、45→85 成因不主張 | 自驗完成 |
+| R02 | R01 摘要全文/R02/R04/R05 官網/R06 商店頁實讀；R08/R09 降線索；回測/前瞻分欄；移除無範圍否定；新增 R11 書目 | 自驗完成 |
+| R03 | stats_master 同源（10.5%/16.6% 正式值、21 列邊界註記）；364/905 母體標示；12特徵+one-hot；HGBClassifier；`=7天` 修正 | 自驗完成 |
+| R04 | PROPOSAL_REPORT 重寫為可獨立閱讀敘事；T/U/Y/Z 對照修正；前作比較表入主稿；A/B 例標教學；−0.1% 接近 0 | 自驗完成 |
+| R05 | 架構①–⑤＋端點＋連線；真實清除帶（695+691=1,386 列）；錨定命題 [p(1+r)−p]/p=r；S01–S09＝自驗暫緩 | 自驗完成 |
+| R06 | 三腳本參數化防覆寫；notes_v2 同源講稿；v2 PPTX/PDF 19 頁（視覺 19/19 PASS）；測試 15/15；README 重整；OpenSpec 17/17 tasks＋strict validate exit 0 | 自驗完成 |
+
+影片未錄、GitHub/YouTube/課程提交未發布（待授權）；組員/組長/正式日期待填；真店 T16、代理人後端、SERVER 維持暫緩。
+
+## D44 本輪工作包：研究／設計／OpenSpec／正式投影片（首輪，歷史）
 
 **2026-10-04 最新排程覆蓋：** 使用者先擱置代理人問題，保留現有介面。T25–T28 的代理人整合與相關修復暫緩，不是 PASS，也不阻塞下表。T16 真店、SERVER、影片與發布維持原各自狀態。本輪不執行產品程式修復、重訓、外部部署或其他課堂作業。
 

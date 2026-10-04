@@ -1,6 +1,10 @@
 # 期末交付清單與任務映射
 
-## 最新本批交付：D44（2026-10-04）
+## 最新：D44-R01–R06 修訂輪自驗完成（2026-10-04）
+
+依獨立審查完成的六項修訂（動機來源/前作實查/數字口徑/主稿敘事/設計圖/同源簡報）見 [D44_REVISION_REPORT.md](D44_REVISION_REPORT.md)。**期中交付現況**：提案文件、v2 PPTX/PDF（19 頁，視覺驗收 19/19）、講稿（同源內嵌，約 10–11 分鐘設計）、design.md、OpenSpec——GLM 自驗完成待 ChatGPT 複審；**影片未錄製；GitHub／YouTube／課程提交未發布（待授權）；組員／組長／正式日期待填**。真店 A/B（T16）、代理人後端、SERVER、期末實驗維持各自狀態。證據：`outputs/proposal_delivery/run2_20261004_01/`。
+
+## D44 首輪（歷史，2026-10-04）
 
 六工作包已於 2026-10-04 全數完成並通過驗收：[PROPOSAL_ACCEPTANCE.md](PROPOSAL_ACCEPTANCE.md)。成品：`docs/RESEARCH_MOTIVATION.md`、`docs/RELATED_WORK_MATRIX.md`＋`docs/RESEARCH_GAP.md`＋`docs/REFERENCES.md`、`docs/CONTRIBUTIONS.md`＋`docs/PROPOSAL_REPORT.md`、根目錄 `design.md`、`openspec/`（CLI 1.14.0，validate --strict 通過）、`slides/TW01_菜價預測_研究提案與初步成果_v1.pptx`＋同名 PDF（19 頁，逐頁視覺驗收 19/19 PASS）與 `docs/SLIDE_NOTES.md`。代理人、SERVER、真店、影片／發布等另外追蹤，不因本批 PASS 升格。組員與正式日期待填。下方表格為2026-10-03初始映射，完成比例以 TASKS 為準。
 

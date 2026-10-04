@@ -1,6 +1,19 @@
 # GLM執行進度與交接紀錄
 
-## 最新排程：D44 研究交付批次（2026-10-04）
+## 最新排程：D44-R01–R06 修訂輪自驗完成（2026-10-04）
+
+獨立審查（`outputs/audits/d44_independent_6eb4adf/`＋`d44_resume_6eb4adf_20261004_01/`）對 D44 首輪結論 Request changes 後，GLM 依 `docs/GLM_D44_R01_R06_REVISION_20261004.md` 完成六項修訂並**自驗**（不等於 ChatGPT 複審通過）；逐項證據見 [D44_REVISION_REPORT.md](D44_REVISION_REPORT.md)：
+
+- **R01**：公視報導實為 **2025-08-13 楊柳颱風**（原稿 2026-09-14 誤）；農業部 219 期＝王鎬杰 2010／2004–2009 批發週均價（加適用範圍）；自由/UDN 2026-07 兩則七管道未尋得原文→撤回；「機率」→歷史配對比例；45→85 逐格複核且成因不主張。
+- **R02**：R01 陳泯宏（摘要全文實讀：RMSE/MAD/MAPE/方向正確率已知）、R02 李岱鑫（正式題名/66週/下週批發/私有資料有價值）、R05 白菜即時官網（中長期趨勢預測+零售換算→撤回「都只看今天」）、R06 商店頁實讀；R08/R09 降待查線索、新增 R11 廖啜翔 2021 書目；矩陣拆歷史回測/前瞻到期欄；移除「無人」「已建立並開放」。
+- **R03**：`run2/stats_master.json`（唯讀重算與補驗交叉核對一致）＋`claims_master.csv`（27 列）作單一數據源；正式值合併 10.5%/16.6%、絲瓜 12.7%/18.3%；浮點 abs>0.05 多 21 列邊界如實註記；364/905 母體標示；12特徵+品項one-hot；候選 DummyMajority/HGBClassifier；`=7天` 標籤修正。
+- **R04**：PROPOSAL_REPORT 重寫為可獨立閱讀（摘要/導論/三類前作+比較表/PA–PM 含教學計算例/評估/結論）；T=參數分析（未執行）、U=主要結果對照修正；−0.1% 接近 0 非門檻；混淆矩陣頁碼=17。
+- **R05**：design.md 架構①–⑤分組+`/forecast` `/agent/query` `/records` 端點+請求/回傳連線；成熟清除真實兩段（695+691=1,386 列/30 日）；錨定命題改 [p(1+r̂)−p]/p=r̂（sign 負≠down）；S01–S09 定位為第五輪自驗、暫緩不修不驗。
+- **R06**：三支製作腳本參數化+防覆寫；`notes_v2.json` 單一底稿同源生成 PPT 備註與 SLIDE_NOTES.md；**v2 PPTX/PDF 各 19 頁**（pypdf 實讀核對；兩輪視覺驗收 19/19 PASS）；製作工具測試 15/15；README 重整為提案入口；AGENTS 同步；OpenSpec 17/17 tasks＋`validate --strict` exit 0（未 archive）。
+
+保護：11 檔 SHA256 前後一致；src/tests/web/contracts/產品 configs 零修改；v1/run1/舊審查未覆寫。未做（如實）：影片未錄、GitHub/YouTube/發布待授權、組員與正式日期待填、乾淨環境重建未驗證。
+
+## D44 首輪（歷史，2026-10-04）
 
 使用者暫緩代理人，先以現有介面作展示。ChatGPT本次用COS讀完L4-1 A–Z可取得正文並檢視圖，重新對照逐字稿，寫入 [來源核對](PROPOSAL_SOURCE_AUDIT_20261004.md)、[執行計畫](PROPOSAL_DELIVERY_PLAN.md)、[GLM提示詞](GLM_PROPOSAL_HANDOFF.md)。
 
