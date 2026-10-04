@@ -33,8 +33,20 @@ def main():
         raise SystemExit(2)
     render.mkdir(parents=True, exist_ok=True)
 
+    import subprocess
+
+    def powerpoint_running() -> bool:
+        tl = subprocess.run(["tasklist", "/FI", "IMAGENAME eq POWERPNT.EXE"], capture_output=True)
+        return b"POWERPNT.EXE" in tl.stdout
+
+    pre_running = powerpoint_running()  # 本輪開始前使用者是否已有 PowerPoint
+    if pre_running:
+        print("NOTE: 偵測到既有 PowerPoint 進程——共享模式：只關閉本輪簡報，不退出應用", file=sys.stderr)
+
     import win32com.client
     app = win32com.client.Dispatch("PowerPoint.Application")
+    # Dispatch 可能連到既有實例（pywin32 _GetGoodDispatch 先試 connect）；
+    # 所有權判定：本輪開始前無進程 且 目前應用無任何已開簡報 → 才可能是我們獨佔啟動的。
     n = 0
     try:
         pres = app.Presentations.Open(str(pptx), WithWindow=False)
@@ -46,7 +58,14 @@ def main():
         finally:
             pres.Close()  # 只關本輪開的簡報
     finally:
-        app.Quit()  # 關閉本輪 Dispatch 的應用實例
+        try:
+            remaining = app.Presentations.Count
+        except Exception:
+            remaining = -1
+        if not pre_running and remaining == 0:
+            app.Quit()  # 唯一可證明安全的 Quit：開始前無進程、結束後已無任何簡報
+        else:
+            print(f"SKIP Quit：共享或尚有簡報（pre_running={pre_running}, remaining={remaining}）", file=sys.stderr)
 
     pages_pdf = None
     try:

@@ -4,6 +4,8 @@
 依據：`outputs/audits/d44_independent_6eb4adf/REVIEW_6eb4adf.md`＋`outputs/audits/d44_resume_6eb4adf_20261004_01/REVIEW_SUPPLEMENT.md`＋`docs/GLM_D44_R01_R06_REVISION_20261004.md`（與使用者最新提示詞範圍不一致時以使用者提示詞為準）。
 基準 HEAD：`6eb4adf`；證據目錄：`outputs/proposal_delivery/run2_20261004_01/`；v1／run1／舊審查全部保留未覆寫。
 
+> **第三輪收尾（2026-10-04 晚；基準 `9c7ed21`，依 `outputs/audits/d44_v2_independent_9c7ed21_20261004_01/REVIEW_9c7ed21.md`）已另完成，見文末「第三輪收尾段落」；成品為 v3（PPTX/PDF/講稿/素材 assets_v3），證據 `outputs/proposal_delivery/run3_20261004_01/`。以下第二輪內容保留為歷史。**
+
 **總結：R01–R06 六項修訂全部完成並通過 GLM 自驗（含 15/15 製作工具測試與 v2 全 19 頁逐頁視覺驗收）；本報告為執行者自驗紀錄，交 ChatGPT 獨立複審，複審結論以前者為準之前不得視為最終驗收。**
 
 ---
@@ -126,3 +128,56 @@
 | 影片／YouTube／GitHub／課程提交 | **未執行，待授權** |
 | 組員／組長／正式日期 | **待填** |
 | 真店 A/B（T16）／SERVER／代理人後端 | 維持暫緩／HOLD |
+
+---
+
+# 第三輪收尾段落（2026-10-04 晚；基準 9c7ed21 → 本輪提交見 Git log）
+
+依 `outputs/audits/d44_v2_independent_9c7ed21_20261004_01/REVIEW_9c7ed21.md`（Request changes：三類收尾）＋使用者收尾工作單完成。成品 **v3**：`slides/TW01_菜價預測_研究提案與初步成果_v3.pptx/.pdf`（19 頁）、`slides/assets_v3/`、`slides/source/notes_v3.json`→`docs/SLIDE_NOTES.md` 同源；證據 `outputs/proposal_delivery/run3_20261004_01/`（stats_master 含 purge 期限別分組、r02_work_checks_v3_correction.json、claims_master 30 列、slides_render_v3、openspec_cli_evidence）。配音試片未動。
+
+## 一、動機／文獻漏改（審查 §3）
+
+| 原問題 | 改了哪裡 | 實際驗證 | 尚存限制 |
+|---|---|---|---|
+| 「現有工具只給今天」「沒有現成工具」「沒有工具回答未來」殘留於問題表/E1b/§3.3/§3.5 | RESEARCH_MOTIVATION 四處改為「本次核對的官方查價頁主要提供當日行情」＋明列白菜即時/農產分析預測換算文案（效果未證實）＋缺口收斂為「固定期限＋同店輸入＋可核對評估」組合 | grep 全稿無三句殘留；p2 講稿同步 | 產品實測未做（未安裝），文案≠效果 |
+| R05 前瞻欄「無（未公開）」等 UNKNOWN→否 | MATRIX R05 四欄改 UNKNOWN（未公開非不存在）；R01/R03 期限改「摘要未明示」；「均無前瞻」改「查核範圍內未見有公開證據者」；GAP 缺口一 R05/R09 措辭同步 | 逐欄覆核；p4 欄名改「未做／尚未確認」語意 | — |
+| R02 指標證據跳步（RMSE/MAE 來自他人題名） | MATRIX/GAP/PROPOSAL_REPORT/PPT p5/p18 縮為「摘要明示誤差比較；實際指標名稱未讀=UNKNOWN」；run3 更正卡記錄 was→now；run2 卡保留原貌 | 更正卡+五處一致 | 李論文方法/結果全文未取得 |
+| R11 名字不一致且以書目補件數 | REFERENCES/MATRIX/GAP/主稿：R11 降待查線索（廖啜翔/廖啟翔未核實、入口未定位）；核心 7 件+R10、近年 5 件；不補篇數 | 計數自查更新；p4/p18 同步 | R11 書目待原文核實 |
+| R09 仍在核心佐證 | GAP 缺口一「既有已做到」移除 R09（標線索） | grep | — |
+
+## 二、圖文／來源一致性（審查 §4＋小勘誤 §7）
+
+| 原問題 | 改了哪裡 | 實際驗證 | 尚存限制 |
+|---|---|---|---|
+| 圖 07-07 vs 文 07-08；「14+1/t+15」不分期限 | 唯讀重算 purge 分組（與複審同口徑：h7 8日242/243列、h14 15日453/448列；val→test h14 自 **07-07** 起）；PH/design §4/stats_master.segments/make_assets 圖註/notes p9/PPT p9 全部統一，規則改 **t+h+1（7天 t+8、14天 t+15）** | 測試 `test_purge_segments_by_horizon` 斷言四組區間全對 | 不改正式 split/parquet |
+| 第10頁「封存 fixture 輸出」歸因錯 | 正式 v3 第10頁採整組教學假設（同試片處理）：撤「fixture 輸出」、副標/卡片尾註/頁尾/notes p10/PROPOSAL_REPORT PJ/design §2-3 一致標示 | grep 無「封存 fixture」；語意檢查（保留「非 fixture」之正確否定） | — |
+| design 保存箭頭指向唯讀 public_history | design §1 重寫：⑤預測紀錄=private/predictions 獨立儲存、與④唯讀公開歷史分離；對照實際 prediction_records.py | 語意測試「唯讀/private/predictions/與④分離」 | — |
+| 小勘誤 | 8組非9 rows（動態）；「價格為災前52–339%」非「漲幅」；刪「時間上同月」；§117 價格欄位數 vs 必要資訊（品項/單位/日期預設）區分；p16「屬預期」改觀察（因果待驗證）；REBUILD.md 改實際 Windows 範例（變數統一） | 逐項覆核 | — |
+
+## 三、架構圖：教授正例落實（使用者判讀＋逐字稿 787–899）
+
+- **分群**：第8頁重畫為五功能群組框（①使用者與手機介面／②查詢處理=API+輸入檢查+規則解析／③菜價計算=ForecastEngine+A/B／④公開行情=唯讀凍結歷史／⑤預測紀錄=private/predictions 獨立私人儲存）；子元件在群組內；規則解析屬②（不與保存混成一格）。
+- **編號**：①–⑤ 為**群組索引非執行順序**（圖例明示）；端點 `/forecast`、`/agent/query`、`/records` 以小字標於②內。
+- **關係**（先唯讀 api/app.py、prediction_records.py、models/predict.py 核對）：①→②提交查詢（含選填上週價）；②→③呼叫預測／③→②回傳 r̂；③→④讀取公開歷史（唯讀）；②→①回傳結果+期限+截止日+限制；**僅使用者選擇時** ②→⑤保存當次預測；⑤→②查閱／匯出。請求與回傳方向分列（非全雙向）。
+- **區分**：④唯讀不存私人紀錄；⑤獨立儲存；③模型載入推論（本輪不訓練）；LLM（GLM/Qwen/Hermes）＝虛線未來區「理解與解釋，不是用 LLM 猜菜價」；SERVER/外網未驗收不畫成已上線。
+- **對照解說**：design §1、投影片圖例與 notes_v3 p8 講稿同一套編號逐項解說互動（「①接收報價→②檢查→呼叫③；③讀④計算，經②回①；僅選擇保存時②寫入⑤；查閱亦經②」），非僅念名稱。
+- **驗收**：`TestArchitectureSlideSemantics` 6 項語意測試（五群組標題、三端點、六箭頭標籤、唯讀/獨立儲存、未來區/圖例、connector≥7 為輔助非充分）＋視覺檢查。
+
+## 四、製作工具防護（審查 §5）
+
+| 原問題 | 修復 | 驗證 |
+|---|---|---|
+| Dispatch 後無條件 Quit（可能關掉使用者 PowerPoint） | export_and_render：開始前 tasklist 偵測既有 POWERPNT（共享模式註記）；結束時 **僅當「開始前無進程 且 Presentations.Count==0」才 Quit**，否則 SKIP Quit 並記錄；本輪簡報一律只 Close | `TestExportSafety::test_shared_powerpoint_not_quit`（in-process mock：使用者已有簡報 → Close✓ Quit✗） |
+| 缺 UI 截圖仍成功輸出空圖頁 | make_pptx：第13頁 UI 截圖為必要素材，缺失即 `FAIL: 缺必要 UI 截圖` exit 3；新增 `--ui-shot` 參數 | `TestSafetyBehaviors::test_make_pptx_missing_ui_shot_fails`（六圖齊備但 UI 缺 → exit 3） |
+
+## 五、v3 成品與總驗證
+
+- **測試**：`pytest slides/source/test_make_tools.py -q` → **22 passed**（含新增 2 防護＋purge 分組斷言＋架構語意 6 項）。
+- **成品**：v3 PPTX/PDF 各 19 頁（render_meta match=True；pypdf 實讀）；SLIDE_NOTES.md 由 notes_v3 再生成（MD/PPT 備註同源正規化包含 19/19；主講 11:30＋快版路徑約 10:00）。
+- **渲染視覺**：run3/slides_render_v3 逐頁 19 張；重點頁（2/4/5/8/9/10/16/18）交獨立視覺驗收——結果見 `slides_render_v3/render_review.md`。
+- **OpenSpec**：validate --strict exit 0（run3/openspec_cli_evidence.txt）；tasks 23/23（含收尾輪 C1–C6，標 GLM 自驗）；未 archive。
+- **保護**：14 檔基準（v1/v2 亦納入）收尾前後 hash 復核（見最終回報）；`src/tests/web/contracts/` 零修改。
+
+## 六、本輪仍受限／暫緩（不變）
+
+影片僅兩頁配音試片（未擴製）；GitHub/YouTube/課程提交未發布；組員/組長/正式日期待填；真店 T16、代理人後端、SERVER 維持暫緩；乾淨環境重建未驗證；R08/R09/R11 書目待查。

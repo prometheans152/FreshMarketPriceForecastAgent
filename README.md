@@ -36,21 +36,22 @@
 - 上漲召回僅約 10%：模型偏保守報持平。無檢定不寫「顯著」。
 - 誠實結論：我們交付的不是「很準的預測」，而是一個**誠實、可驗證**的預測與增益評估框架。
 
-## 正式交付入口（本輪 v2）
+## 正式交付入口（現行 v3；歷史 v1/v2 保留）
 
 | 交付物 | 位置 |
 | --- | --- |
-| **投影片（可編輯）** | `slides/TW01_菜價預測_研究提案與初步成果_v2.pptx`（主講 15＋附錄 4＝19 頁） |
-| **投影片 PDF** | `slides/TW01_菜價預測_研究提案與初步成果_v2.pdf`（19 頁，與 PPTX 同源） |
-| **逐頁講稿（約 10–11 分鐘設計）** | [docs/SLIDE_NOTES.md](docs/SLIDE_NOTES.md)（與 PPT 內嵌備註同一底稿 `slides/source/notes_v2.json`） |
+| **投影片（可編輯）** | `slides/TW01_菜價預測_研究提案與初步成果_v3.pptx`（主講 15＋附錄 4＝19 頁） |
+| **投影片 PDF** | `slides/TW01_菜價預測_研究提案與初步成果_v3.pdf`（19 頁，與 PPTX 同源） |
+| **逐頁講稿（約 10–11.5 分鐘設計）** | [docs/SLIDE_NOTES.md](docs/SLIDE_NOTES.md)（與 PPT 內嵌備註同一底稿 `slides/source/notes_v3.json`） |
+| **配音試片（兩頁效果版）** | `recordings/preview_20261004_01/TW01_投影片AI配音試片.mp4`（1:56；製作與驗證見同目錄 PREVIEW_REPORT.md） |
 | **研究提案全文（A–Z）** | [docs/PROPOSAL_REPORT.md](docs/PROPOSAL_REPORT.md) |
-| **設計藍圖** | [design.md](design.md)（架構①–⑤／資料流／公式／切分與驗證） |
+| **設計藍圖** | [design.md](design.md)（§1 五群組架構①–⑤＋對照解說／資料流／公式／切分與驗證） |
 | **研究動機與 RQ** | [docs/RESEARCH_MOTIVATION.md](docs/RESEARCH_MOTIVATION.md) |
-| **相關研究** | [矩陣](docs/RELATED_WORK_MATRIX.md)｜[缺口](docs/RESEARCH_GAP.md)｜[引用清單](docs/REFERENCES.md) |
+| **相關研究** | [矩陣](docs/RELATED_WORK_MATRIX.md)｜[缺口](docs/RESEARCH_GAP.md)｜[引用清單](docs/REFERENCES.md)（R08/R09/R11 為待查線索） |
 | **三貢獻** | [docs/CONTRIBUTIONS.md](docs/CONTRIBUTIONS.md) |
-| **規格管理** | `openspec/`（OpenSpec 1.14.0 局部安裝；validate --strict 通過）｜[工作流說明](docs/OPENSPEC_WORKFLOW.md) |
-| **主張→證據追溯** | `outputs/proposal_delivery/run2_20261004_01/claims_master.csv`（27 列） |
-| **本輪修訂報告** | [docs/D44_REVISION_REPORT.md](docs/D44_REVISION_REPORT.md)（R01–R06 逐項） |
+| **規格管理** | `openspec/`（OpenSpec 1.14.0；validate --strict 通過）｜[工作流說明](docs/OPENSPEC_WORKFLOW.md) |
+| **主張→證據追溯** | `outputs/proposal_delivery/run3_20261004_01/claims_master.csv`（30 列） |
+| **修訂報告** | [docs/D44_REVISION_REPORT.md](docs/D44_REVISION_REPORT.md)（R01–R06＋第三輪收尾段） |
 | **驗收狀態** | [docs/PROPOSAL_ACCEPTANCE.md](docs/PROPOSAL_ACCEPTANCE.md) |
 
 ## 已完成／待驗證／暫緩（如實分列）

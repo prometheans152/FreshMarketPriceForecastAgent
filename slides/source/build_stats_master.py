@@ -75,7 +75,7 @@ def main() -> int:
         if mismatches:
             print("CROSSCHECK FAILED:", mismatches, file=sys.stderr)
             return 3
-        crosscheck = "passed (9 rows: nonflat/n/display all match)"
+        crosscheck = f"passed ({len(cc)} data rows: nonflat/n/display all match)"
     else:
         crosscheck = "skipped (crosscheck csv not found)"
 
@@ -98,13 +98,24 @@ def main() -> int:
             "baseline_momentum": e["baselines"]["past_change_continues"]["direction"]["macro_f1"],
         }
 
-    # purge 真實分布（R05 時間軸圖依據）
+    # purge 真實分布（R05 時間軸圖依據；期限別分組 t+h+1）
     pu = df[df["purge_reason"].notna()]
+
+    def seg(reason, h):
+        s2 = pu[(pu["purge_reason"] == reason) & (pu["horizon_days"] == h)]
+        return {"t_min": str(pd.to_datetime(s2["t"]).min().date()), "t_max": str(pd.to_datetime(s2["t"]).max().date()),
+                "dates": int(s2["t"].nunique()), "rows": int(len(s2))}
+
     purge = {
         "rows": int(len(pu)),
         "distinct_t": int(pu["t"].nunique()),
         "reasons": {k: int(v) for k, v in pu["purge_reason"].value_counts().items()},
         "per_horizon": {str(k): int(v) for k, v in pu.groupby("horizon_days").size().items()},
+        "segments": {
+            "train_to_val": {"h7": seg("train_label_not_mature_before_val", 7), "h14": seg("train_label_not_mature_before_val", 14)},
+            "val_to_test": {"h7": seg("val_label_not_mature_before_test", 7), "h14": seg("val_label_not_mature_before_test", 14)},
+        },
+        "maturity_rule": "標籤成熟日 = t+h+1（7天目標 t+8、14天目標 t+15）",
         "t_min": str(pd.to_datetime(pu["t"]).min().date()),
         "t_max": str(pd.to_datetime(pu["t"]).max().date()),
     }

@@ -120,12 +120,19 @@ def main():
     ax.legend(fontsize=8)
     savefig(fig, out_dir, "mae_negative", "負向結果：return MAE 對比，來源 public_test_results.json", summary, args.force)
 
-    # ---------- 圖4：時間切分＋真實成熟清除帶（parquet 唯讀 purge 日期） ----------
+    # ---------- 圖4：時間切分＋真實成熟清除帶（parquet 唯讀 purge 分組；期限別 t+h+1） ----------
     df = pd.read_parquet(ROOT / "data/processed/features_labels.parquet")
     pu = df[df["purge_reason"].notna()]
-    seg1 = pu[pu["purge_reason"] == "train_label_not_mature_before_val"]
-    seg2 = pu[pu["purge_reason"] == "val_label_not_mature_before_test"]
-    fig, ax = plt.subplots(figsize=(10, 3.2))
+
+    def seg(reason, h):
+        s = pu[(pu["purge_reason"] == reason) & (pu["horizon_days"] == h)]
+        return pd.Timestamp(s["t"].min()), pd.Timestamp(s["t"].max()), int(len(s)), int(s["t"].nunique())
+
+    t1a, t1b, n1a, d1a = seg("train_label_not_mature_before_val", 7)
+    t2a, t2b, n2a, d2a = seg("train_label_not_mature_before_val", 14)
+    t3a, t3b, n3a, d3a = seg("val_label_not_mature_before_test", 7)
+    t4a, t4b, n4a, d4a = seg("val_label_not_mature_before_test", 14)
+    fig, ax = plt.subplots(figsize=(10, 3.4))
     sp = stats["splits"]
     bands = [
         ("train", pd.Timestamp(sp["train"]["t_min"]), pd.Timestamp(sp["train"]["t_max"]), "#2E75B6"),
@@ -135,18 +142,22 @@ def main():
     for name, t0, t1, c in bands:
         ax.barh(0, (t1 - t0).days, left=t0, height=0.5, color=c, alpha=0.75, label=name)
         ax.text(t0 + (t1 - t0) / 2, 0.38, f"{name}\n{t0.date()}～{t1.date()}", ha="center", fontsize=8)
-    for seg, yy, lab in [(seg1, 0.78, f"成熟清除① train尾\n{seg1['t'].min().date()}～{seg1['t'].max().date()}（{len(seg1)}列）"),
-                         (seg2, -1.15, f"成熟清除② val尾\n{seg2['t'].min().date()}～{seg2['t'].max().date()}（{len(seg2)}列）")]:
-        t0, t1 = pd.Timestamp(seg["t"].min()), pd.Timestamp(seg["t"].max())
+    clears = [
+        (t2a, t2b, 0.80, pd.Timestamp("2025-12-01"), "left",
+         f"成熟清除① train→validation（成熟日 t+h+1）\nh7：{t1a.date()}～{t1b.date()}（{d1a} 日、{n1a} 列）   h14：{t2a.date()}～{t2b.date()}（{d2a} 日、{n2a} 列）"),
+        (t4a, t4b, -1.24, pd.Timestamp("2026-01-05"), "left",
+         f"成熟清除② validation→test\nh7：{t3a.date()}～{t3b.date()}（{d3a} 日、{n3a} 列）   h14：{t4a.date()}～{t4b.date()}（{d4a} 日、{n4a} 列）"),
+    ]
+    for t0, t1, yy, tx, ha, lab in clears:
         ax.barh(0, (t1 - t0).days, left=t0, height=0.5, color="none", edgecolor="black", linewidth=2.2)
-        ax.annotate(lab, xy=(t0 + (t1 - t0) / 2, 0.25), xytext=(t0 + (t1 - t0) / 2, yy),
-                    fontsize=8, ha="center", va="bottom", arrowprops=dict(arrowstyle="->", lw=1))
-    ax.set_ylim(-1.6, 1.35)
+        ax.annotate(lab, xy=(t0 + (t1 - t0) / 2, 0.25), xytext=(tx, yy),
+                    fontsize=7.5, ha=ha, va="bottom", arrowprops=dict(arrowstyle="->", lw=1))
+    ax.set_ylim(-1.7, 1.5)
     ax.set_yticks([])
     ax.set_xlim(pd.Timestamp("2025-09-20"), pd.Timestamp("2026-10-15"))
-    ax.set_title("時間切分與實際成熟清除帶（1,386 列／30 個起算日；同日 13 市場同區）")
+    ax.set_title("時間切分與實際成熟清除帶（合計 1,386 列／聯集 30 起算日；h7 與 h14 帶長不同：8 日 vs 15 日；同日 13 市場同區）")
     ax.legend(loc="upper left", fontsize=8)
-    savefig(fig, out_dir, "time_split", "切分＋真實 purge：features_labels.parquet purge_reason 唯讀重算（run2 stats_master.json purge）", summary, args.force)
+    savefig(fig, out_dir, "time_split", "切分＋真實 purge 分組：features_labels.parquet purge_reason 唯讀重算（與複審同口徑）", summary, args.force)
 
     # ---------- 圖5：分品項 macro-F1（封存 JSON 頂層 by_crop） ----------
     fig, ax = plt.subplots(figsize=(9, 4))
@@ -169,7 +180,7 @@ def main():
     ax.set_xticklabels(lab, fontsize=8)
     ax.set_ylim(0, 0.6)
     ax.set_ylabel("方向 macro-F1")
-    ax.set_title("分品項 macro-F1（甘藍方向事件最少，分數最低屬預期）")
+    ax.set_title("分品項 macro-F1（甘藍方向事件最少、分數最低——此為觀察，因果待驗證）")
     savefig(fig, out_dir, "by_crop", "分品項成績，來源 public_test_results.json 頂層 by_crop", summary, args.force)
 
     # ---------- 圖6：7 天混淆矩陣（封存 JSON confusion_matrix/labels） ----------

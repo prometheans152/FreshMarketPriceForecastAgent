@@ -31,6 +31,7 @@ RED = RGBColor(0xB0, 0x30, 0x30)
 GREEN = RGBColor(0x2F, 0x7D, 0x32)
 AMBER = RGBColor(0xC0, 0x7A, 0x00)
 FONT = "微軟正黑體"
+UI_SHOT = ""  # 由 --ui-shot 設定
 
 
 def build(pptx_path: Path, assets: Path, notes_data: dict, stats: dict, force: bool):
@@ -195,15 +196,15 @@ def build(pptx_path: Path, assets: Path, notes_data: dict, stats: dict, force: b
 
     # --- p04 前作分類 ---
     s = add_slide()
-    title_bar(s, "相關研究：三類前作", "分類討論（核心 8 件＋官方動向；R08/R09 降待查線索）")
+    title_bar(s, "相關研究：三類前作", "分類討論（核心 7 件＋官方動向；R08/R09/R11 降待查線索）")
     add_table(s, 5, 4, Inches(0.5), Inches(1.2), Inches(12.3), Inches(4.6), [
         ["類別", "代表前作", "已做到（實讀確認）", "未做／UNKNOWN"],
-        ["批發・市場價格預測", "陳泯宏2024[R01]；林沂臻2017[R03]；NCHU 2025[R07]；廖啜翔2021[R11]", "R01：2012–22批發、ARIMA/ETS/TDNN/LSTM，摘要列 RMSE/MAD/MAPE/方向正確率", "消費者店價輸入；固定7/14日曆期限；R11僅書目層級"],
-        ["零售・私人資料", "農業大數據平台2018[R04]；李岱鑫2015[R02]", "R04：29億筆電子發票零售估計+颱風情境；R02：私有中盤商資料預測下週批發價（RMSE/MAE）", "消費者輸入；單店真值前瞻到期驗證"],
-        ["消費者行情工具", "白菜即時[R05]；農產分析[R06]", "R05官網列中長期趨勢預測/零售換算/價格溫度計；R06輸入買價比對當日行情", "R05模型與效果未公開（UNKNOWN）；R06未列未來期限預測"],
+        ["批發・市場價格預測", "陳泯宏2024[R01]；林沂臻2017[R03]；NCHU 2025[R07]", "R01：2012–22批發、ARIMA/ETS/TDNN/LSTM，摘要列 RMSE/MAD/MAPE/方向正確率", "消費者店價輸入；固定7/14日曆期限"],
+        ["零售・私人資料", "農業大數據平台2018[R04]；李岱鑫2015[R02]", "R04：29億筆電子發票零售估計+颱風情境；R02：私有中盤商資料預測下週批發價（誤差比較；指標名稱未讀UNKNOWN）", "消費者輸入；單店真值前瞻到期驗證"],
+        ["消費者行情工具", "白菜即時[R05]；農產分析[R06]", "R05官網列中長期趨勢預測/零售換算/價格溫度計；R06輸入買價比對當日行情", "R05模型/效果/輸入方式/期限均未公開（UNKNOWN）；R06文案止於當日"],
         ["官方動向", "農糧署115年度徵件[R10]", "「生成式AI＋預測式ML＋農產價格」獲政策重視", "生產端決策；公告非成果"],
     ], size=12)
-    footer(s, 4, "docs/RELATED_WORK_MATRIX.md（歷史回測/前瞻到期分欄）；run2/r02_work_checks_v2.json")
+    footer(s, 4, "docs/RELATED_WORK_MATRIX.md（歷史回測/前瞻到期分欄）；run3 更正卡")
     notes(s, "p04")
 
     # --- p05 前作比較 ---
@@ -213,7 +214,7 @@ def build(pptx_path: Path, assets: Path, notes_data: dict, stats: dict, force: b
         ["維度", "李岱鑫2015 [R02]", "大數據平台2018 [R04]", "農產分析 [R06]", "本案 TW01"],
         ["輸入", "中盤商手寫筆記(私有)+公開登記", "電子發票（無輸入）", "使用者買價（比對當日）", "今天店價＋選填上週同店價"],
         ["目標", "下週高麗菜批發價(高雄)", "15項農產零售估計+情境模擬", "當日價差合理性", "從今天起 t+7/t+14 方向"],
-        ["評估", "歷史回測(RMSE/MAE)", "估計模型(細節未公開)", "無預測指標", "封存測試(macro-F1)+前瞻同店到期協議"],
+        ["評估", "歷史回測(誤差比較；指標UNKNOWN)", "估計模型(細節未公開)", "無預測指標", "封存測試(macro-F1)+前瞻同店到期協議"],
         ["主要限制", "批發對象；66週小樣本", "通路段估計非店價", "止於當日比對", "B增益零證據；僅一年臺中"],
     ], size=12)
     txbox(s, Inches(0.5), Inches(5.6), Inches(12.3), Inches(0.9),
@@ -271,39 +272,54 @@ def build(pptx_path: Path, assets: Path, notes_data: dict, stats: dict, force: b
     footer(s, 7, "docs/DATA_CARD.md；docs/DATA_QUALITY_REPORT.md；run2 stats_master.json")
     notes(s, "p07")
 
-    # --- p08 架構（含連接箭頭） ---
+    # --- p08 架構（五群組＋語意箭頭；D44 收尾輪） ---
     s = add_slide()
-    title_bar(s, "系統架構：現況與暫緩", "實線箭頭=已實作之請求/資料流；黃底虛線=暫緩（未部署）")
-    boxes = {
-        "ui":   (Inches(0.6), Inches(1.5), Inches(3.0), Inches(1.3), "① 手機網頁\n表單/自然語言輸入", LIGHT, True),
-        "api":  (Inches(4.6), Inches(1.5), Inches(3.4), Inches(1.3), "② HTTP API (FastAPI)\n/forecast /agent/query /records", LIGHT, True),
-        "eng":  (Inches(8.9), Inches(1.5), Inches(3.6), Inches(1.3), "③ ForecastEngine\nRF(7天)/HGB(14天) 封存v0.1.0", LIGHT, True),
-        "hist": (Inches(8.9), Inches(3.4), Inches(3.6), Inches(1.1), "④ 凍結公開歷史\npublic_history（唯讀快照）", LIGHT, True),
-        "rule": (Inches(4.6), Inches(3.4), Inches(3.4), Inches(1.1), "⑤ 規則代理人+保存層\nrule模式／records凍結預測", LIGHT, True),
-        "glm":  (Inches(4.6), Inches(5.35), Inches(3.4), Inches(1.0), "未來A：GLM API 後端\n金鑰未配置", RGBColor(0xFA, 0xF3, 0xE3), False),
-        "qwen": (Inches(8.9), Inches(5.35), Inches(3.6), Inches(1.0), "未來B：Qwen3.8-27B 端點\nSERVER 未部署", RGBColor(0xFA, 0xF3, 0xE3), False),
-        "herm": (Inches(0.6), Inches(5.35), Inches(3.0), Inches(1.0), "未來C：Hermes 0.19.0\n離線驗證未接真模型", RGBColor(0xFA, 0xF3, 0xE3), False),
-    }
-    for l, t, w, h, text, fill, solid in boxes.values():
-        sh = s.shapes.add_shape(5, l, t, w, h)
-        sh.fill.solid(); sh.fill.fore_color.rgb = fill
-        sh.line.color.rgb = DARK if solid else GRAY
-        sh.line.dash_style = None if solid else 4
-        sh.line.width = Pt(1.5) if solid else Pt(1)
-        tf = sh.text_frame; tf.word_wrap = True
-        p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER
-        r = p.add_run(); r.text = text; r.font.size = Pt(12); r.font.name = FONT
-        r.font.color.rgb = DARK; r.font.bold = solid
-    # 連接箭頭（請求↓／回傳↑／資料讀取↓）
-    arrow(s, Inches(3.6), Inches(2.15), Inches(4.6), Inches(2.15), "請求")
-    arrow(s, Inches(4.6), Inches(2.55), Inches(3.6), Inches(2.55), "回傳")
-    arrow(s, Inches(8.0), Inches(2.15), Inches(8.9), Inches(2.15), "叫用")
-    arrow(s, Inches(8.9), Inches(2.85), Inches(8.0), Inches(2.85), "預測")
-    arrow(s, Inches(10.7), Inches(2.8), Inches(10.7), Inches(3.4), "讀取")
-    arrow(s, Inches(6.0), Inches(2.8), Inches(6.0), Inches(3.4), "保存")
-    arrow(s, Inches(6.6), Inches(3.4), Inches(6.6), Inches(2.8), "查閱")
-    txbox(s, Inches(0.6), Inches(6.55), Inches(12.2), Inches(0.5), "虛線黃底＝D44 暫緩（不修復、不驗收、不接線）；規則代理人設計上不呼叫語言模型，介面以規則模式作展示載體，不宣稱已通過課程全部代理人要求", size=11, color=GRAY)
-    footer(s, 8, "design.md §1（①–⑤與未來A–C）；docs/AGENT_RUNTIME_DIRECTION.md")
+    title_bar(s, "系統架構：五個功能群組", "實線=現況資料流（請求／回傳方向如標註）；虛線=暫緩未來；數字=群組索引（非執行順序）")
+
+    def group_box(l, t, w, h, title, body, fill=LIGHT):
+        box = s.shapes.add_shape(5, l, t, w, h)
+        box.fill.solid(); box.fill.fore_color.rgb = fill
+        box.line.color.rgb = ACCENT; box.line.width = Pt(2)
+        txbox(s, l + Inches(0.12), t + Inches(0.08), w - Inches(0.24), Inches(0.35), title, size=14, bold=True, color=DARK)
+        txbox(s, l + Inches(0.12), t + Inches(0.46), w - Inches(0.24), h - Inches(0.56), body, size=11, color=GRAY)
+
+    group_box(Inches(0.45), Inches(1.15), Inches(2.35), Inches(2.15), "① 使用者與手機介面",
+              "手機網頁 web/\n表單入口＋自然語言\n輸入：品項、今天\n價格、單位、日期；\n（選填）上週同店價")
+    group_box(Inches(4.45), Inches(1.15), Inches(3.1), Inches(4.5), "② 查詢處理（api/app.py）",
+              "FastAPI 端點：\nPOST /forecast（表單）\nPOST /agent/query（自然語言）\nPOST·GET /records（保存·查閱）\n\n輸入檢查與規則解析：\n單位換算、上週可比性\n（不可比→回 A 說明）\n自然語言＝規則代理人\n（設計上不呼叫語言模型）")
+    group_box(Inches(8.45), Inches(1.15), Inches(2.55), Inches(2.6), "③ 菜價計算",
+              "ForecastEngine\n載入封存模型推論\n（RF 7天／HGB 14天；\n本輪不訓練）\n＋A 現價錨定・B 調整")
+    group_box(Inches(11.55), Inches(1.15), Inches(1.35), Inches(2.15), "④ 公開行情",
+              "public_history\n凍結快照\n（唯讀；\n不存私人紀錄）")
+    group_box(Inches(8.45), Inches(4.1), Inches(2.55), Inches(1.55), "⑤ 預測紀錄",
+              "private/predictions/\nJSON 凍結（請求＋回應）\n查閱／匯出（GET /records）\n＝獨立私人儲存（與④分離）")
+
+    arrow(s, Inches(2.8), Inches(1.8), Inches(4.45), Inches(1.8), None)
+    txbox(s, Inches(2.82), Inches(1.28), Inches(1.6), Inches(0.35), "提交查詢", size=9, color=ACCENT, align=PP_ALIGN.CENTER)
+    txbox(s, Inches(2.82), Inches(1.9), Inches(1.6), Inches(0.5), "（含選填\n上週同店價）", size=8, color=GRAY, align=PP_ALIGN.CENTER)
+    arrow(s, Inches(4.45), Inches(2.75), Inches(2.8), Inches(2.75), None, GREEN)
+    txbox(s, Inches(2.82), Inches(2.42), Inches(1.6), Inches(0.35), "回傳結果", size=9, color=GREEN, align=PP_ALIGN.CENTER)
+    txbox(s, Inches(2.82), Inches(2.82), Inches(1.6), Inches(0.5), "＋期限・截止日\n・來源與限制", size=8, color=GREEN, align=PP_ALIGN.CENTER)
+    arrow(s, Inches(7.55), Inches(1.8), Inches(8.45), Inches(1.8), None)
+    txbox(s, Inches(7.57), Inches(1.42), Inches(0.86), Inches(0.35), "呼叫預測", size=8, color=ACCENT, align=PP_ALIGN.CENTER)
+    arrow(s, Inches(8.45), Inches(2.45), Inches(7.55), Inches(2.45), None, GREEN)
+    txbox(s, Inches(7.57), Inches(2.5), Inches(0.86), Inches(0.35), "回傳 r̂", size=8, color=GREEN, align=PP_ALIGN.CENTER)
+    arrow(s, Inches(11.0), Inches(1.8), Inches(11.55), Inches(1.8), None)
+    txbox(s, Inches(10.85), Inches(1.28), Inches(0.85), Inches(0.6), "讀取歷史\n（唯讀）", size=8, color=ACCENT, align=PP_ALIGN.CENTER)
+    arrow(s, Inches(7.55), Inches(4.6), Inches(8.45), Inches(4.6), None)
+    txbox(s, Inches(7.57), Inches(4.12), Inches(0.86), Inches(0.6), "保存當次\n預測", size=8, color=ACCENT, align=PP_ALIGN.CENTER)
+    txbox(s, Inches(7.57), Inches(4.68), Inches(0.86), Inches(0.35), "（選擇時）", size=8, color=GRAY, align=PP_ALIGN.CENTER)
+    arrow(s, Inches(8.45), Inches(5.35), Inches(7.55), Inches(5.35), None, GREEN)
+    txbox(s, Inches(7.57), Inches(5.4), Inches(0.86), Inches(0.6), "查閱／\n匯出紀錄", size=8, color=GREEN, align=PP_ALIGN.CENTER)
+
+    future = s.shapes.add_shape(5, Inches(0.5), Inches(5.85), Inches(12.4), Inches(0.75))
+    future.fill.solid(); future.fill.fore_color.rgb = RGBColor(0xFA, 0xF3, 0xE3)
+    future.line.color.rgb = GRAY; future.line.dash_style = 4; future.line.width = Pt(1)
+    txbox(s, Inches(0.7), Inches(5.92), Inches(12.0), Inches(0.65),
+          "暫緩未來（虛線，未部署、未驗收）：GLM API／Qwen3.8-27B／Hermes 0.19.0＝LLM 理解與解釋（不是用 LLM 猜菜價）；SERVER_3090 部署與外網展示（T32）", size=11, color=GRAY)
+    txbox(s, Inches(0.5), Inches(6.68), Inches(12.4), Inches(0.35),
+          "圖例：①→②提交查詢；②檢查後呼叫③；③讀取④（唯讀）計算，結果經②回①；僅使用者選擇保存時②寫入⑤；查閱亦經②。", size=10, color=GRAY)
+    footer(s, 8, "design.md §1（同一套編號與對照解說）；依 api/app.py・prediction_records.py・models/predict.py 唯讀核對")
     notes(s, "p08")
 
     # --- p09 時間切分（真實清除帶） ---
@@ -312,7 +328,7 @@ def build(pptx_path: Path, assets: Path, notes_data: dict, stats: dict, force: b
     pic(s, "time_split", Inches(0.7), Inches(1.25), w=Inches(10.2))
     bullets(s, [
         ("標籤契約（凍結於看測試前）：r_h = m(t+h)/m(t) − 1；±5% 含邊界為持平（eps=1e-9）；缺到期價＝無標籤", 0),
-        ("同日 13 市場進同區；成熟清除實際兩段：train 尾 04-25～05-09（695 列）＋ val 尾 07-08～07-21（691 列）＝1,386 列/30 起算日", 0),
+        ("同日 13 市場進同區；成熟清除（成熟日=t+h+1）：train→val 邊界 h7 清 05-02～09（242列）、h14 清 04-25～05-09（453列）＝695；val→test 邊界 h7 清 07-14～21（243列）、h14 清 07-07～21（448列）＝691；合計 1,386 列/聯集 30 起算日", 0),
         ("封存測試一次性（清單 SHA256 4e136574…）；期限永遠從使用者今天 t 起算", 1),
     ], t=Inches(4.6), size=14)
     footer(s, 9, "docs/LABEL_CONTRACT.md；run2 stats_master.json purge（唯讀重算）；manifest.json splits")
@@ -320,7 +336,7 @@ def build(pptx_path: Path, assets: Path, notes_data: dict, stats: dict, force: b
 
     # --- p10 A/B（教學例標示） ---
     s = add_slide()
-    title_bar(s, "A/B 兩種輸入與一個數字例", "A=現價錨定；B=上週價實驗規則；數字例含教學假設（已標）")
+    title_bar(s, "A/B 兩種輸入與一個數字例", "本頁數值全為教學假設（非真店實驗、非正式 fixture 輸出）")
     txbox(s, Inches(0.5), Inches(1.2), Inches(6.2), Inches(0.5), "公式", size=17, bold=True)
     txbox(s, Inches(0.5), Inches(1.7), Inches(6.2), Inches(2.6),
           "A 店價估計：p̂(t+h) = p(t) × (1 + r̂_h)\nB 調整：r_B = r_A + α × (Δ店價7日 − Δ公開同期)\n　α = 0.3（開發期固定；未經同店資料訓練）\n\n錨定不變向：p>0 時 [p(1+r̂)−p]/p = r̂\n→ 同一 ±5% 分類器方向不變；輸入現價只改金額\nsign 為負 ≠ down（−4.1% 仍屬持平）",
@@ -329,11 +345,11 @@ def build(pptx_path: Path, assets: Path, notes_data: dict, stats: dict, force: b
     txbox(s, Inches(0.5), Inches(5.0), Inches(6.2), Inches(1.4), "A：1 個必填（今天價格）＋品項\nB：再加 2 個選填（上週價＋實際日期）\n上週不可比（7±2天外/換店/換規格/跨品項）→ 自動回 A 並說明", size=14)
     card = s.shapes.add_shape(5, Inches(7.1), Inches(1.2), Inches(5.7), Inches(5.3))
     card.fill.solid(); card.fill.fore_color.rgb = LIGHT; card.line.color.rgb = ACCENT
-    txbox(s, Inches(7.35), Inches(1.4), Inches(5.3), Inches(0.5), "數字例（甘藍；教學計算非真店實驗）", size=15, bold=True)
+    txbox(s, Inches(7.35), Inches(1.4), Inches(5.3), Inches(0.5), "數字例（甘藍；本頁數值全為教學假設）", size=15, bold=True)
     txbox(s, Inches(7.35), Inches(1.95), Inches(5.3), Inches(4.4),
-          "輸入：今天 32 元/台斤〔教學假設〕；上週同店 28 元〔教學假設〕\n\n模型（市場）：r̂_7 = −4.1% → 持平〔封存 fixture 輸出〕\n　　　　　　r̂_14 = −0.9% → 持平〔封存 fixture 輸出〕\n\nA：7天後 ≈ 30.7 元、14天後 ≈ 31.7 元\n\nB：店價週變化 = 32/28−1 = +14.29%〔教學〕\n　公開同期 +1.0%〔教學〕\n　r_B = −4.1% + 0.3×13.29% ≈ −0.11%（仍持平；\n　接近 0，非接近 ±5% 門檻）\n\n回應附：資料截止日、點估計僅供參考、B 實驗性未驗證",
+          "輸入：今天 32 元/台斤〔教學假設〕；上週同店 28 元〔教學假設〕\n\n模型（市場）：r̂_7 = −4.1% → 持平〔教學假設〕\n　　　　　　r̂_14 = −0.9% → 持平〔教學假設〕\n\nA：7天後 ≈ 30.7 元、14天後 ≈ 31.7 元\n\nB：店價週變化 = 32/28−1 = +14.29%〔教學〕\n　公開同期 +1.0%〔教學〕\n　r_B = −4.1% + 0.3×13.29% ≈ −0.11%（仍持平；\n　接近 0，非接近 ±5% 門檻）\n\n※本頁全部數值皆為教學假設，非真店實驗，\n亦非正式模型 fixture 結果",
           size=12.5)
-    footer(s, 10, "r̂＝封存 fixtures；32/28/+1%＝教學假設；store_adapter.py（α=0.3）")
+    footer(s, 10, "本頁全部數值＝教學假設（非 fixture、非模型輸出）；α=0.3＝固定實驗規則")
     notes(s, "p10")
 
     # --- p11 模型（候選修正） ---
@@ -382,9 +398,11 @@ def build(pptx_path: Path, assets: Path, notes_data: dict, stats: dict, force: b
     # --- p13 介面 ---
     s = add_slide()
     title_bar(s, "介面現況與限制", "原型截圖（2026-10-03，本機瀏覽器）")
-    shot = ROOT / "outputs/e2e/ui_ab_mobile_390x844.png"
-    if shot.exists():
-        s.shapes.add_picture(str(shot), Inches(0.7), Inches(1.2), height=Inches(5.4))
+    shot = Path(UI_SHOT)
+    if not shot.exists():
+        print(f"FAIL: 缺必要 UI 截圖 {shot}（第13頁必要素材；不可靜默略過）", file=sys.stderr)
+        raise SystemExit(3)
+    s.shapes.add_picture(str(shot), Inches(0.7), Inches(1.2), height=Inches(5.4))
     bullets(s, [
         ("已實作（本機）：表單/自然語言兩入口、A/B 並列、保存→到期核對、匯出/刪除（request_id 綁定伺服器預測）", 0),
         ("主張狀態進畫面：資料截止日、驗證範圍、B 實驗性警示", 0),
@@ -447,17 +465,21 @@ def build(pptx_path: Path, assets: Path, notes_data: dict, stats: dict, force: b
     title_bar(s, "附錄 A3：引用清單（[R01…R11]）")
     refs = [
         "R01 陳泯宏(2024) 國產大宗蔬菜價格預測模型之比較. 臺大統計碩士學位學程. (摘要全文實讀；DOI 10.6342/NTU202400875)",
-        "R02 李岱鑫(2015) 高雄果菜運銷公司高麗菜批發價格預測之研究—蒐集私有資料的價值. 清華. (摘要實讀)",
+        "R02 李岱鑫(2015) 高雄果菜運銷公司高麗菜批發價格預測之研究—蒐集私有資料的價值. 清華. (摘要實讀；誤差比較，指標UNKNOWN)",
         "R03 林沂臻(2017) HHT菜價預測. 中山醫大碩士. (索引摘要)",
         "R04 農委會×財政資訊中心(2018) 農業大數據平台零售估計. 豐年社報導. (報導全文)",
         "R05 flux6lab 白菜即時 App/官網. (官網實讀 2026-10-04；中長期趨勢預測/零售換算文案)",
         "R06 鹿中創客 農產分析 App. (Google Play 文案實讀 2026-10-04)",
         "R07 YuehChun(2025) NCHU-Data-Mining-Project. GitHub. (repo)",
-        "R11 廖啜翔(2021) 以深度學習方式探討臺灣結球白菜之價格. 臺大農經碩士. (僅書目)",
         "R10 農糧署(2026) 115年度AI+ML農產價格先導研究徵件. (PDF全文)",
-        "R08 洪士育(北科大)、R09 陳澤維(政大)：書目未定位 → 待查線索，不作核心引用",
+        "R08 洪士育(北科大)、R09 陳澤維(政大)、R11 廖啟翔(臺大農經，作者名未核實)：書目未定位 → 待查線索，不作核心引用",
     ]
-    bullets(s, [(r, 0) for r in refs], l=Inches(0.6), t=Inches(1.15), w=Inches(12.2), size=12, gap=Pt(4))
+    bullets(s, [(r, 0) for r in refs], l=Inches(0.6), t=Inches(1.2), w=Inches(12.2), size=13.5, gap=Pt(10))
+    note = s.shapes.add_shape(5, Inches(0.6), Inches(5.75), Inches(12.2), Inches(0.95))
+    note.fill.solid(); note.fill.fore_color.rgb = LIGHT; note.line.color.rgb = ACCENT; note.line.width = Pt(1.25)
+    txbox(s, Inches(0.85), Inches(5.85), Inches(11.7), Inches(0.8),
+          "計數：核心作品 7 件（R01–R07）＋官方動向 1 件（R10）；2021–2026 近年 5 件。R08／R09／R11 為待查線索（書目未定位、R11 作者名未核實）——不計核心、不硬湊篇數。\n完整書目、永久入口與讀取層級（full／abstract／page／report）見 docs/REFERENCES.md；「文案未見」「摘要未載」一律標 UNKNOWN，不寫成「無」。",
+          size=12, color=GRAY)
     footer(s, "A3", "docs/REFERENCES.md（完整書目/入口/讀取層級）")
     notes(s, "p18")
 
@@ -488,8 +510,11 @@ def main():
     ap.add_argument("--assets", default=str(ROOT / "slides/assets_v2"))
     ap.add_argument("--notes", default=str(ROOT / "slides/source/notes_v2.json"))
     ap.add_argument("--stats", default=str(ROOT / "outputs/proposal_delivery/run2_20261004_01/stats_master.json"))
+    ap.add_argument("--ui-shot", default=str(ROOT / "outputs/e2e/ui_ab_mobile_390x844.png"), help="第13頁必要UI截圖路徑")
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
+    global UI_SHOT
+    UI_SHOT = args.ui_shot
     notes_data = json.loads(Path(args.notes).read_text(encoding="utf-8"))
     stats = json.loads(Path(args.stats).read_text(encoding="utf-8"))
     build(Path(args.pptx), Path(args.assets), notes_data, stats, args.force)

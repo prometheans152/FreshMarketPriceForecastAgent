@@ -27,7 +27,7 @@ openspec init --tools none --language zh-TW   # 非互動；不覆寫既有 AGEN
 | `design.md` | 本批變更設計（文件批次、不動程式；舊 FINAL 文件保留歷史） |
 | `specs/research-evidence/spec.md` | 主張可追溯（WHEN/THEN：成績可重算、UNKNOWN 不當否定、負向保留、B 標待驗證） |
 | `specs/proposal-delivery/spec.md` | 跨文件一致、PPTX/PDF 實檔逐頁檢查、講者備註、範圍誠實 |
-| `tasks.md` | 原P1–P6 共 11 項＋D44-R01–R06 修訂輪 6 項，共 17/17 勾選（GLM 自驗；ChatGPT 複審另計） |
+| `tasks.md` | 原P1–P6 共 11 項＋D44-R01–R06 修訂輪 6 項，共 23/23 勾選（GLM 自驗；ChatGPT 複審另計） |
 
 ## 常用命令（Git Bash；PowerShell 用 `tools\\openspec\\node_modules\\.bin\\openspec`）
 
