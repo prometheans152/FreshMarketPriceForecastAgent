@@ -1,5 +1,24 @@
 # TW01 菜價預測專題執行任務
 
+## D44 本輪工作包：研究／設計／OpenSpec／正式投影片
+
+**2026-10-04 最新排程覆蓋：** 使用者先擱置代理人問題，保留現有介面。T25–T28 的代理人整合與相關修復暫緩，不是 PASS，也不阻塞下表。T16 真店、SERVER、影片與發布維持原各自狀態。本輪不執行產品程式修復、重訓、外部部署或其他課堂作業。
+
+詳細任務：[PROPOSAL_DELIVERY_PLAN.md](docs/PROPOSAL_DELIVERY_PLAN.md)；已讀教授來源：[SOURCE_AUDIT](docs/PROPOSAL_SOURCE_AUDIT_20261004.md)；GLM直接入口：[HANDOFF](docs/GLM_PROPOSAL_HANDOFF.md)。本表為本輪狀態索引，P1–P6只是既有T任務的子工作包，不取代T01–T36。
+
+| 工作包 | 對應原TASK | 產物與完成標準 | 狀態 |
+|---|---|---|---|
+| 來源核對／安排 | T01 | COS實讀L4-1 A–Z、逐字稿補充及六包計畫；只證明本批來源／規劃已完成 | PASS（2026-10-04） |
+| P1 研究動機 | T04/T33 | 有證據的問題、研究問題、正式稿與簡報版摘要 | PASS（2026-10-04；RESEARCH_MOTIVATION.md：5項可查證據＋RQ1–RQ3＋169字摘要） |
+| P2 前作與差異 | T04 | 重查矩陣、REFERENCES、RESEARCH_GAP；未知不當沒有 | PASS（10件關鍵作品、UNKNOWN 12處如實標、[R01–R10]編號、三組缺口；僅摘要閱讀者主張已縮小） |
+| P3 三貢獻／研究稿 | T33 | C1–C3各自可追溯；A–Z提案與初步成果稿 | PASS（CONTRIBUTIONS.md＋PROPOSAL_REPORT.md A–Z；基線並列、負向保留、無顯著/首次用語） |
+| P4 設計藍圖 | T02 | 根目錄design.md、架構／資料流／時間軸與具體公式例子 | PASS（§0–§5現況藍圖置頂＋歷史附錄；錨定不變向與0.3來源明示） |
+| P5 OpenSpec管理 | T02/T34 | 真CLI初始化、規格情境、change與任務、版本及validate輸出 | PASS（CLI 1.14.0局部安裝；change 4/4 artifacts、11/11 tasks；validate --strict exit 0；openspec_cli_evidence.txt） |
+| P6 正式投影片 | T33/T34 | 可編輯PPTX＋對應PDF＋講者備註＋逐頁渲染驗收 | PASS（PPTX=PDF=19頁；兩輪視覺驗收rev2 19/19 PASS（render_review.md）；SLIDE_NOTES.md主講11:15＋10分鐘快版） |
+| 本批交付檢查 | T34 | PROPOSAL_ACCEPTANCE、來源／數字／文件一致性與保護證據 | PASS（PROPOSAL_ACCEPTANCE.md六包全過；保護檔6/6 SHA256不變；claims_evidence 15列回填文稿段落與頁碼；eval JSON重算=2d28acd2…74b8） |
+
+先來源／數字核對及P5a管理初始化，再P1/P2平行→P3→P4→P5b→P6→交付檢查。**T33本批提案／簡報不再以T27/T32全部完成為前置条件**；未完成實驗照實標示。**2026-10-04 本批P1–P6與交付檢查全數PASS，驗收見 [PROPOSAL_ACCEPTANCE.md](docs/PROPOSAL_ACCEPTANCE.md)；真店T16、代理人後端、SERVER、影片與發布維持各自狀態，不因本批PASS升格。**原條目以下保留歷史，衝突以D44為準。
+
 > 給 GLM：先讀 [AGENTS.md](AGENTS.md)、[design.md](design.md)、[GLM_HANDOFF.md](docs/GLM_HANDOFF.md)及[MODEL_VALIDATION_PLAN.md](docs/MODEL_VALIDATION_PLAN.md)，按依賴逐項執行。依執行環境採用 Superpowers 的 executing-plans 或 subagent-driven-development；技能不可用時，保留相同的逐項驗證與獨立審查流程。不要把寫好任務、下載資料或產生圖表當成模型已驗證。
 
 **Goal（D41）:** 保留本機已訓練菜價模型與封存評估，先用可替換的 GLM API 後端完成代理人工具整合，再在另一台 RTX 3090 SERVER 自架 Qwen3.8-27B 並以同一介面切換重驗。使用者以手機輸入今天店價及選填上週同店價，取得 7／14 天預測與有根據的解釋。Hermes Agent 暫定（使用者原文 HARMES），詳見 [代理人方向](docs/AGENT_RUNTIME_DIRECTION.md)。

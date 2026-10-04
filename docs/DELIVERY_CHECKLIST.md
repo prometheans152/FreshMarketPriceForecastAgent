@@ -1,5 +1,9 @@
 # 期末交付清單與任務映射
 
+## 最新本批交付：D44（2026-10-04）
+
+六工作包已於 2026-10-04 全數完成並通過驗收：[PROPOSAL_ACCEPTANCE.md](PROPOSAL_ACCEPTANCE.md)。成品：`docs/RESEARCH_MOTIVATION.md`、`docs/RELATED_WORK_MATRIX.md`＋`docs/RESEARCH_GAP.md`＋`docs/REFERENCES.md`、`docs/CONTRIBUTIONS.md`＋`docs/PROPOSAL_REPORT.md`、根目錄 `design.md`、`openspec/`（CLI 1.14.0，validate --strict 通過）、`slides/TW01_菜價預測_研究提案與初步成果_v1.pptx`＋同名 PDF（19 頁，逐頁視覺驗收 19/19 PASS）與 `docs/SLIDE_NOTES.md`。代理人、SERVER、真店、影片／發布等另外追蹤，不因本批 PASS 升格。組員與正式日期待填。下方表格為2026-10-03初始映射，完成比例以 TASKS 為準。
+
 建立日期：2026-10-03（T01產出）。來源：本機逐字稿（行號見[課程要求](COURSE_REQUIREMENTS.md)）與先前課程頁快照；當屆Notion公告未能讀取，最新細則屬未確認。
 
 ## 要求→任務映射

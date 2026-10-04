@@ -1,5 +1,9 @@
 # AIoT 期末專題
 
+## 最新工作批次：研究提案與正式投影片（D44）
+
+2026-10-04 使用者暫緩代理人整合，先保留現有介面；本輪執行 [六個研究／交付工作包](docs/PROPOSAL_DELIVERY_PLAN.md)，教授 L4-1 已由 COS 重新讀取，見 [來源核對](docs/PROPOSAL_SOURCE_AUDIT_20261004.md)。**六包已全數完成並通過驗收（[PROPOSAL_ACCEPTANCE.md](docs/PROPOSAL_ACCEPTANCE.md)）**：研究動機與 RQ（[RESEARCH_MOTIVATION](docs/RESEARCH_MOTIVATION.md)）、前作矩陣與缺口（[RELATED_WORK_MATRIX](docs/RELATED_WORK_MATRIX.md)、[RESEARCH_GAP](docs/RESEARCH_GAP.md)、[REFERENCES](docs/REFERENCES.md)）、三貢獻與 A–Z 研究稿（[CONTRIBUTIONS](docs/CONTRIBUTIONS.md)、[PROPOSAL_REPORT](docs/PROPOSAL_REPORT.md)）、設計藍圖（[design.md](design.md)）、真 OpenSpec 管理（[OPENSPEC_WORKFLOW](docs/OPENSPEC_WORKFLOW.md)，validate --strict 通過），以及正式可編輯投影片 `slides/TW01_菜價預測_研究提案與初步成果_v1.pptx`＋同名 PDF（19 頁；逐頁渲染視覺驗收 19/19 PASS，講稿見 [SLIDE_NOTES](docs/SLIDE_NOTES.md)）。未等待金鑰／SERVER；模型與封存評估未變（保護檔 SHA256 六項核對一致）。
+
 本工作區用來完成TW01「現場菜價7／14天預測與分析代理人」期末專題，並保留先前選題與資料查核紀錄。
 
 初始化／交接更新日期：2026-10-03；狀態更新：2026-10-04（**第五輪完成：S01–S09 全修，Hermes 0.19.0 真介面整合，227 項測試通過，詳[第五輪報告](docs/ROUND5_REPAIR_REPORT.md)**。本機已有資料管線、公開模型與封存評估、模型包 v0.1.0、HTTP API、手機網頁（含保存流程）、行情更新，以及三層可切換代理人：`rule`（預設）／`glm_zai`/`glm_bigmodel`（OpenAI 相容真 tool-calling 迴圈）／`qwen_local`（本機 Qwen3.8-27B 端點，不自動切雲端）；框架可選官方 `hermes-agent` 0.19.0（白名單隔離、輸出同過真值驗證器）。真 GLM 呼叫待金鑰設定；真店 A/B 待到期價；SERVER／外網手機待相應條件。模型分數與負向結果未變。

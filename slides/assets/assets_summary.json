@@ -1,0 +1,8 @@
+{
+  "volatility": "動機：各品項 |r|>5% 比例，來源 data/processed/features_labels.parquet（凍結 2026-10-03 快照）",
+  "f1_vs_baselines": "來源 outputs/evaluation/public/public_test_results.json（SHA256 2d28acd2…）",
+  "mae_negative": "同上來源；點估計未勝基線為本案明示限制",
+  "time_split": "來源 manifest.json splits + outputs/splits/split_list.csv",
+  "by_crop": "來源 public_test_results.json by_crop",
+  "confusion_h7": "來源同上；漲召回偏低為明示限制（up recall ≈ 10%）"
+}

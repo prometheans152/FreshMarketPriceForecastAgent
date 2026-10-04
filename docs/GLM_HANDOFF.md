@@ -1,5 +1,7 @@
 # GLM接手指引：TW01菜價預測專案
 
+**D44 最新覆蓋（2026-10-04）：** 本輪已改為研究／設計／OpenSpec／正式投影片，代理人整合暫緩。請直接讀 [GLM_PROPOSAL_HANDOFF.md](GLM_PROPOSAL_HANDOFF.md) 及 [PROPOSAL_DELIVERY_PLAN.md](PROPOSAL_DELIVERY_PLAN.md)。下方 D41 提示詞保留歷史；本輪不要從它恢復代理人修復、API接線、重訓或SERVER部署。現有介面可作展示，六包文稿不以後端實機驗收為前置門檻。
+
 更新日期：2026-10-04（D41）。本文件給 GLM 開發執行者；不要把開發者 GLM 與程式內的 GLM API 後端混為一談。
 
 **最新覆蓋規則：** 先讀 [代理人方向](AGENT_RUNTIME_DIRECTION.md) 與第三輪 `44dabe3` 獨立審查。使用者已確定 **本機 Qwen3.8-27B**，需要 **GLM API 可切換且先行使用**；Hermes Agent 暫定（原文 HARMES）。不再確認 8B／27B 原意，不把全部代理人工作卡在 SERVER。R01–R08 是未修復缺陷，不因新後端而消失。

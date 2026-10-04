@@ -1,5 +1,19 @@
 # GLM執行進度與交接紀錄
 
+## 最新排程：D44 研究交付批次（2026-10-04）
+
+使用者暫緩代理人，先以現有介面作展示。ChatGPT本次用COS讀完L4-1 A–Z可取得正文並檢視圖，重新對照逐字稿，寫入 [來源核對](PROPOSAL_SOURCE_AUDIT_20261004.md)、[執行計畫](PROPOSAL_DELIVERY_PLAN.md)、[GLM提示詞](GLM_PROPOSAL_HANDOFF.md)。
+
+**2026-10-04 GLM 完成六包並通過驗收（[PROPOSAL_ACCEPTANCE.md](PROPOSAL_ACCEPTANCE.md)）**：
+- P1 動機：[RESEARCH_MOTIVATION.md](RESEARCH_MOTIVATION.md)（5 項可查證據＋RQ1–RQ3）。
+- P2 前作：[RELATED_WORK_MATRIX.md](RELATED_WORK_MATRIX.md)（10 件、UNKNOWN 12 處如實標）＋[RESEARCH_GAP.md](RESEARCH_GAP.md)＋[REFERENCES.md](REFERENCES.md)（[R01–R10]）。
+- P3 貢獻：[CONTRIBUTIONS.md](CONTRIBUTIONS.md)（C1 已驗證／C2 待驗證／C3 初步）＋[PROPOSAL_REPORT.md](PROPOSAL_REPORT.md)（A–Z 完整稿，基線並列、負向保留）。
+- P4 設計：根目錄 [design.md](../design.md) 重整為 §0–§5 現況藍圖＋歷史附錄。
+- P5 OpenSpec：CLI 1.14.0 局部安裝（`tools/openspec/`）、change `prepare-tw01-proposal-package` 4/4 artifacts、11/11 tasks、`validate --strict` exit 0（[OPENSPEC_WORKFLOW.md](OPENSPEC_WORKFLOW.md)；證據 `outputs/proposal_delivery/run1_20261004/openspec_cli_evidence.txt`）。
+- P6 投影片：`slides/TW01_菜價預測_研究提案與初步成果_v1.pptx`＋同名 PDF（各 19 頁＝主講 15＋附錄 4）；逐頁 PNG 渲染＋兩輪獨立視覺驗收，rev2 19/19 PASS（`slides_render/render_review.md`）；[SLIDE_NOTES.md](SLIDE_NOTES.md) 講稿主講約 11:15＋10 分鐘快版；6 張圖表由凍結 JSON 生成並標來源。
+- 保護核對：6 個凍結工件 SHA256 不變；`public_test_results.json` 重算 = `2d28acd2…74b8`；`src/`、`tests/`、`web/`、`contracts/`、正式 configs 無修改；`claims_evidence.csv` 15 列回填文稿段落與頁碼。
+- 本批未做（維持原狀態）：真店 T16、代理人後端（GLM API／Qwen／SERVER）、影片、發布、遠端推送。第五輪自報不代替 [第五輪獨立審查](../outputs/audits/round5_independent_2f7199e/REVIEW_2f7199e.md)，相關缺陷暫緩而非關閉。
+
 更新日期：2026-10-04（GLM第五輪完成：S01–S09 全修＋Hermes 真介面；詳[第五輪報告](ROUND5_REPAIR_REPORT.md)）。
 
 - **第五輪完成**：Hermes 0.19.0 真建構/真 dispatch/真工具追蹤（tool_complete_callback；無事後補算）；輸入忠實（TrustedContext 防改價/改日期/無中生有）；輸出事實 (mode,horizon,field,unit) 分離；保存不可變 ID＋simulated 隔離；隔離於 import 前生效；227 測試（乾淨環境同數）；凍結工件不變。**真 GLM 仍待金鑰設定。**

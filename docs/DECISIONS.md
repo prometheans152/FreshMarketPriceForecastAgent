@@ -51,6 +51,8 @@
 | D42 | 2026-10-04，GLM 第四輪（依[第三輪獨立審查](reviews/../../outputs/audits/2026-10-04_round3_independent/REVIEW_44dabe3.md)與使用者本次指示） | R01–R08 修復完成（測試 134→192，無刪測試）；代理人後端改**供應商可切換三層**：OpenAI 相容迴圈（GLM/自架 Qwen3.8-27B 同契約）＋官方 hermes-agent 0.19.0 整合（白名單僅 2 菜價工具、HERMES_HOME 隔離、輸出同過真值驗證器）＋規則降級；`AIOT_AGENT_PROFILE`/`AIOT_AGENT_FRAMEWORK` 明確切換、qwen_local 不自動切雲端；R04 保存改 request_id 綁定伺服器真推論。GLM 金鑰未配置（待使用者：平台/model ID/金鑰設定） | 詳[第四輪報告](ROUND4_GLM_API_REPORT.md)。模型/評估/切分工件 hash 不變；真 GLM、真 Qwen、T16/T32/T35 各自 HOLD。 |
 | D43 | 2026-10-04，GLM 第五輪（依[第四輪獨立審查](../outputs/audits/round4_independent_f146b97/REVIEW_f146b97.md) S01–S09） | 全數修正：Hermes 依安裝版 0.19.0 真介面重寫（handler 回 JSON 字串、tool_complete_callback 權威追蹤、無事後補算）；import 前環境隔離＋顯式 base_url；TrustedContext 輸入忠實驗證；驗證器 (mode,horizon,field,unit) 分離；request_id 伺服器生成＋simulated 全流程；上游錯誤遮罩；工具上限真生效；解析器數量/日期完整語意；配置完整驗證＋private/.env 載入。測試 192→**227**（乾淨環境同數）；凍結工件全部不變（fixtures 因 S05 契約演進重生成，語義差異=0 已核對） | 詳[第五輪報告](ROUND5_REPAIR_REPORT.md)。真 GLM 仍待金鑰；真 Qwen/3090、T16/T32/T35 各自 HOLD。 |
 
+| D44 | 2026-10-04，使用者本次明確要求＋COS實讀L4-1 | 代理人問題暫擱，現有介面保留作展示；本輪改做研究動機、相關研究與差異、三項主要貢獻、design.md、OpenSpec管理及正式菜價投影片 | [来源核對](PROPOSAL_SOURCE_AUDIT_20261004.md)、[六工作包](PROPOSAL_DELIVERY_PLAN.md)、[GLM提示詞](GLM_PROPOSAL_HANDOFF.md)。暫停D41/D43的代理人優先執行順序，不刪未來Qwen3.8-27B/GLM切換方向，也不移除Hermes。文稿／簡報不依賴金鑰、SERVER或真店到期；不把未驗證能力寫成已驗收。只安排本機研究交付，不授權發布、重訓或產品修復。 |
+
 ## 目前未決事項
 
 - 正式題名與初版品項／方法、真店資料可取得程度；TW01目前是本案執行方向。
