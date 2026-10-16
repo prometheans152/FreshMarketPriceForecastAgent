@@ -1,6 +1,6 @@
 # Oracle Docker — 正式維運與回滾
 
-> **改名（2026-10-16／17）：** 本文已改用新名稱 `fresh-market-price-agent-*`／`FMPA_*`。Oracle 主機已於 2026-10-17 遷移完成，只有 certbot 續期排程 `tw01-certbot-renew.*` 仍是舊名；Cloudflare Worker 仍是舊的 `tw01-forecast-mcp`。進度見 [RENAME_MIGRATION.md](../../RENAME_MIGRATION.md)。
+> **改名（2026-10-16／17）：** 本文已改用新名稱 `fresh-market-price-agent-*`／`FMPA_*`。Oracle 主機已於 2026-10-17 遷移完成，只有 certbot 續期排程 `tw01-certbot-renew.*` 仍是舊名；新 Worker `fresh-market-price-agent` 已部署並通過 6/6，但 ChatGPT 仍連舊的 `tw01-forecast-mcp`（保留到切換為止）。進度見 [RENAME_MIGRATION.md](../../RENAME_MIGRATION.md)。
 
 日期：2026-10-15。**原 Oracle VPS 已正式切到 Docker Compose。** IP、HTTPS Nginx、Cloudflare Tunnel、Let's Encrypt IP SAN 憑證均保留。
 

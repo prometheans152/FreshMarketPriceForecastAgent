@@ -2,7 +2,8 @@
 
 > **Rename (2026-10-16/17):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
 > The Oracle host was migrated on 2026-10-17 except the certbot timer (`tw01-certbot-renew.*`);
-> the Cloudflare Worker is still the old `tw01-forecast-mcp`. Progress: [RENAME_MIGRATION.md](../RENAME_MIGRATION.md).
+> the new Worker `fresh-market-price-agent` is live (6/6 E2E), while ChatGPT still uses the old
+> `tw01-forecast-mcp`, which stays up until the connector is switched. Progress: [RENAME_MIGRATION.md](../RENAME_MIGRATION.md).
 
 > **CURRENT SERVER STATUS (2026-10-15):** The same public anonymous MCP
 > URL has actually completed 6/6 live Cloudflare VPC → Oracle protocol
