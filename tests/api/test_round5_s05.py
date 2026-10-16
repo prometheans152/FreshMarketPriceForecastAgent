@@ -121,6 +121,10 @@ class TestS09EnvFile:
         """private/.env 載入實作：存在則載 AIOT_* 鍵；既有環境變數優先。"""
         from aiot_price.api import app as app_module
 
+        # This legacy feature is intentionally OFF in isolated manual/MCP runs;
+        # test its original non-isolated behavior without weakening assertions.
+        monkeypatch.delenv("AIOT_RUNTIME_ISOLATED", raising=False)
+
         env_file = tmp_path / ".env"
         env_file.write_text("AIOT_TEST_KEY=from_file\nAIOT_EXISTING=from_file\n", encoding="utf-8")
         monkeypatch.setenv("AIOT_EXISTING", "from_env")

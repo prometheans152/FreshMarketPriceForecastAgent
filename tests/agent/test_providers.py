@@ -134,8 +134,10 @@ def _CTX(**kw):
 
 
 class TestToolContract:
-    def test_whitelist_only_two_tools(self):
-        assert TOOL_NAMES == {"get_market_quote", "post_forecast"}
+    def test_whitelist_three_tools_phase2(self):
+        # 第二階段（獲授權規格變更）：save_record 加入白名單（AGENT_DESIGN §4.2；
+        # 執行仍需客戶端 save_confirmation，見 test_phase2_agent.py）。
+        assert TOOL_NAMES == {"get_market_quote", "post_forecast", "save_record"}
 
     def test_unknown_tool_rejected(self, engine):
         tools = AgentTools(engine)

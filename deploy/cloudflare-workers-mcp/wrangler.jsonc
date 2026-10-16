@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tw01-forecast-mcp",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-14",
+  "workers_dev": true,
+  "observability": {
+    "enabled": false
+  },
+  "vpc_services": [
+    {
+      "binding": "VPC_ORACLE_FORECAST",
+      "service_id": "01a13a39-0554-7ca0-b29a-38c70d886752"
+    }
+  ],
+  "ratelimits": [
+    { "name": "RL_REQUESTS_IP", "namespace_id": "70101401", "simple": { "limit": 12, "period": 60 } },
+    { "name": "RL_REQUESTS_POP", "namespace_id": "70101402", "simple": { "limit": 60, "period": 60 } },
+    { "name": "RL_TOOLS_IP", "namespace_id": "70101403", "simple": { "limit": 4, "period": 60 } },
+    { "name": "RL_TOOLS_POP", "namespace_id": "70101404", "simple": { "limit": 20, "period": 60 } }
+  ],
+  "vars": {
+    "AUTH_MODE": "public_noauth",
+    "FORECASTENGINE_TRANSPORT": "vpc_service",
+    "FORECASTENGINE_BASE_URL": "https://161.33.19.220",
+    "FORECASTENGINE_ALLOWED_HOSTNAME": "161.33.19.220",
+    "UPSTREAM_TIMEOUT_MS": "20000"
+  }
+}

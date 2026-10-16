@@ -32,5 +32,8 @@ dev = [
     "httpx>=0.28,<1",
 ]
 
+# Transport-only extra; install in an isolated virtualenv (not the frozen ML .venv).
+mcp = ["mcp==1.30.0", "tzdata==2025.3"]
+
 [tool.setuptools.packages.find]
 where = ["src"]

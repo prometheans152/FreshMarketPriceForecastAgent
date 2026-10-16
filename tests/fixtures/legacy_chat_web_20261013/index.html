@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="現場菜價 7／14 天預測（TW01，臺中公開市場行情參考）">
+  <title>現場菜價預測（7／14 天）</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>現場菜價預測</h1>
+      <p class="subtitle">輸入今天看到的價格，預測 7／14 天後會不會更貴</p>
+    </header>
+
+    <main>
+      <section id="agentSection" class="agent-box" aria-labelledby="agentHeading">
+        <h2 id="agentHeading">聊天查行情／預測</h2>
+        <p id="agentStatus" class="agent-status" aria-live="polite">正在讀取聊天設定…</p>
+        <p id="agentHelp" class="hint">每題獨立，不會記住上一題；請在每題寫清楚品項與市場。做預測時，再提供今天店價與單位。</p>
+        <ul class="agent-examples">
+          <li>查中義市場高麗菜最新公開市場行情</li>
+          <li>中義市場高麗菜今天一台斤32元，預測7／14天</li>
+        </ul>
+        <label for="agentQuery">你的問題</label>
+        <div class="agent-row">
+          <input type="text" id="agentQuery" placeholder="例：中義市場高麗菜今天一台斤32元" maxlength="2000" autocomplete="off" aria-describedby="agentHelp">
+          <button type="button" id="agentBtn" class="primary">送出問題</button>
+        </div>
+        <div id="agentResult" class="agent-result" aria-live="polite" hidden></div>
+      </section>
+
+      <form id="predictForm" novalidate>
+        <div class="field">
+          <label for="crop">品項</label>
+          <select id="crop" name="crop_id" required></select>
+        </div>
+
+        <div class="field">
+          <label for="market">參考市場（臺中）</label>
+          <select id="market" name="market_id" required></select>
+          <p class="hint">用來對照公開市場行情，不會揭露你的店家。</p>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="currentPrice">今天價格</label>
+            <input type="number" id="currentPrice" name="current_price" inputmode="decimal"
+                   min="0.1" step="0.1" placeholder="例如 25" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="priceUnit">單位</label>
+            <select id="priceUnit" name="price_unit" required></select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="obsDate">觀察日期</label>
+            <input type="date" id="obsDate" required>
+          </div>
+          <div class="field">
+            <label for="obsTime">時間</label>
+            <input type="time" id="obsTime" required>
+          </div>
+        </div>
+        <p class="hint">預設為現在時間；7／14 天從這天開始算。</p>
+
+        <div class="field">
+          <label for="storeId">匿名店號（選填）</label>
+          <input type="text" id="storeId" pattern="[A-Za-z0-9_-]+" placeholder="store-a" autocomplete="off">
+          <p class="hint">只記在你的手機（本機），格式例如 store-a，可自己改。</p>
+        </div>
+
+        <div class="toggle-block">
+          <label class="switch-row" for="hasLastWeek">
+            <span class="switch-label">有上週價格嗎？（選填）</span>
+            <span class="switch">
+              <input type="checkbox" id="hasLastWeek" role="switch">
+              <span class="knob" aria-hidden="true"></span>
+            </span>
+          </label>
+
+          <div id="prevWeekPanel" class="prev-week" hidden>
+            <div class="field-row">
+              <div class="field">
+                <label for="prevPrice">上週價格</label>
+                <input type="number" id="prevPrice" inputmode="decimal" min="0.1" step="0.1"
+                       placeholder="例如 28" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="prevUnit">上週單位</label>
+                <select id="prevUnit"></select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="prevDate">上週實際日期</label>
+              <input type="date" id="prevDate">
+            </div>
+            <p class="hint">須是同一家店、同規格、同單位，日期約 7 天前（前後 2 天內）；不符合時只能看 A 模式結果。</p>
+          </div>
+        </div>
+
+        <button type="submit" id="predictBtn" class="primary">查詢預測</button>
+      </form>
+
+      <div id="errorBox" class="error-box" role="alert" hidden></div>
+
+      <section id="result" aria-live="polite"></section>
+
+      <div id="saveBar" class="save-bar" hidden>
+        <button type="button" id="saveRecordBtn" class="secondary">保存這次預測</button>
+        <p id="saveStatus" class="save-status" hidden></p>
+        <p class="hint">自願保存這次預測到伺服器，之後可單筆刪除或全部匯出；不保存、關閉頁面都不影響查詢。</p>
+      </div>
+
+      <details id="recordsPanel" class="records-box">
+        <summary>已保存紀錄</summary>
+        <p class="hint">只有按過「保存這次預測」的查詢才會出現在這裡（匿名摘要）。</p>
+        <div class="records-toolbar">
+          <button type="button" id="refreshRecords" class="secondary small">重新整理</button>
+          <a id="exportRecords" class="link-btn small" href="records/export" download="tw01_prediction_records.json">匯出全部</a>
+        </div>
+        <div id="recordsList" class="records-list" aria-live="polite"></div>
+        <p id="recordsStatus" class="records-status" hidden></p>
+      </details>
+
+    </main>
+
+    <footer>
+      <p class="disclaimer">公開市場均價模型（臺中）；店價估計為現價錨定推估，未在同店驗證</p>
+    </footer>
+  </div>
+
+  <noscript>
+    <p class="noscript-note">此頁面需要開啟 JavaScript 才能查詢預測。</p>
+  </noscript>
+</body>
+</html>

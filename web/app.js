@@ -5,13 +5,12 @@
  * 純靜態、無外部 CDN 依賴、無追蹤。
  * API 為同源相對路徑（部署時 API server 直接 serve web/）。
  * 欄位語意依 contracts/forecast.schema.json。
- * 代理人回應欄位 backend_used／degraded／degraded_reason／forecast
+ * 表單回應直接來自 ForecastEngine
  * 與 /records 保存端點，依後端契約實作（ROUND2 審查 F07/F08 修復）。
  * =======================================================*/
 
 // API 路徑（同源、相對路徑；不加前導斜線，頁面與 API 同目錄即可作用）
 const API_FORECAST = 'forecast';
-const API_AGENT_QUERY = 'agent/query';
 const API_RECORDS = 'records';
 const API_RECORDS_EXPORT = 'records/export';
 
@@ -173,7 +172,7 @@ function savePrefs() {
 
 /* ---------- 店號單一來源（F07） ----------
  * 表單 #storeId 是唯一來源（初始值來自 tw01_ui_prefs_v1）；
- * 主表單與代理人請求共用，不再使用 vp_store_id。 */
+ * 本機表單匿名店號，不涉及聊天。 */
 function currentStoreId() {
   const input = $('storeId');
   const value = input ? input.value.trim() : '';
@@ -224,7 +223,6 @@ function init() {
 
   $('predictForm').addEventListener('submit', onSubmit);
   bindSaveAndRecords();
-  bindAgent();
 }
 
 /* ---------- 請求組裝與驗證 ---------- */
@@ -248,6 +246,9 @@ function buildRequest() {
     errors.push('請輸入有效的今天價格（須大於 0）');
   }
   if (!date) errors.push('請填寫觀察日期');
+  if (date && date > toInputDate(new Date())) {
+    errors.push('觀察日期不可在未來');
+  }
   if (!time) errors.push('請填寫觀察時間');
   if (storeId && !STORE_ID_RE.test(storeId)) {
     errors.push('匿名店號僅能使用英文、數字、- 與 _（例如 store-a）');
@@ -434,6 +435,7 @@ function forecastHtml(data) {
   };
   const modeNote = modeNotes[data.mode_executed] || ('執行模式：' + data.mode_executed);
   parts.push('<p class="mode-note">' + esc(modeNote) + '</p>');
+  parts.push('<p class="hint">下方原模型警示中的「今天」是本次填寫的報價基準日，不一定是查詢當日。</p>');
 
   // 全域警示逐條顯示
   if (Array.isArray(data.warnings) && data.warnings.length) {
@@ -706,126 +708,6 @@ function bindSaveAndRecords() {
       deleteRecord(btn.getAttribute('data-record-id'), btn);
     });
   }
-}
-
-/* ---------- 代理人問答（T26 /agent/query） ---------- */
-
-// 依 backend_used／degraded／degraded_reason 產生標示；
-// 規則結果不得顯示為 Qwen 成功執行（F07）。
-function backendLabel(data) {
-  const d = data || {};
-  const used = d.backend_used || d.backend || null;
-  const degraded = d.degraded === true;
-  let text;
-  if (degraded) {
-    text = 'Qwen 失敗→規則模式' + (d.degraded_reason ? '（原因：' + d.degraded_reason + '）' : '');
-  } else if (used === 'rule') {
-    text = '代理人（規則模式）';
-  } else if (used === 'qwen') {
-    text = 'Qwen 代理人';
-  } else {
-    text = used ? '代理人（' + used + '）' : '代理人';
-  }
-  return { text: text, degraded: degraded };
-}
-
-function renderAgentResult(out, data) {
-  out.textContent = '';
-
-  const label = backendLabel(data);
-
-  const head = document.createElement('p');
-  head.className = 'agent-head' + (label.degraded ? ' agent-head-degraded' : '');
-  head.textContent = label.text + '：';
-  out.appendChild(head);
-
-  // (a) 回答文字：textContent，不注入 HTML
-  const answer = document.createElement('div');
-  answer.className = 'agent-answer';
-  answer.textContent = (data && data.answer) || '（沒有回應）';
-  out.appendChild(answer);
-
-  // (b) 結構化結果卡：後端附上的工具真值 forecast（ForecastResponse）
-  const fc = data && data.forecast;
-  const hasResults = !!fc && typeof fc === 'object' &&
-    (Array.isArray(fc.results) || Array.isArray(fc.results_without_last_week));
-  if (hasResults) {
-    const cardsLabel = document.createElement('p');
-    cardsLabel.className = 'agent-forecast-label';
-    cardsLabel.textContent = '工具預測結果（7／14 天）：';
-    out.appendChild(cardsLabel);
-
-    const cards = document.createElement('div');
-    cards.className = 'agent-forecast';
-    // forecastHtml 內所有動態字串均經 esc()，與主表單同一套渲染（含單位顯示）
-    cards.innerHTML = forecastHtml(fc);
-    out.appendChild(cards);
-  } else {
-    const note = document.createElement('p');
-    note.className = 'agent-forecast-missing';
-    note.textContent = '（本次回應未附結構化預測結果，上方文字僅供參考。）';
-    out.appendChild(note);
-  }
-}
-
-function bindAgent() {
-  const btn = document.getElementById('agentBtn');
-  const input = document.getElementById('agentQuery');
-  const out = document.getElementById('agentResult');
-  if (!btn || !input || !out) return;
-
-  async function ask() {
-    const text = input.value.trim();
-    out.hidden = false;
-    if (!text) {
-      out.textContent = '請輸入問題，例如「高麗菜 一斤32」。';
-      return;
-    }
-    // F07：店號與主表單共用同一來源（#storeId／tw01_ui_prefs_v1）
-    const storeId = currentStoreId();
-    if (!STORE_ID_RE.test(storeId)) {
-      out.textContent = '匿名店號格式不正確（僅英文、數字、- 與 _），請先修正上方表單的店號再問代理人。';
-      return;
-    }
-    btn.disabled = true;
-    btn.textContent = '查詢中…';
-    out.textContent = '代理人查詢中…';
-    try {
-      const res = await fetch(API_AGENT_QUERY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: text, store_id: storeId })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        const msg = data && data.error && data.error.message ? data.error.message : '查詢失敗（HTTP ' + res.status + '）';
-        out.textContent = msg;
-        return;
-      }
-      renderAgentResult(out, data);
-      // R06：代理人成功且附帶有效預測時，lastRun 對應本次代理人結果；
-      // 保存按鈕與表單共用，但保存的永遠是「最近一次成功查詢」。
-      if (data.forecast && !data.forecast.error && Array.isArray(data.forecast.results) && data.forecast.results.length) {
-        lastRun = {
-          request: { query: text, store_id: storeId, source: 'agent' },
-          response: data.forecast,
-          source: 'agent'
-        };
-        resetSaveBar();
-        setSaveStatus('本列保存的是剛才的代理人查詢結果。', false);
-      }
-    } catch (err) {
-      out.textContent = '無法連線到伺服器，請確認服務已啟動或網路狀況。';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '問代理人';
-    }
-  }
-
-  btn.addEventListener('click', ask);
-  input.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') ask();
-  });
 }
 
 document.addEventListener('DOMContentLoaded', init);

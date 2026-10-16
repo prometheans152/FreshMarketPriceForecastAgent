@@ -343,6 +343,12 @@ button.primary:disabled {
   min-width: 0;
 }
 
+/* On narrow phones, two 174px cards make unit/price text wrap into
+   unreadable columns. Keep A and B in sequence under each horizon. */
+@media (max-width: 420px) {
+  .ab-row { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ---------- 結果卡片 ---------- */
 
 .card {
@@ -643,17 +649,3 @@ button.danger:disabled {
   opacity: 0.6;
   cursor: default;
 }
-
-/* ---------- 代理人問答 ---------- */
-.agent-box { margin-top: 24px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
-.agent-box h2 { font-size: 1.05rem; margin: 0 0 4px; }
-.agent-row { display: flex; gap: 8px; }
-.agent-row input { flex: 1; min-width: 0; }
-.agent-result { margin-top: 12px; line-height: 1.6; }
-.agent-head { margin: 0 0 4px; font-weight: 600; }
-.agent-head-degraded { color: var(--error-line); }
-.agent-answer { white-space: pre-wrap; }
-.agent-forecast-label { margin: 10px 0 0; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
-.agent-forecast { margin-top: 6px; display: grid; gap: 10px; }
-.agent-forecast .req-echo { margin-bottom: 0; }
-.agent-forecast-missing { margin: 8px 0 0; font-size: 0.82rem; color: var(--muted); }

@@ -1,0 +1,30 @@
+[Unit]
+Description=TW01-only Cloudflare Workers VPC Tunnel (QUIC)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=tw01tunnel
+Group=tw01tunnel
+ExecStart=/usr/bin/cloudflared tunnel --no-autoupdate --protocol quic --loglevel info run --token-file /etc/tw01-cloudflared/token
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+AmbientCapabilities=
+MemoryHigh=140M
+MemoryMax=230M
+CPUQuota=40%
+
+[Install]
+WantedBy=multi-user.target

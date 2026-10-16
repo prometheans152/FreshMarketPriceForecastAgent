@@ -1,0 +1,10 @@
+# Only the native, frozen inference runtime and ASGI API. No training or LLM service.
+numpy==2.5.3
+pandas==2.3.3
+scikit-learn==1.9.1
+joblib==1.6.0
+pyarrow==25.0.1
+fastapi==0.142.2
+uvicorn==0.54.0
+tzdata==2025.3
+

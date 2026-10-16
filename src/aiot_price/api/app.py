@@ -31,6 +31,8 @@ from aiot_price.data.schema import CROP_MAPPINGS, supported_crops
 from aiot_price.models.predict import KNOWN_MARKETS, ForecastEngine
 
 RELEASE_DIR = os.environ.get("AIOT_RELEASE_DIR", "models/releases/0.1.0")
+MANUAL_WEB = os.environ.get("AIOT_MANUAL_WEB") == "1"
+RECORDS_DIR = Path(os.environ.get("AIOT_RECORDS_DIR", "private/predictions"))
 
 app = FastAPI(title="AIoT 菜價 7/14 天預測 API", version="0.1.0")
 
@@ -59,6 +61,74 @@ async def read_limited_json(request: Request, max_bytes: int = MAX_BODY_BYTES) -
 
 @app.middleware("http")
 async def access_limits(request: Request, call_next):
+    if MANUAL_WEB:
+        # A loopback bind alone is insufficient protection from DNS rebinding
+        # and browser requests originating at unrelated sites. Apply the check
+        # before any GET, /records mutation, /forecast, or agent dispatch.
+        # This is manual-only; legacy API/provider routes remain unchanged.
+        from urllib.parse import urlsplit
+
+        client_host = request.client.host if request.client else ""
+        hostname = request.url.hostname
+        if client_host == "testclient":
+            # Starlette's in-process TestClient virtual transport, not a
+            # network peer. A real TCP peer cannot acquire this client IP.
+            allowed = hostname == "testserver"
+        else:
+            allowed = (
+                client_host in {"127.0.0.1", "::1"}
+                and hostname in {"127.0.0.1", "::1", "localhost"}
+            )
+
+        scheme, netloc = request.url.scheme, request.url.netloc
+        origin = request.headers.get("origin")
+        referer = request.headers.get("referer")
+        fetch_site = request.headers.get("sec-fetch-site")
+        if fetch_site is not None and fetch_site.lower() not in {"same-origin", "none"}:
+            allowed = False
+        if origin is not None:
+            try:
+                parsed = urlsplit(origin)
+                allowed = allowed and (
+                    parsed.scheme == scheme and parsed.netloc == netloc
+                    and not parsed.username and not parsed.password
+                    and parsed.path in {"", "/"}
+                    and not parsed.query and not parsed.fragment
+                )
+            except ValueError:
+                allowed = False
+        if referer is not None:
+            try:
+                parsed = urlsplit(referer)
+                allowed = allowed and (
+                    parsed.scheme == scheme and parsed.netloc == netloc
+                    and not parsed.username and not parsed.password
+                )
+            except ValueError:
+                allowed = False
+        if not allowed:
+            return JSONResponse(status_code=403, content={"error": {
+                "code": "manual_local_origin_only",
+                "message": "此手動網頁只接受同一台電腦與同源網站的請求。",
+            }})
+    if os.environ.get("AIOT_LOCAL_HERMES_DEMO") == "1":
+        # The personal demonstration is never served to other hosts/origins.
+        from urllib.parse import urlsplit
+
+        client_host = request.client.host if request.client else ""
+        host = request.url.hostname
+        origin = request.headers.get("origin")
+        allowed = client_host in {"127.0.0.1", "::1"} and host in {"127.0.0.1", "localhost", "::1"}
+        if origin:
+            try:
+                parsed_origin = urlsplit(origin)
+                allowed = allowed and parsed_origin.scheme == request.url.scheme and parsed_origin.netloc == request.url.netloc
+            except ValueError:
+                allowed = False
+        if not allowed:
+            return JSONResponse(status_code=403, content={"error": {
+                "code": "local_demo_only", "message": "此 Hermes 試用僅供本機同一網頁操作。"
+            }})
     # 請求大小：Content-Length 超限直接拒絕（快速路徑）；實際位元組在
     # read_limited_json 串流層再守一次（chunked 無標頭也攔得住）。
     content_length = request.headers.get("content-length")
@@ -164,6 +234,30 @@ async def forecast(request: Request) -> JSONResponse:
                 }
             },
         )
+    if MANUAL_WEB:
+        # The manual interface uses an observed price, not a hypothetical
+        # future store observation. Keep this gate out of legacy/API paths.
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo as _ZoneInfo
+
+        try:
+            observed_raw = body["observed_at"]
+            if not isinstance(observed_raw, str):
+                raise ValueError("observed_at must be a timestamp")
+            observed_date = _dt.fromisoformat(observed_raw)
+            if observed_date.tzinfo is None or observed_date.utcoffset() is None:
+                raise ValueError("observed_at must include a timezone")
+            if observed_date.astimezone(_ZoneInfo("Asia/Taipei")).date() > _dt.now(
+                _ZoneInfo("Asia/Taipei")
+            ).date():
+                raise ValueError("future observation")
+        except (TypeError, ValueError, OverflowError):
+            return JSONResponse(
+                status_code=422,
+                content={"error": {
+                    "code": "invalid_date", "message": "請填寫有效且不在未來的觀察日期與時區。"
+                }},
+            )
     engine = get_engine()
     response = engine.forecast(body)
     if not response.get("error"):
@@ -179,7 +273,32 @@ async def forecast(request: Request) -> JSONResponse:
 
 # ---------- 代理人端點（T26）----------
 
-from aiot_price.agent.service import QwenBackend, RuleBackend, handle_agent_query  # noqa: E402
+# Manual launcher must not import any agent backend, even while registering routes.
+# The legacy path retains the previous module-level symbols for existing callers/tests.
+if not MANUAL_WEB:
+    from aiot_price.agent.service import QwenBackend, RuleBackend, handle_agent_query  # noqa: E402
+
+
+@app.get("/agent/status")
+def agent_status() -> dict:
+    """Configuration metadata only; no model request or connection-success claim."""
+    if MANUAL_WEB:
+        return {"provider": None, "model": None, "runtime": "manual", "configured": False,
+                "reason": "chat_disabled", "local_demo": False}
+    from aiot_price.agent.providers import resolve_active_profile
+
+    try:
+        profile, reason = resolve_active_profile()
+    except Exception:
+        profile, reason = None, "profile_config_unavailable"
+    return {
+        "provider": profile.name if profile else None,
+        "model": profile.model if profile else None,
+        "runtime": os.environ.get("AIOT_AGENT_FRAMEWORK", "direct"),
+        "configured": profile is not None and not reason,
+        "reason": reason or None,
+        "local_demo": os.environ.get("AIOT_LOCAL_HERMES_DEMO") == "1",
+    }
 
 
 @app.post("/agent/query")
@@ -189,6 +308,10 @@ async def agent_query(request: Request) -> JSONResponse:
     QwenBackend 需環境變數 AIOT_QWEN_BASE_URL／AIOT_QWEN_MODEL（SERVER 部署）；
     未設定時使用規則後端（與工具同源，回答只引用工具數字）。
     """
+    if MANUAL_WEB:
+        return JSONResponse(status_code=403, content={"error": {
+            "code": "chat_disabled", "message": "手動表單模式已停用聊天；請直接使用菜價表單。"
+        }})
     try:
         body = await read_limited_json(request)
     except BodyTooLarge:
@@ -213,6 +336,23 @@ async def agent_query(request: Request) -> JSONResponse:
             status_code=400,
             content={"error": {"code": "bad_request", "message": "store_id 須為短字串（匿名店號）。"}},
         )
+    # 第二階段：save_record 工具的使用者確認門——僅當客戶端（介面按鈕）明確帶
+    # save_confirmation={"request_id":..., "confirmed": true} 時才組裝 save_gate。
+    # LLM 自行呼叫 save_record 而無此確認 → 工具回 save_requires_user_confirmation。
+    sc = body.get("save_confirmation")
+    save_gate = None
+    if sc is not None:
+        if not isinstance(sc, dict) or sc.get("confirmed") is not True or not isinstance(sc.get("request_id"), str):
+            return JSONResponse(
+                status_code=400,
+                content={"error": {"code": "bad_request", "message": "save_confirmation 須為 {request_id: 字串, confirmed: true}。"}},
+            )
+        if not re.match(r"^[A-Za-z0-9_-]+$", sc["request_id"] or ""):
+            return JSONResponse(
+                status_code=400,
+                content={"error": {"code": "bad_request", "message": "save_confirmation.request_id 格式無效。"}},
+            )
+        save_gate = {"request_id": sc["request_id"], "confirmed": True, "saver": _save_record_by_request_id}
     engine = get_engine()
     # 第四輪 D41：供應商可切換（AIOT_AGENT_PROFILE：rule|glm_zai|glm_bigmodel|qwen_local）
     from aiot_price.agent.providers import resolve_active_profile, run_agent_loop
@@ -235,9 +375,9 @@ async def agent_query(request: Request) -> JSONResponse:
     if profile.kind == "openai_compat" and framework == "hermes":
         from aiot_price.agent.hermes_runner import run_hermes_agent
 
-        result = await run_in_threadpool(run_hermes_agent, engine, query, profile, store_id)
+        result = await run_in_threadpool(run_hermes_agent, engine, query, profile, store_id, None, save_gate)
     elif profile.kind == "openai_compat":
-        result = await run_in_threadpool(run_agent_loop, engine, query, profile, store_id)
+        result = await run_in_threadpool(run_agent_loop, engine, query, profile, store_id, None, save_gate)
     elif profile.name == "rule":
         qwen = QwenBackend()
         backend = qwen if qwen.available() else RuleBackend()
@@ -274,6 +414,8 @@ def _load_private_env(env_path: Path | None = None) -> dict:
     """
     import re as _re
 
+    if os.environ.get("AIOT_RUNTIME_ISOLATED") == "1":
+        return {}
     path = env_path or (Path(__file__).resolve().parents[3] / "private" / ".env")
     if not path.exists():
         return {}
@@ -335,6 +477,7 @@ from aiot_price.api.prediction_records import (
     load_records,
     save_prediction,
 )
+from aiot_price.integrations.manual_records import load_manual_records
 
 _RECORD_ID_RE = _re_id.compile(r"^[A-Za-z0-9_-]+$")
 
@@ -360,32 +503,51 @@ async def save_record(request: Request) -> JSONResponse:
             status_code=422,
             content={"error": {"code": "bad_request", "message": "請提供 request_id 欄位（字串）；不接受客戶端提交完整預測結果。"}},
         )
+    if set(body) != {"request_id"}:
+        return JSONResponse(status_code=400, content={"error": {
+            "code": "bad_request", "message": "僅允許 request_id，不接受保存路徑或客戶端結果。"
+        }})
     rid = body.get("request_id")
     if not isinstance(rid, str) or not re.match(r"^[A-Za-z0-9_-]+$", rid or ""):
         return JSONResponse(status_code=400, content={"error": {"code": "bad_request", "message": "無效的 request_id。"}})
+    result = _save_record_by_request_id(rid)
+    status = {True: 200}.get(result.get("ok"), result.get("_status", 422))
+    return JSONResponse(status_code=status, content={k: v for k, v in result.items() if k != "_status"})
+
+
+def _save_record_by_request_id(rid: str):
+    """共用保存核心（POST /records 與 Agent save_record 工具同一路徑）。
+
+    只吃 request_id；內容取自伺服器暫存的本伺服器推論結果（R04）。
+    回傳 dict：成功 {"ok": True, "record_id", "saved_at"}；失敗含 "_status" 供 HTTP 層。
+    """
     entry = _RECENT_FORECASTS.get(rid)
     if entry is None:
-        return JSONResponse(
-            status_code=404,
-            content={"error": {"code": "bad_request", "message": "找不到此預測（可能已過期或服務已重啟）；請重新查詢後再保存。"}},
-        )
+        return {"ok": False, "error": "record_not_found", "_status": 404,
+                "message": "找不到此預測（可能已過期或服務已重啟）；請重新查詢後再保存。"}
     resp_obj, req_obj = entry["response"], entry["request"]
     if not _valid_forecast_structure(resp_obj):
-        return JSONResponse(status_code=422, content={"error": {"code": "bad_request", "message": "預測結構無效，無法保存。"}})
-    # S05：simulated 沿全流程（請求或回應任一帶 simulated 即保存為模擬紀錄）
+        return {"ok": False, "error": "invalid_forecast_structure", "_status": 422,
+                "message": "預測結構無效，無法保存。"}
     if req_obj.get("simulated") or resp_obj.get("simulated"):
         resp_obj = {**resp_obj, "simulated": True}
     try:
-        path, saved_at = await run_in_threadpool(save_prediction, resp_obj, req_obj)
+        if MANUAL_WEB:
+            # Explicitly sandbox all manual records, never use legacy defaults.
+            path, saved_at = save_prediction(resp_obj, req_obj, out_dir=RECORDS_DIR)
+        else:
+            # Preserve existing legacy call signature (also used by previous tests).
+            path, saved_at = save_prediction(resp_obj, req_obj)
     except ValueError as e:
-        return JSONResponse(status_code=422, content={"error": {"code": "bad_request", "message": str(e)}})
-    return JSONResponse(status_code=200, content={"ok": True, "record_id": path.stem.replace("prediction_", ""), "saved_at": saved_at})
+        return {"ok": False, "error": "save_rejected", "_status": 422, "message": str(e)}
+    return {"ok": True, "record_id": path.stem.replace("prediction_", ""), "saved_at": saved_at}
 
 
 @app.get("/records")
 async def list_records() -> JSONResponse:
     """已保存預測的匿名摘要清單（供到期核對）。"""
-    records, skipped = await run_in_threadpool(lambda: load_records(include_skipped_info=True))
+    loader = load_manual_records if MANUAL_WEB else load_records
+    records, skipped = await run_in_threadpool(lambda: loader(out_dir=RECORDS_DIR, include_skipped_info=True))
     items = []
     for rec in records:
         resp = rec.get("response") or {}
@@ -415,7 +577,8 @@ async def list_records() -> JSONResponse:
 @app.get("/records/export")
 async def export_records() -> JSONResponse:
     """匯出全部已保存預測（完整內容，供手機下載保存）。"""
-    records = await run_in_threadpool(load_records)
+    loader = load_manual_records if MANUAL_WEB else load_records
+    records = await run_in_threadpool(loader, RECORDS_DIR)
     return JSONResponse(status_code=200, content={"records": records})
 
 
@@ -423,7 +586,7 @@ async def export_records() -> JSONResponse:
 async def remove_record(record_id: str) -> JSONResponse:
     if not _RECORD_ID_RE.match(record_id):
         return JSONResponse(status_code=400, content={"error": {"code": "bad_request", "message": "無效的紀錄 ID。"}})
-    ok = await run_in_threadpool(delete_record, record_id)
+    ok = await run_in_threadpool(delete_record, record_id, RECORDS_DIR)
     if not ok:
         return JSONResponse(status_code=404, content={"error": {"code": "bad_request", "message": "找不到此紀錄。"}})
     return JSONResponse(status_code=200, content={"ok": True})

@@ -13,7 +13,7 @@
   <div class="page">
     <header>
       <h1>現場菜價預測</h1>
-      <p class="subtitle">輸入今天看到的價格，預測 7／14 天後會不會更貴</p>
+      <p class="subtitle">手動輸入現場價格，比較 7／14 天 A／B 推估；無須登入或連線語言模型</p>
     </header>
 
     <main>
@@ -56,7 +56,7 @@
         <div class="field">
           <label for="storeId">匿名店號（選填）</label>
           <input type="text" id="storeId" pattern="[A-Za-z0-9_-]+" placeholder="store-a" autocomplete="off">
-          <p class="hint">只記在你的手機（本機），格式例如 store-a，可自己改。</p>
+          <p class="hint">匿名識別碼會隨查詢送到本機 API；只有按保存才會寫入本機紀錄。格式例如 store-a。</p>
         </div>
 
         <div class="toggle-block">
@@ -112,15 +112,6 @@
         <p id="recordsStatus" class="records-status" hidden></p>
       </details>
 
-      <section id="agentSection" class="agent-box">
-        <h2>用問的也可以</h2>
-        <p class="hint">直接打「高麗菜 一斤32」，代理人會幫你查。</p>
-        <div class="agent-row">
-          <input type="text" id="agentQuery" placeholder="例：高麗菜今天一斤32，上週28" maxlength="2000" autocomplete="off">
-          <button type="button" id="agentBtn" class="primary">問代理人</button>
-        </div>
-        <div id="agentResult" class="agent-result" aria-live="polite" hidden></div>
-      </section>
     </main>
 
     <footer>

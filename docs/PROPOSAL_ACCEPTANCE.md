@@ -1,4 +1,10 @@
-# TW01 研究提案、設計、OpenSpec 與正式投影片：本輪驗收（P1–P6）
+# TW01 提案驗收：最新 v5 r3／D44 歷史 P1–P6 保留
+
+**目前最新（2026-10-09）：Proposal v5 r3 已經 ChatGPT/COS 第三輪獨立複審 EXTERNAL_PASS，範圍僅提案研究文件及33頁簡報。** [主文](proposal_v5/PROPOSAL.md)／[Agent設計](proposal_v5/AGENT_DESIGN.md)／[版本狀態](proposal_v5/STATUS.md)／[獨立報告](../outputs/audits/proposal_v5_r3_independent_20261009_01/REVIEW_R3.md)。下方 P1–P6 為 D44（2026-10-04）的歷史驗收紀錄，不能蓋掉最新 v5；真 LLM、真店 A/B、SERVER、影片和發布仍未完成。
+
+---
+
+
 
 日期：2026-10-04（Asia/Taipei）。依據 [PROPOSAL_DELIVERY_PLAN.md](PROPOSAL_DELIVERY_PLAN.md) 的六工作包驗收。
 證據目錄：`outputs/proposal_delivery/run1_20261004/`。

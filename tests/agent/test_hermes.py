@@ -34,14 +34,18 @@ def engine():
 
 class TestHermesOffline:
     def test_tool_registration_whitelist(self, engine, tmp_path, monkeypatch):
-        """註冊後 enabled_toolsets=['aiot_price'] 只含兩個菜價工具，terminal/browser 被排除。"""
+        """註冊後 enabled_toolsets=['aiot_price'] 只含三個菜價工具（第二階段加 save_record），terminal/browser 被排除。"""
         monkeypatch.setenv("AIOT_HERMES_HOME", str(tmp_path))
-        hermes_runner._register_aiot_tools(engine)
+        hermes_runner._register_aiot_tools(engine, ctx=hermes_runner.TrustedContext(
+            crop_id="cabbage", market_id="中義市場", current_price_jin=32.0,
+            price_unit="NTD_per_taiwan_jin", observed_date="2026-10-04",
+            allowed_modes=("without_last_week", "with_last_week", "both")))
         from model_tools import get_tool_definitions
 
         defs = get_tool_definitions(enabled_toolsets=[hermes_runner.HERMES_TOOLSET])
         names = {d["function"]["name"] for d in defs}
-        assert names == {"get_market_quote", "post_forecast"}, f"白名單外工具外洩：{names}"
+        # 第二階段（獲授權規格變更）：save_record 入白名單；執行仍需 save_gate 確認
+        assert names == {"get_market_quote", "post_forecast", "save_record"}, f"白名單外工具外洩：{names}"
         all_names = {d["function"]["name"] for d in get_tool_definitions(enabled_toolsets=None) or []}
         assert "terminal" in all_names or len(all_names) > 5  # 確認內建高危工具存在但未啟用
         assert "terminal" not in names and "browser" not in "".join(names)

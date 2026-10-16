@@ -1,0 +1,12 @@
+**/.git
+**/.env
+**/.secrets
+**/private
+**/records
+**/logs
+**/__pycache__
+**/*.pyc
+**/node_modules
+**/.DS_Store
+*.zip
+test-results

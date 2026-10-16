@@ -1,5 +1,7 @@
 # TW01 設計藍圖：現場菜價 7／14 天預測與分析代理人
 
+**2026-10-09 現行提案設計入口：** [Proposal v5 r3](docs/proposal_v5/PROPOSAL.md)、[Agent 設計](docs/proposal_v5/AGENT_DESIGN.md)、[Deep Research](docs/proposal_v5/DEEP_RESEARCH.md)、[文獻表](docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md)；[第三輪獨立複審](outputs/audits/proposal_v5_r3_independent_20261009_01/REVIEW_R3.md) 已對**提案文件及簡報**判定 EXTERNAL_PASS。既有 §0–§5 與舊草案保留，最新 CURRENT/PARTIAL/PROPOSED 映射見下方 §6；產品 LLM、同店驗證及 SERVER 仍未完成。
+
 重整日期：2026-10-04（P4，D44 工作包；同日 D44-R05 修訂＋D44-收尾輪：架構五群組編號與對照解說、清除帶分組精確化（t+h+1 期限別）、教學例全標教學假設、暫緩現況措辭）。本檔是正式設計藍圖（現況→本輪→未來分層）；原 2026-10-03 草案全文保留於文末「歷史附錄」不刪除。本輪（D44）六工作包＝研究動機/相關研究/三貢獻/本藍圖/OpenSpec/正式投影片；**非目標**：代理人修復、GLM/Qwen 接線、SERVER 部署、重訓模型（均暫緩，現有介面僅作展示載體）。
 
 ## 0. 使用情境與輸入輸出（PA–PE）
@@ -42,7 +44,7 @@
 
 **對照解說（與投影片 v3 第 8 頁同一套編號）**：①接收使用者報價與選填上週價後，把查詢交給②；②檢查條件與單位（不可比的上週價自動回 A 並說明），通過後呼叫③；③讀取④提供的唯讀公開歷史，以載入的封存模型計算 r̂ 並做 A/B，結果經②回傳①並附期限、截止日與限制。只有使用者選擇保存時，②才把當次預測凍結寫入⑤（獨立私人紀錄，非④）；之後的查閱與匯出也經②回到①，作為到期核對依據。虛線區為暫緩未來，不畫成已運行。
 
-- **已運行（本機）**：①–⑤全部（規則代理人即②之自然語言解析路徑的確定性實作，設計上不呼叫語言模型；其環境邊界屬工程聲明，隨代理人整體暫緩保留已知缺口）。
+- **已運行（本機）**：①–⑤的底層模組／API／資料流已具備，②仍為規則式固定工具序列，⑤保存透過 Web 獨立呼叫 /records；**不代表產品具備自主選工具的 LLM Planner**（最新 CURRENT/PARTIAL/PROPOSED 見 §6）。
 - **暫緩（虛線，未部署）**：LLM 後端（GLM/Qwen/Hermes，理解與解釋用）與 SERVER_3090／外網（T32）；D44 決議本批不修復、不驗收、不接線，僅如實標示。
 - 圖一來源：本節文字圖（可編輯）；投影片（v3）第 8 頁同構重繪（群組框＋語意箭頭＋端點小字＋圖例）。
 
@@ -92,6 +94,23 @@
 - 版本/回退：模型包 v0.1.0（manifest 含 hash）；更新流程（R07：config/download/schema/write/reload 五階段退出碼 0–5）。
 - 未來（未實作，不畫成已運行）：GLM/Qwen 後端接線、SERVER_3090 部署、外網手機（T32）、真店收集（T16）、使用者研究。
 - 已知工程缺陷：第五輪 GLM 自報 S01–S09 已修（見 ROUND5_REPAIR_REPORT），**屬執行者自驗、未經新一輪獨立審查**；D44 起代理人相關整合暫緩——保留已知缺口，本批不修復、不驗收、不接線，藍圖僅如實標示（詳 docs/AGENT_RUNTIME_DIRECTION.md 與各輪獨立審查）。
+
+---
+
+## 6. Proposal v5 r3：真實程式、Domain Agent 設計與待辦分界
+
+教授要求的最新 **①–⑤ 系統架構、D1–D9 流程圖、Algorithm 1 完整41行 Pseudocode** 在 [AGENT_DESIGN.md](docs/proposal_v5/AGENT_DESIGN.md) §3／§7／§8；[簡報](slides/proposal_v5/README.md) 主講第11–13頁、附錄第28頁。上方 D44 架構圖保存工程歷史；如狀態不一致，以本節與 AGENT_DESIGN 的實機核對優先。
+
+| 狀態 | 可主張的功能 | 必須保留的限制 |
+| --- | --- | --- |
+| **CURRENT** | 規則式 parse_query；AgentTools 兩個工具 get_market_quote／post_forecast；ForecastEngine 封存 RF/HGB；ToolCallLimiter 限制呼叫**次數**；RuleBackend 模板由工具結果組文；獨立 Web/records 保存 API | 固定序列非自主 Planner；RuleBackend 模板不經 validate_qwen_answer；save_record 尚非 AgentTool |
+| **CURRENT＋PARTIAL** | 公開資料落後3日以上會警告；無可用特徵才回 stale_data_unusable；validate_qwen_answer 只掛於 QwenBackend 路徑 | 不可宣稱所有超期資料都硬性拒絕，或所有文字都經過同一驗證器；10秒工具逾時只有常數，未證實所有工具路徑有 timeout |
+| **PARTIAL／HOLD** | 可保存/查閱/匯出預測；有事先配對驗證設計 | 同店 t+7/t+14 真價缺失（T16），不具備已驗證的 B 增益與 Agent 保存工具化 |
+| **PROPOSED** | LLM Planner 能按使用者問題選白名單工具、經伺服器端 schema 驗證後呼叫；LLM 只理解/解釋、不產生菜價；抽象工具 get_public_quote、call_forecast、save_record | GLM API、Qwen3.8-27B、Hermes、SERVER、真實自主工具選擇及外網展示皆未部署驗收 |
+
+研究與實作邊界不變：公開市場均價≠私人店價；A使用今天現價錨定，B加入選填、可比較的上週同店價；B的0.3是固定規則，尚無同店到期驗證；正式模型方向macro-F1未勝動量，價格相對變化MAE未勝不變價，上漲召回仍偏低。全部數字以凍結評估為準，不重訓不漂白負向結果。
+
+**OpenSpec**：現有變更紀錄對應 D44 歷史提案工件，不因 Proposal v5 r3 文件複審 PASS 而自動將 Agent/實測/部署工件標 PASS；本輪沒有擴大既有 OpenSpec 變更的實作範圍。
 
 ---
 

@@ -1,6 +1,168 @@
+## 最新 TW01 私人連線驗證（2026-10-14T04:54:46.111969+08:00；本節優先）
+
+本人專用「TW01 菜價查詢與 A 預測」已建立、已連線，且已取得真正 ChatGPT 原始 application 工具呼叫與結果；目前是 SELF_CHECK_ACCOUNT_CANDIDATE，正式 EXTERNAL_PASS 仍 HOLD。此節以下較早的 DE10／DE11 HOLD 是歷史狀態，原文完整保留。
+
+一般網頁：http://127.0.0.1:8766/ ，收尾 health=ready、manual/chat_disabled、PID80052。私人插件：https://chatgpt.com/plugins/plugin_asdk_app_6ace7f59fe488191af7942bee81bb93f 。正常專用 client PID89804，loopback readyz200；人工重連後的新行情已恢復。驗收 observer 已停止，日常連線不持續捕獲對話。
+
+網頁：manual_web → /forecast(A/B、台斤/公斤、t+7/t+14)及本機 /records → 凍結 ForecastEngine(RF7/HGB14)。ChatGPT：專用私人 Tunnel → 官方 client → SDK stdio／入站界限與 watchdog → 獨立 worker Job → 原 AgentTools／同一凍結 Engine；恰兩工具 get_market_quote、post_forecast(匿名A)，不提供 B、保存、私人紀錄、任意 URL、檔案或程式。
+
+真實案例、原始參數／structuredContent、完整獨立 Engine JSON、原回答與檢查結果：C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_account_followup_20261014014708_Windows5800X\DE11\cases；逐案及全部限制見 C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_account_followup_20261014014708_Windows5800X\DE12\acceptance_matrix.md。檢查器只驗支援的文字格式；未支援或缺說明的原回答保留非零，不改寫成 PASS。行情原案價格／日期污染副本各 exit1。
+
+原19/19 SHA256/size、ML原104行 freeze不變。原整合120、產品564、repo593(--ignore=outputs)回歸 exit0/skip0；裸repo22 collection errors/exit2保留。帳號續作沒有再改產品source/tests、模型或公開資料。離線雲端請求等待逾60秒後人工取消，該體驗仍HOLD；Windows不是硬即時系統，原公開模型未勝相應簡單基線，真店A/B仍未驗證，公開歷史截至2026-10-02。
+
+正常啟動只用本輪已核實的 C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_account_followup_20261014014708_Windows5800X\DE10\tw01_tunnel.ps1 -Action Run（PowerShell7；已有profile時不要再Init）。用file:key參照，agent沒有讀取／印出／hash runtime key。沒有 commit/push、重訓、公开部署、Qwen／3090／Ubuntu操作或借用舊 COS 通道。證據、恢復步驟、checksum正反驗證與独立審查入口：C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_account_followup_20261014014708_Windows5800X\DE12\handoff.md。
+
+---
+
+## 最新 Codex 候選（2026-10-14；本節優先）
+
+# TW01 本輪候選交付
+
+更新：2026-10-14T00:52:48.571008+08:00；主機 Windows 5800X；HEAD `9e29cddce8687489dcd07bc2f8d673d2e0a72ce3`。
+
+**SELF_CHECK_LOCAL_CANDIDATE。獨立代理人：INDEPENDENT_AGENT_PASS；正式 EXTERNAL_PASS：HOLD。本人ChatGPT插件尚未接通，DE10/DE11 HOLD。**
+
+本輪交付補充（2026-10-14）：私人通道 helper 的繼承環境與 profile 漂移缺口，以及交付 checker 的缺件／虛假獨立 PASS 缺口，均已有原始 RED、最小修補及另一上下文的親自重跑。追加原文：`C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_codex_20261013_235947_Windows5800X\DE08\independent\delivery_addendum.md`；原核心 46 檔審查身份不变。helper 作者假 client 最終 16 passed/exit 0，關掉環境清理的隔離副本 exit 1；獨立 reviewer 自己的假 client 與真空設定拒絕分開記錄。**真 tunnel-client Init/Doctor/Run、帳號權限、ChatGPT E2E 仍 NOT_RUN/HOLD。**
+
+私人接線準備位置是 `C:\Users\prometheans\Documents\AIOT_FinishProject\private\tw01_chatgpt_tunnel_codex_20261014`：本人只將新專用 ID 寫入 `tunnel-id.txt`、新 runtime key 寫入 `runtime-key.txt`；不要貼金鑰到聊天。本輪兩檔仍為空，ACL 已去繼承。receipt 的原欄位 `acl_inheritance=true` 實際存的是 AreAccessRulesProtected，已保留原件並更名 `inheritance_disabled=true`，沒有改動權限或讀值。
+
+本人完成工作區選擇、專用通道／key 與風險授權後，才用 PowerShell 7 執行下方 future helper；現在不是成功接線證據。它使用清空後的子環境、固定 ID／file:key 參照／loopback、固定 MCP command，Init 不覆寫既有 profile，Doctor/Run 先驗 profile SHA256 與 identity。官方 client version/init/doctor/run help 已親跑；只讀 help 不等於 doctor/run。
+
+```powershell
+pwsh -NoProfile -File "C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_codex_20261013_235947_Windows5800X\DE10\tw01_tunnel.ps1" -Action Init
+pwsh -NoProfile -File "C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_codex_20261013_235947_Windows5800X\DE10\tw01_tunnel.ps1" -Action Doctor
+pwsh -NoProfile -File "C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_codex_20261013_235947_Windows5800X\DE10\tw01_tunnel.ps1" -Action Run
+```
+
+剩餘驗收限制：Windows 排程不是硬即時保證；入站 bound 不等於全機 OOM 保證；公開歷史仍封存截至 2026-10-02（封存前 health 親查），原公開測試未勝對應簡單基線，真店到期 A/B 尚未驗證；本輪 Chrome 目視遭工具拒絕；私人通道權限、ChatGPT 最終自由文字與斷線恢復均未驗證。已重現的本機重要缺陷關閉，ChatGPT 入口仍不具正式啟用條件，正式 EXTERNAL_PASS 仍 HOLD。
+
+實際可使用網址：http://127.0.0.1:8766/ ，本輪再次health=ready、manual/chat_disabled；既有PID80052未重啟。另自行啟停隔離candidate跑22個真正HTTP請求。Chrome自動化拒開`ERR_BLOCKED_BY_CLIENT`，本輪無新桌面/手機圖，不將HTTP或舊37checks當新Chrome验收。
+
+架構：manual browser→manual_web→原API /forecast、/records→凍結ForecastEngine（RF7/HGB14，A/B固定alpha0.3）；ChatGPT（未接通）→TW01專用私人Tunnel（未成立）→tunnel-client→官方SDK stdio/Binary ingress guard→兩工具嚴格schema/watchdog→每呼叫suspended worker Job→原ML隔離worker→adapter/AgentTools/同一凍結release。兩入口各自程序，不走/agent/query，不需要模型API。
+
+真回歸：整合 **120 passed/127 warnings**；產品tests **564 passed/6995 warnings**；repository **593 passed/6995 warnings（明示--ignore=outputs）**，各exit0/skip0。三組範圍嵌套，不相加。裸repo本輪exit2/22 collection errors，源於outputs的歷史及本輪可逆backup同名檔，不刪封存或稱裸全repoPASS。
+
+原19項SHA256/size不變（18 unique），ML原104行freeze逐行不變；初始103行源於PYTHONPATH=src的egg-info遮蔽，有獨立親重現。
+
+主安全修復：watchdog不再將4s當額外工作時間；每worker在執行前入獨立Job、正常/取消/超時清整個後代；入站raw line16384 bytes/depth16/全訊息128members/key64bytes；arguments≤5欄且不排序/回顯巨量extra；SDK input schema完整移入已註冊watchdog的handler。
+
+15秒從自訂call_tool dispatch計，包含lock等待、輸入/輸出schema及worker decode。bounded ingress framing/SDK JSON-RPC解析先於它。真同步阻塞首次OS停止約15.000–15.016s；最多4s僅清理/確認。這是實測容差，不是硬即時Windows排程保證。拒收ingress的Windows launcher曾exit0，仍有固定診斷、無attack response及實際關閉；negative checker另有exit1。
+
+原始數值限制不變：公開均價非店家真值、正式公開測試未勝對應簡單基線、同店到期A/B尚無證據、機率/區間null。沒有重訓/修改正式模型與資料，不接Qwen/3090/Ubuntu，不改/借既有Tunnel，不讀私人record/key，不commit/push/公開部署/購買。
+
+本輪證據絕對路徑：`C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_codex_20261013_235947_Windows5800X`。原始使用者規格及舊各輪失敗均保留。精確重跑看下方handoff；回滾依backup前後hash逐檔，不reset/clean。
+
+本節原始証據：`outputs/quality_runs/chatgpt_dual_entry_codex_20261013_235947_Windows5800X/DE12/`，獨立原文`outputs/quality_runs/chatgpt_dual_entry_codex_20261013_235947_Windows5800X/DE08/independent/independent_review.md`。
+新版完整重跑與短TEMP操作看`outputs/quality_runs/chatgpt_dual_entry_codex_20261013_235947_Windows5800X/DE12/handoff.md`。以下各輪敘述保留作歷史紀錄；舊測試數/未閉合狀態/15+4工作敘述不能替代本輪實測。
+
+---
+
+# TW01 本輪候選交付
+
+更新：2026-10-14T00:52:48.571008+08:00；主機 Windows 5800X；HEAD `9e29cddce8687489dcd07bc2f8d673d2e0a72ce3`。
+
+**SELF_CHECK_LOCAL_CANDIDATE。獨立代理人：INDEPENDENT_AGENT_PASS；正式 EXTERNAL_PASS：HOLD。本人ChatGPT插件尚未接通，DE10/DE11 HOLD。**
+
+實際可使用網址：http://127.0.0.1:8766/ ，本輪再次health=ready、manual/chat_disabled；既有PID80052未重啟。另自行啟停隔離candidate跑22個真正HTTP請求。Chrome自動化拒開`ERR_BLOCKED_BY_CLIENT`，本輪無新桌面/手機圖，不將HTTP或舊37checks當新Chrome验收。
+
+架構：manual browser→manual_web→原API /forecast、/records→凍結ForecastEngine（RF7/HGB14，A/B固定alpha0.3）；ChatGPT（未接通）→TW01專用私人Tunnel（未成立）→tunnel-client→官方SDK stdio/Binary ingress guard→兩工具嚴格schema/watchdog→每呼叫suspended worker Job→原ML隔離worker→adapter/AgentTools/同一凍結release。兩入口各自程序，不走/agent/query，不需要模型API。
+
+真回歸：整合 **120 passed/127 warnings**；產品tests **564 passed/6995 warnings**；repository **593 passed/6995 warnings（明示--ignore=outputs）**，各exit0/skip0。三組範圍嵌套，不相加。裸repo本輪exit2/22 collection errors，源於outputs的歷史及本輪可逆backup同名檔，不刪封存或稱裸全repoPASS。
+
+原19項SHA256/size不變（18 unique），ML原104行freeze逐行不變；初始103行源於PYTHONPATH=src的egg-info遮蔽，有獨立親重現。
+
+主安全修復：watchdog不再將4s當額外工作時間；每worker在執行前入獨立Job、正常/取消/超時清整個後代；入站raw line16384 bytes/depth16/全訊息128members/key64bytes；arguments≤5欄且不排序/回顯巨量extra；SDK input schema完整移入已註冊watchdog的handler。
+
+15秒從自訂call_tool dispatch計，包含lock等待、輸入/輸出schema及worker decode。bounded ingress framing/SDK JSON-RPC解析先於它。真同步阻塞首次OS停止約15.000–15.016s；最多4s僅清理/確認。這是實測容差，不是硬即時Windows排程保證。拒收ingress的Windows launcher曾exit0，仍有固定診斷、無attack response及實際關閉；negative checker另有exit1。
+
+原始數值限制不變：公開均價非店家真值、正式公開測試未勝對應簡單基線、同店到期A/B尚無證據、機率/區間null。沒有重訓/修改正式模型與資料，不接Qwen/3090/Ubuntu，不改/借既有Tunnel，不讀私人record/key，不commit/push/公開部署/購買。
+
+本輪證據絕對路徑：`C:\Users\prometheans\Documents\AIOT_FinishProject\outputs\quality_runs\chatgpt_dual_entry_codex_20261013_235947_Windows5800X`。原始使用者規格及舊各輪失敗均保留。精確重跑看下方handoff；回滾依backup前後hash逐檔，不reset/clean。
+
+| 階段 | 狀態 | 實際驗證/限制 | 證據 |
+|---|---|---|---|
+| DE00 | SELF_CHECK + 獨立輸入查核 | 原14+5=19/19（18 unique）、104行freeze、入場60/60checksum | DE00/evidence.md；DE12/final_baseline_check.json |
+| DE01 | SELF_CHECK + 獨立代理人複核 | 两工具契約、非法輸入/欄數與欄名限制 | src/aiot_price/integrations/chatgpt_contracts.py；DE05/ingress |
+| DE02 | SELF_CHECK + 獨立代理人複核 | manual首次import隔離、agent拒絕、records伺服器路徑 | tests/integrations/test_manual_web.py；DE08/independent/manual_isolation_stdout.log |
+| DE03 | SELF_CHECK；本輪UI渲染BLOCKED | Web無改碼；本輪真HTTP A/B/fallback/units/records；Chrome拒開 | DE09/http_results.json；DE09/visual_review.md |
+| DE04 | SELF_CHECK + 獨立代理人複核 | 官方MCP1.30.0獨立transport；原ML freeze不變 | requirements/chatgpt-mcp.lock；DE00/freeze診斷；DE12/final_baseline_check.json |
+| DE05 | SELF_CHECK + 獨立代理人複核 | 真engine/adapter完整JSON、非法schema、污染價格/方向拒收 | DE05/engine_results；DE08/independent/independent_original.json |
+| DE06 | SELF_CHECK + 獨立代理人複核 | 15s工作期限、每worker Job完整後代、SDK驗證移入watchdog、入站bound、人工native重開 | DE06/lifecycle_evidence.md；DE06/schemavalidation；DE08/independent/independent_review.md |
+| DE07 | SELF_CHECK | integration/product/repo ignore outputs全過；裸repo22collection errors保留 | DE07/*verified.*；DE07/bare_repository.* |
+| DE08 | INDEPENDENT_AGENT_PASS；正式外審HOLD | 全新fork_turns=none reviewer親讀原檔、真重跑、兩缺口紅綠與closure | DE08/independent/independent_review.md；review_input_manifest.json；commands.jsonl |
+| DE09 | SELF_CHECK_HTTP；Chrome BLOCKED/NOT_RUN | 22個真TCP/HTTP請求，isolated synthetic records；原8766仍live | DE09/http_results.json；process_cleanup.json；visual_review.md |
+| DE10 | HOLD | 本人登入/工作區/權限、TW01專用ID/runtime key/風險授權、doctor/run未成立 | DE10/permissions_matrix.md；official_sources.md |
+| DE11 | HOLD/NOT_RUN | 没有TW01真ChatGPT tool-call/structuredContent/自由文字/斷線恢复驗收 | DE11/status.md |
+| DE12 | SELF_CHECK_LOCAL_CANDIDATE | 本輪候選封存、精確scope、完整失敗史、checksum正反控制；非final | DE12/delivery_manifest.json；handoff.md；failure_history.md |
+
+---
+
+# TW01 最新工作包：網頁表單＋個人 ChatGPT 插件（2026-10-13）
+
+**2026-10-13 23:12 Windows COS 再續作／最新且優先的本機候選版本：** 新 Codex 原碼實讀及執行被安全政策 `BLOCKED`；另以新上下文文本快照完成 `STATIC_ONLY_REQUEST_CHANGES`，**不能取代 DE08 獨立親讀＋負例重跑**。審查指出 A 預測 ±5% 分類邊界未檢查非法方向，作者已在獨立 DE05 紅測得到 **5 failed、4 passed**，修改僅限 `chatgpt_adapter.py` 的方向輸出驗證與 `test_chatgpt_mcp.py` 新負例，綠測 **21 passed**。最新版 **整合 86 passed、產品 tests 530 passed、repo `--ignore=outputs` 559 passed**，均 exit0；歷史裸 repo collection errors 不抹掉。原始保護 **19/19**、ML `.venv` freeze **104/104** 不變，實查網頁仍 `http://127.0.0.1:8766/` ready/manual/chat_disabled。Platform 個人組織現有四條通道均非 TW01，ChatGPT Plugins 頁面顯示新增入口，但**TW01 專用 tunnel、runtime key、doctor/run、真人 ChatGPT tool-call 仍無實證，DE08／DE10／DE11 均 HOLD**，沒有繞過審查 gate。最新原始測試及完整審查停點在 `outputs/quality_runs/chatgpt_dual_entry_continuation_20261013_2251_Windows5800X/`。本輪仍是 `SELF_CHECK／本機候選`，不 commit/push、不動 Ubuntu／RTX3090／Qwen／原模型。
+
+**2026-10-13 深夜 Windows COS 最新續作（覆蓋下方舊測試數，但不改歷史狀態）：** 專用 MCP transport 的 Windows Job Object、異步 worker/pipe、獨立 OS-thread watchdog 及 unregister 競態最小返修已落地，最新 **MCP 整合 77 passed、產品 `tests/` 521 passed、repo `--ignore=outputs` 550 passed**（三者皆 exit 0）。原 14+5 模型／資料保護基準 SHA/size 一致，`.venv` pip freeze 104 行無變更。15 秒僅為 dispatch 起算的工作預算，另有最多 4 秒 bounded cleanup，不宣稱總 wall-clock 嚴格 15 秒。網頁 `http://127.0.0.1:8766/` 健康、manual `chat_disabled`。**目前仍是 SELF_CHECK／本機候選；DE08 獨立 reviewer 未完整執行，DE10 私用 tunnel／本人權限、DE11 ChatGPT 真接線仍 HOLD，不是 EXTERNAL_PASS。** 交付證據 `outputs/quality_runs/chatgpt_dual_entry_continuation_20261013_2125_Windows5800X/DE12/`。不動 Qwen／3090／Ubuntu／原 release，不 commit/push。
+
+**最新方向：保留不依賴 GLM 的表單網頁，保留網頁 A／B 與本機紀錄；新增本人 ChatGPT 的 MCP 兩工具，第一版查行情＋A 預測。Qwen／3090 暫緩，不重訓、不改凍結模型／資料。**
+
+**2026-10-13 Windows COS 執行更新：** 原工作單已在本輪實作雙入口的本機候選，包含無 GLM 表單 A/B/紀錄、本機原生 stdio MCP 兩工具與真 Windows Chrome 介面驗證。執行者為 ChatGPT，結果僅 **SELF_CHECK**；並非本人 ChatGPT 私人插件接通／正式外部驗收。獨立 DE08、權限／通道 DE10、真 ChatGPT DE11 仍 **HOLD**。本段只更新當輪狀態，保留先前規劃及全部歷史任務記錄。
+
+**2026-10-13 15:16 後續實做結果（不覆寫前輪）：** 修正原生 MCP 佇列等待未計入15秒、取消時子程序未確保終止的缺陷；另跑完整真 SDK session、4項取消/排隊負向控制、整合49 PASS及明示 `--ignore=outputs` 的 repo 522 PASS。本人 Platform 已實見個人 Tunnels 清單及 Create/Edit UI，但沒有建立/借用既有 tunnel。Windows 官方 `tunnel-client v0.0.16` 已離線下載、SHA256核對、執行版本說明，不曾連線；AGY reviewer 因 429、Claude Code reviewer 因 OAuth 逾期皆未審到原碼，所以**DE08、DE10、DE11繼續 HOLD**。這是同一作者 SELF_CHECK，**正式外部驗收仍未完成**。新增證據：`outputs/quality_runs/chatgpt_dual_entry_followup_20261013_1516_Windows5800X/DE12/continuation_summary.md`。
+
+- [最新結論與雙入口架構](docs/chatgpt_dual_entry/20261013_01/CONCLUSION.md)
+- [完整 DE00–DE12 任務卡與驗收條件](docs/chatgpt_dual_entry/20261013_01/TASKS.md)
+- [給 ChatGPT 的 COS 執行工作單](docs/chatgpt_dual_entry/20261013_01/COS_HANDOFF_PROMPT.md)
+- [本輪已實作的 Windows MCP 操作與限制](docs/CHATGPT_PLUGIN.md)
+- [DE00–DE12 實作後 runbook](docs/chatgpt_dual_entry/20261013_01/RUNBOOK.md)
+- [本輪原生 log、失敗與返修證據](outputs/quality_runs/chatgpt_dual_entry_impl_20261013_1349_Windows5800X/DE12/acceptance_matrix.md)
+
+| 任務 | 項目 | 前置依賴 | 產品執行狀態 |
+| --- | --- | --- | --- |
+| DE00 | Windows／範圍／保護基準 | 原始要求與原檔 | **SELF_CHECK：原14/14、凍結5/5一致** |
+| DE01 | 原碼對照與實作契約 | DE00 | **SELF_CHECK：兩工具嚴格 schema，故意造錯非零** |
+| DE02 | 無 GLM 的 manual 後端 | DE01 | **SELF_CHECK：隔離 import，A/B/紀錄真 API** |
+| DE03 | 保留表單 A／B 與紀錄，移除聊天 | DE02 | **SELF_CHECK：現行表單 Chrome 介面驗證** |
+| DE04 | 官方 MCP SDK 與依賴隔離 | DE01 | **SELF_CHECK：SDK 1.30.0 獨立 venv，ML 依賴未動** |
+| DE05 | 兩工具 MCP adapter | DE04 | **SELF_CHECK：原 engine 完整值比較，偽值拒收** |
+| DE06 | 原生 MCP／15秒終止／人工恢復 | DE05 | **SELF_CHECK：native 6 calls；15.015s 真 PID 終止** |
+| DE07 | 回歸、反向控制、保護核對 | DE03＋DE06 | **SELF_CHECK：tests 489 pass，--ignore=outputs 518 pass；裸跑6 collection errors 均留證** |
+| DE08 | 獨立實作與輸出複審 | DE07 | **HOLD：未取得另一個獨立 reviewer** |
+| DE09 | 本機網頁實測與試用網址 | DE08；無獨立審查只測隔離候選 | **SELF_CHECK／隔離候選：Chrome 37 checks，http://127.0.0.1:8766/** |
+| DE10 | 本人權限與私人通道 | DE08通過；帳號條件 | **HOLD：workspace/Tunnels 權限與 runtime key 未核實、client 不在 PATH** |
+| DE11 | 真 ChatGPT 工具與文字驗收 | DE10 | **HOLD：本人插件未接通，未執行真 ChatGPT 對話** |
+| DE12 | 報告、操作文件與完整交付 | DE09＋DE11；或接線層如實HOLD | **SELF_CHECK：已交付 runbook、狀態與可重現原始證據；非正式終驗** |
+
+DE02／DE03 與 DE04–DE06 可依契約分支進行。帳號缺項只 HOLD DE10／DE11；缺獨立複審時不升格 final，仍完成候選本機驗證與 DE12。工具或 Windows 路徑不可讀則保存原錯並 BLOCKED，不切換 Ubuntu／3090 替代。
+
+本工作包覆蓋下方歷史「GLM先行→3090」的當前執行安排，不改 T01–T36 的既有文字或 Proposal v5 r3 的限定 EXTERNAL_PASS。真店到期 A／B、Qwen／3090、外網多人、影片、GitHub／YouTube／課程發布、插件 B／保存均未納入本輪實作授權。
+
+---
+
+以下保留本輪開始前的 TASKS 原文，作為歷史任務與驗收記錄。
+
 # TW01 菜價預測專題執行任務
 
-## D44-R01–R06 修訂輪（2026-10-04；最新）
+## 最新階段：Proposal v5 r3 已通過 S80（2026-10-09）
+
+[ChatGPT 獨立第三輪複審](outputs/audits/proposal_v5_r3_independent_20261009_01/REVIEW_R3.md) 判定 **EXTERNAL_PASS（限 Proposal v5 r3 文件、33頁簡報及其來源一致性）**；[主文](docs/proposal_v5/PROPOSAL.md) 與 [v5 文件包](docs/proposal_v5/STATUS.md) 為當前工作區正式提案入口。D44/v1-v4 的狀態與工作單以下保留為歷史，不可蓋掉這一輪已通過之結論。
+
+| 任務／交付 | 目前狀態 | 證據與依賴 |
+| --- | --- | --- |
+| Proposal／Deep Research／八欄文獻表（T33） | **EXTERNAL_PASS** | v5 r3 五份文件；REVIEW_R3 |
+| v5 簡報／PDF／講稿（T33/T34） | **EXTERNAL_PASS** | 23主講＋10附錄、74/74檢查、7/7 guard、33頁獨立目視；UTF-8 全repo 256 passed |
+| README／TASKS／design／AGENTS 主入口 | **工作區已同步（未提交Git）** | 2026-10-09文件升格；不改封存模型和已驗收 PPTX/PDF |
+| T16 真店 A/B 到期價 | **HOLD** | 缺同店同規格之7/14日真價；不能拿市場測試冒充 |
+| T26/T27 真 LLM Planner／自主工具調度 | **PROPOSED／暫緩** | 目前是規則式兩工具、固定序列；/records獨立保存API |
+| SERVER_3090／外網手機 T23–T25/T32 | **HOLD** | 未部署或未驗收 |
+| 最終影片、GitHub、YouTube、課程交件 | **未完成／待明確授權** | Final 的>10分鐘影片與>20頁PPT不等於 Proposal 達標 |
+| 封面組員／日期 | **待填** | 不猜測 |
+
+**注意：** 提案驗收不等於真正的 Domain Agent 或最終期末成品驗收。本輪不建立 Git commit／remote、不推送或發布，也不重訓。
+
+---
+
+
+## D44-R01–R06 修訂輪（歷史：2026-10-04）
 
 依 `outputs/audits/d44_independent_6eb4adf/REVIEW_6eb4adf.md` 之 Request changes 完成**研究內容與交付校正**，全部由 GLM 自驗通過，待 ChatGPT 獨立複審；詳 [D44_REVISION_REPORT.md](docs/D44_REVISION_REPORT.md)（原問題／改檔／證據／驗證／剩餘限制逐項）。工作單 [GLM_D44_R01_R06_REVISION_20261004.md](docs/GLM_D44_R01_R06_REVISION_20261004.md)；證據 `outputs/proposal_delivery/run2_20261004_01/`（stats_master＋claims_master 27 列＋r01/r02 查核卡＋v2 渲染 19/19＋openspec CLI）。
 

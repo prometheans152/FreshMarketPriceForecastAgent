@@ -284,7 +284,17 @@ def parse_query(text: str, today: date | None = None) -> ParsedQuery:
     # 月日補年一律用當次 today 的年份（參數傳遞，不用全域；S08-5）
     mentions = _extract_mentions(text, pq.today.year)
     if not mentions:
-        pq.missing = ["品項", "今天價格", "計價單位（元/台斤或元/公斤）"]
+        # 行情查詢沒有店價也可解析品項／市場。預測必要欄位仍由
+        # to_forecast_request 與工具 TrustedContext 分別強制檢查。
+        crops = {cid for alias, cid in _ALIAS_PATTERNS if alias in text}
+        if len(crops) == 1:
+            pq.crop_id = next(iter(crops))
+        elif len(crops) > 1:
+            pq.ambiguous_crops = sorted(crops)
+        markets = [market for market in KNOWN_MARKETS if market in text]
+        if len(markets) == 1:
+            pq.market_id = markets[0]
+        pq.to_forecast_request()
         return pq
 
     # 月日補年保守規則（S08，記錄於此）：月/日寫法一律補今天年，不回推上一年；
@@ -421,13 +431,19 @@ class AgentTools:
         last = row["price_last"]
         if pd.isna(last):
             return {"ok": False, "reason": f"{market_id} 的 {crop_id} 無可用價格"}
+        age = row.get("price_last_age_days")
+        if pd.isna(age) or age is None:
+            return {"ok": False, "reason": "公開報價的實際觀測日無法確認"}
+        observed = pd.Timestamp(self.engine.public_cutoff) - pd.Timedelta(days=int(age))
         return {
             "ok": True,
             "market_id": market_id,
             "crop_id": crop_id,
             "price": float(last),
             "unit": "NTD_per_taiwan_jin",
-            "observed_date": str(self.engine.public_cutoff.date()),
+            "observed_date": str(observed.date()),
+            "public_data_cutoff": str(self.engine.public_cutoff.date()),
+            "price_age_days_at_cutoff": int(age),
         }
 
     def post_forecast(self, request: dict) -> dict:

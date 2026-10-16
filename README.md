@@ -1,6 +1,6 @@
 # TW01 現場菜價 7／14 天預測與分析代理人
 
-**AIoT 應用與資料分析期末專題・研究提案與初步成果（2026-10-04，D44-R01–R06 修訂版）**
+**AIoT 應用與資料分析期末專題・Proposal v5 r3（2026-10-09；本機正式主版，提案獨立驗收通過）**
 組員：待填（≤4 人，組長待填）｜正式發表日期：待填｜[本機重現入口](#本機使用與重現)見文末
 
 ## 一句話情境
@@ -36,7 +36,23 @@
 - 上漲召回僅約 10%：模型偏保守報持平。無檢定不寫「顯著」。
 - 誠實結論：我們交付的不是「很準的預測」，而是一個**誠實、可驗證**的預測與增益評估框架。
 
-## 正式交付入口（現行 v3；歷史 v1/v2 保留）
+## 現行正式 Proposal 主版本：v5 r3（2026-10-09）
+
+**狀態：第三輪 ChatGPT/COS 獨立複審 EXTERNAL_PASS，僅提案文件和簡報。** 這表示 v5 r3 是目前**本機工作區的正式 Proposal 主入口**，不代表已經 Git commit、公開發布或完成整個期末產品。參閱 [獨立審查報告](outputs/audits/proposal_v5_r3_independent_20261009_01/REVIEW_R3.md) 與 [版本狀態](docs/proposal_v5/STATUS.md)。已驗收的 PPTX/PDF 原始快照保持不變。
+
+| 內容 | 正式主入口 |
+| --- | --- |
+| Proposal 主稿 | [PROPOSAL.md](docs/proposal_v5/PROPOSAL.md) |
+| Deep Research（五思維、三爭論、十問題） | [DEEP_RESEARCH.md](docs/proposal_v5/DEEP_RESEARCH.md) |
+| 教授指定的八欄文獻表 | [ARTICLE_SUMMARY_TABLE.md](docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md) |
+| Agent Architecture、Flowchart、41行 Pseudocode | [AGENT_DESIGN.md](docs/proposal_v5/AGENT_DESIGN.md) |
+| 可編輯簡報／同源 PDF | slides/proposal_v5/TW01_Proposal_v5.pptx 與同名 PDF（23主講＋10附錄） |
+| 講稿、來源與重建說明 | [逐頁講稿](slides/proposal_v5/SLIDE_NOTES_v5.md)・[來源](slides/proposal_v5/SOURCES.md)・[重建 README](slides/proposal_v5/README.md) |
+| 工程設計與正式驗收 | [design.md §6](design.md)・[驗收狀態](docs/PROPOSAL_ACCEPTANCE.md) |
+
+**尚未完成**：真正的 LLM Planner／自主選工具與 GLM/Qwen/Hermes 後端、同店到期價 A/B 增益、SERVER／外網手機、正式影片、GitHub／YouTube／課程交件及組員日期。前述功能不能因 Proposal 通過而宣稱 PASS。
+
+## 歷史 v3 交付入口（v1／v2／v4 保留）
 
 | 交付物 | 位置 |
 | --- | --- |
@@ -56,19 +72,19 @@
 
 ## 已完成／待驗證／暫緩（如實分列）
 
-**已完成（本機、可重現）**：公開資料管線、模型訓練與封存評估（含負向結果）、模型包 v0.1.0、HTTP API、手機網頁原型（A/B 並列＋保存到期核對）、規則代理人（展示載體）、研究提案全套文稿與 v2 簡報。
+**已完成（本機、可重現）**：公開資料、封存模型與評估、模型包、HTTP API、手機 Web／規則 Agent 原型，以及 Proposal v5 r3 文件與33頁簡報的獨立複審 PASS；真正 LLM Planner 尚未接線。
 
 **待驗證（有協議、未執行）**：真店 A/B 到期增益（T16，缺真店到期價）；B 之 α=0.3 未訓練；使用者人因評估；參數敏感度與近期方法同資料比較。
 
 **暫緩（D44 決議不修不驗）**：GLM API／Qwen3.8-27B／SERVER_3090 部署與外網展示（T23–T32）；代理人語言模型後端整合（保留已知缺口，見 [代理人方向](docs/AGENT_RUNTIME_DIRECTION.md)）。
 
-**未完成交付**：**影片未錄製**；**GitHub／YouTube／課程提交未發布**（待授權）；組員／組長／正式日期待填。
+**未完成交付**：**完整影片未錄製（既有兩頁1分56秒試片）**；**GitHub／YouTube／課程提交未發布**（待授權）；組員／組長／正式日期待填。
 
 ## 本機使用與重現
 
 - 環境：Windows＋`.venv`（pandas 2.3.3、pyarrow 25.0.1、scikit-learn、python-pptx 1.0.2、matplotlib 3.11.2、pywin32 312、pypdf 6.19.0；PowerPoint（COM 匯出用）與微軟正黑體）。本清單為現有環境盤點，未做乾淨環境重建驗證。
 - 啟動 API（規則模式展示）：`.venv\Scripts\python.exe -m uvicorn aiot_price.api.app:app`（詳 [design.md](design.md)）。
-- 重建 v2 簡報（全部參數化、防覆寫）：
+- **正式 v5 重建**：請依 [slides/proposal_v5/README.md](slides/proposal_v5/README.md) 在全新輸出目錄依序跑 build.py、export_safe.py、check.py；勿覆寫已驗收的 v5 r3 PPTX/PDF。下列四項為歷史 v2 重建命令，僅供回溯：
   1. `.venv/Scripts/python.exe slides/source/build_stats_master.py --out <新run>/stats_master.json`
   2. `.venv/Scripts/python.exe slides/source/make_assets.py --out <新素材目錄> --stats <新run>/stats_master.json`
   3. `.venv/Scripts/python.exe slides/source/make_pptx.py --pptx <新pptx> --assets <素材> --notes slides/source/notes_v2.json --stats <新run>/stats_master.json`

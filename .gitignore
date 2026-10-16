@@ -32,3 +32,17 @@ dist/
 
 # Video tooling: portable ffmpeg build too large for git
 /tools/video_tools/ffmpeg/
+
+# Previous cohorts' course decks (other people's work, ~81 MB) — keep local only
+/歷屆/
+
+# Local release bundles; publish through GitHub Releases instead of committing
+/*.zip
+
+# Cloudflare Wrangler local state and dev secrets (any directory)
+.wrangler/
+.dev.vars
+.build-check/
+
+# Docker Compose secret files (any directory)
+.secrets/

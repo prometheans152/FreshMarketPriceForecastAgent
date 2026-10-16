@@ -1,0 +1,4 @@
+{$TW01_PUBLIC_DOMAIN:localhost} {
+    encode zstd gzip
+    reverse_proxy web:8080
+}

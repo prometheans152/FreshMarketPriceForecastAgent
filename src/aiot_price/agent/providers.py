@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import time
@@ -66,15 +67,48 @@ TOOL_SCHEMAS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_record",
+            "description": (
+                "經使用者明確確認後，保存預測供 7/14 天後到期核對（介面保存按鈕走 /records；對話內保存需客戶端 save_confirmation）。"
+                "只有當客戶端已帶 save_confirmation（使用者確認）才會成功；"
+                "未確認時呼叫會收到 save_requires_user_confirmation，此時應告知使用者如何保存。"
+                "不接受模型自製的任何價格資料；保存內容一律取自伺服器暫存的真實推論結果。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "request_id": {"type": "string", "description": "本次預測的 request_id（來自 post_forecast 結果）"},
+                },
+                "required": ["request_id"],
+            },
+        },
+    },
 ]
 TOOL_NAMES = {t["function"]["name"] for t in TOOL_SCHEMAS}
+# 第二階段（AGENT_DESIGN §4.2）：提案抽象名 → 實際工具的映射層。
+# LLM 若以抽象名提出呼叫，伺服端映射到真實工具執行；trace 同時記錄 requested/executed。
+TOOL_ALIASES = {
+    "get_public_quote": "get_market_quote",
+    "call_forecast": "post_forecast",
+}
 ALLOWED_ARG_KEYS = {
     "get_market_quote": {"crop_id", "market_id"},
     "post_forecast": {
         "crop_id", "market_id", "current_price", "price_unit", "observed_at", "mode",
         "previous_price", "previous_price_unit", "previous_observed_at",
     },
+    "save_record": {"request_id"},
 }
+
+
+def resolve_tool_name(name: str) -> str | None:
+    """白名單解析（含抽象別名）。回傳實際工具名；未知回 None。"""
+    if name in TOOL_NAMES:
+        return name
+    return TOOL_ALIASES.get(name)
 
 # ---------- S06：秘密遮罩（不能只截短） ----------
 
@@ -139,9 +173,28 @@ def resolve_active_profile(config_path: str | Path = DEFAULT_CONFIG) -> tuple[Pr
     """依 AIOT_AGENT_PROFILE 選 profile；配置不完整回原因（呼叫端須 503，不靜默降級）。"""
     profiles = load_profiles(config_path)
     want = os.environ.get("AIOT_AGENT_PROFILE", "rule")
-    prof = profiles.get(want)
+    # Coding Plan is an explicit, loopback-only personal Hermes demonstration.
+    # The regular product profile continues to use the general API endpoint.
+    if want == "glm_zai_coding":
+        prof = ProviderProfile(
+            name=want, kind="openai_compat",
+            base_url="https://api.z.ai/api/coding/paas/v4",
+            model="glm-5.3-flash", api_key_env="AIOT_GLM_API_KEY",
+            timeout=20, max_tokens=800, max_tool_calls=4, max_turns=4,
+            max_retries=0, total_timeout=90, cloud_fallback=False,
+            description="Local personal Hermes demonstration; not a public product deployment",
+        )
+        if os.environ.get("AIOT_LOCAL_HERMES_DEMO") != "1" or os.environ.get("AIOT_AGENT_FRAMEWORK") != "hermes":
+            return prof, "local_hermes_demo_required"
+    else:
+        prof = profiles.get(want)
     if prof is None:
         return None, f"unknown_profile:{want}"
+    if want in {"glm_zai", "glm_zai_coding"} and os.environ.get("AIOT_GLM_MODEL"):
+        model = os.environ["AIOT_GLM_MODEL"].strip()
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}", model):
+            return prof, "profile_model_invalid"
+        prof.model = model
     reason = _profile_complete(prof)
     if reason:
         return prof, reason
@@ -249,13 +302,14 @@ class TrustedContext:
     allowed_modes: tuple = ("without_last_week",)
     previous_price_jin: float | None = None
     previous_date: str | None = None
+    forecast_input_valid: bool = True  # 手動建立的 context 相容；解析入口必須明確設值
 
     @classmethod
     def from_parsed(cls, parsed, store_id: str | None, today) -> "TrustedContext":
         from aiot_price.data.schema import to_taiwan_jin
 
         req = parsed.to_forecast_request()
-        ctx = cls(store_id=store_id)
+        ctx = cls(store_id=store_id, forecast_input_valid=bool(req) and not parsed.unit_non_comparable)
         ctx.crop_id = parsed.crop_id
         ctx.market_id = parsed.market_id or "中義市場"
         if parsed.current_price is not None and parsed.price_unit in ("NTD_per_taiwan_jin", "NTD_per_kg"):
@@ -301,6 +355,15 @@ def validate_args_against_context(name: str, args: dict | None, ctx: TrustedCont
             return False, "market_mismatch_with_user_input", {}
         return True, "", out
 
+    if name == "save_record":
+        rid = args.get("request_id")
+        if not isinstance(rid, str) or not rid or len(rid) > 64:
+            return False, "invalid_request_id", {}
+        return True, "", out
+
+    # quote/save preflight 可開放，但不能讓模型補出缺少的預測輸入。
+    if not ctx.forecast_input_valid:
+        return False, "forecast_input_missing_or_invalid", {}
     # post_forecast
     if args.get("crop_id") != ctx.crop_id:
         return False, "crop_mismatch_with_user_input", {}
@@ -342,23 +405,107 @@ def validate_args_against_context(name: str, args: dict | None, ctx: TrustedCont
 
 # ---------- 代理人迴圈（S03/S07） ----------
 
-def _execute_tool(tools: AgentTools, name: str, args: dict | None, ctx: TrustedContext) -> dict:
-    if name not in TOOL_NAMES:
+def agent_preflight_missing(parsed, save_gate: dict | None = None) -> list[str]:
+    """有任一工具的可信輸入便可讓 LLM 選工具；各工具仍各自驗證。"""
+    parsed.to_forecast_request()
+    confirmed_save = (
+        isinstance(save_gate, dict) and save_gate.get("confirmed") is True
+        and isinstance(save_gate.get("request_id"), str)
+        and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", save_gate["request_id"])
+        and callable(save_gate.get("saver"))
+    )
+    if confirmed_save:
+        return []
+    if parsed.crop_id and not parsed.ambiguous_crops:
+        # 未提供價格的行情查詢要求明確市場；已有完整店價沿用既有預設市場。
+        if parsed.market_id or (not parsed.missing and not parsed.unit_non_comparable):
+            return []
+    return list(parsed.missing) or ["品項與參考市場"]
+
+
+def tool_result_status(result, tool: str | None = None) -> tuple[bool, str | None]:
+    """參數驗證之外的工具執行狀態；ok:false 即使無 error 仍是失敗。"""
+    if not isinstance(result, dict):
+        return False, "invalid_tool_result"
+    error = result.get("error")
+    explicit_failure = "ok" in result and result["ok"] is not True
+    missing_success = tool in ("get_market_quote", "save_record") and result.get("ok") is not True
+    missing_forecast = tool == "post_forecast" and not result.get("results")
+    if error or explicit_failure or missing_success or missing_forecast:
+        reason = error or result.get("reason") or "tool_execution_failed"
+        return False, mask_secrets(str(reason))[:160]
+    return True, None
+
+
+def _public_trace(event: dict) -> dict:
+    """只處理已選定的 trace 欄位，所有字串值（含拒絕理由與ID）均遮罩。"""
+    event = dict(event)
+    if str(event.get("validation", "")).startswith("rejected:"):
+        # 不需要把被拒的任意欄位值回傳瀏覽器來說明驗證失敗。
+        event["args"] = {}
+    # 已知拒絕工具仍可定位；未知任意名称只保留安全摘要。
+    known_denied = {"run_shell", "read_file", "modify_model", "read_secrets", "nonexistent_tool"}
+    requested = event.get("requested")
+    if requested and resolve_tool_name(requested) is None and requested not in known_denied:
+        event["requested"] = "unknown_tool"
+        if str(event.get("error", "")).startswith("unknown_tool:"):
+            event["error"] = "unknown_tool"
+    def clean(value):
+        if isinstance(value, str):
+            return mask_secrets(value)[:160]
+        if isinstance(value, dict):
+            return {key: clean(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [clean(item) for item in value]
+        return value
+    return clean(event)
+
+def _execute_tool(tools: AgentTools, name: str, args: dict | None, ctx: TrustedContext, save_gate: dict | None = None) -> dict:
+    """白名單執行（含別名解析與 save_record 使用者確認門）。
+
+    save_gate 由 API 層組成：{"request_id": <客戶端確認的 id>, "confirmed": True,
+    "saver": callable(request_id)->dict}。模型自訂參數不可繞過——request_id 必須與
+    客戶端確認值相符，保存內容由伺服器暫存之真實推論結果決定。
+    """
+    canonical = resolve_tool_name(name)
+    if canonical is None:
         return {"ok": False, "error": f"unknown_tool:{name}"}
-    ok, reason, exec_args = validate_args_against_context(name, args, ctx)
+    ok, reason, exec_args = validate_args_against_context(canonical, args, ctx)
     if not ok:
         return {"ok": False, "error": f"input_fidelity_rejected:{reason}"}
     try:
-        if name == "get_market_quote":
+        if canonical == "get_market_quote":
             return tools.get_market_quote(exec_args["crop_id"], exec_args["market_id"])
+        if canonical == "save_record":
+            if not isinstance(save_gate, dict) or save_gate.get("confirmed") is not True:
+                return {"ok": False, "error": "save_requires_user_confirmation"}
+            if exec_args.get("request_id") != save_gate.get("request_id"):
+                return {"ok": False, "error": "save_request_id_not_confirmed_by_user"}
+            saver = save_gate.get("saver")
+            if not callable(saver):
+                return {"ok": False, "error": "save_saver_unavailable"}
+            result = saver(exec_args["request_id"])
+            return result if isinstance(result, dict) else {"ok": False, "error": "save_saver_invalid_result"}
         return tools.post_forecast(exec_args)
     except Exception as e:
         return {"ok": False, "error": f"tool_execution_error:{type(e).__name__}"}
 
 
-def _fallback_answer(parsed, forecast_result, err: str) -> str:
+def _fallback_answer(parsed, forecast_result, err: str, tool_outputs: dict | None = None) -> str:
     if forecast_result:
         return RuleBackend().reply(parsed, {"forecast": forecast_result})
+    outputs = tool_outputs or {}
+    if outputs.get("save_ok") is True:
+        return "已依您的確認保存先前預測，供到期核對。"
+    quote = outputs.get("market_quote")
+    if isinstance(quote, dict) and quote.get("ok") is True:
+        price = quote.get("price")
+        unit = {"NTD_per_taiwan_jin": "台斤", "NTD_per_kg": "公斤"}.get(quote.get("unit"))
+        observed = quote.get("observed_date")
+        if (isinstance(price, (float, int)) and not isinstance(price, bool) and math.isfinite(price)
+                and price > 0 and unit and isinstance(observed, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", observed)):
+            return (f"最新公開行情為 {price:g} 元／{unit}（觀測日 {observed}）。"
+                    "此為市場均價，非店價。")
     return "代理人後端暫時無法回應，請稍後再試，或直接使用表單查詢菜價預測。"
 
 
@@ -368,6 +515,7 @@ def run_agent_loop(
     profile: ProviderProfile,
     store_id: str | None = None,
     today=None,
+    save_gate: dict | None = None,
 ) -> dict:
     provider = OpenAICompatProvider(profile)
     base = {
@@ -377,7 +525,7 @@ def run_agent_loop(
     parsed = parse_query(query, today=today)
     ctx = TrustedContext.from_parsed(parsed, store_id, today=today) if today else TrustedContext.from_parsed(parsed, store_id, today=parsed.today)
 
-    if parsed.missing or parsed.unit_non_comparable:
+    if agent_preflight_missing(parsed, save_gate):
         return {**base, "parsed": _pd(parsed), "tool_trace": [], "forecast": None,
                 "answer": RuleBackend().reply(parsed, {}),
                 "backend_used": "rule", "degraded": True, "degraded_reason": "missing_input_skip_llm"}
@@ -396,9 +544,14 @@ def run_agent_loop(
     else:
         system += " 使用者未提供可比的上週價：不得自行填入任何 previous 欄位。"
     system += (
-        "\n你只有 get_market_quote 與 post_forecast 兩個工具。需要預測時必須以與上述可信資訊完全一致的參數呼叫 post_forecast，"
+        "\n你只有 get_market_quote、post_forecast 與 save_record 三個工具。需要預測時必須以與上述可信資訊完全一致的參數呼叫 post_forecast，"
         "不得修改任何數值、日期、品項或市場；回答只能引用工具結果的數字。"
+        "save_record 僅在使用者已於介面確認保存後才會成功；未確認時請告知使用者以介面的保存按鈕確認。"
     )
+    if isinstance(save_gate, dict) and save_gate.get("confirmed") is True and save_gate.get("request_id"):
+        # 使用者已於介面確認保存「先前查詢」的預測：注入可信 request_id 供 LLM 引用
+        #（值仍由 gate 嚴格比對；LLM 換 id 會被拒）。
+        system += f"\n使用者已在介面確認保存先前預測 request_id={save_gate['request_id']}；如要保存，請以該 id 呼叫 save_record。"
 
     messages = [
         {"role": "system", "content": system},
@@ -406,6 +559,8 @@ def run_agent_loop(
     ]
     trace: list[dict] = []
     forecast_result = None
+    quote_result = None
+    save_ok = False
     final_text = None
     started = time.monotonic()
     budget_exhausted = False
@@ -431,21 +586,48 @@ def run_agent_loop(
             })
             remaining = profile.max_tool_calls - len(trace)
             for i, call in enumerate(resp.tool_calls):
+                requested = call["name"]
+                canonical = resolve_tool_name(requested)
+                if canonical is None:
+                    # 不在白名單（含別名）：記錄拒絕、回協議錯誤，絕不執行
+                    trace.append(_public_trace({
+                        "requested": requested, "tool": canonical, "tool_call_id": call["id"],
+                        "args": {}, "validation": "rejected:not_whitelisted",
+                        "ok": False, "error": f"unknown_tool:{requested}",
+                    }))
+                    messages.append({"role": "tool", "tool_call_id": call["id"],
+                                     "content": json.dumps({"ok": False, "error": f"unknown_tool:{requested}"}, ensure_ascii=False)})
+                    continue
                 if i >= remaining:
                     # S07：預算耗盡不再執行，但仍回覆協議訊息（不留懸空 ID）
+                    trace.append(_public_trace({
+                        "requested": requested, "tool": canonical, "tool_call_id": call["id"],
+                        "args": {k: (call["arguments"] or {}).get(k) for k in ("crop_id", "market_id", "current_price", "mode", "request_id")},
+                        "validation": "rejected:tool_budget_exceeded",
+                        "ok": False, "error": "tool_budget_exceeded",
+                    }))
                     messages.append({"role": "tool", "tool_call_id": call["id"],
                                      "content": json.dumps({"ok": False, "error": "tool_budget_exceeded"}, ensure_ascii=False)})
                     budget_exhausted = True
                     continue
-                result = _execute_tool(AgentTools(engine), call["name"], call["arguments"], ctx)
-                trace.append({
-                    "tool": call["name"],
-                    "tool_call_id": call["id"],
-                    "args": {k: (call["arguments"] or {}).get(k) for k in ("crop_id", "market_id", "current_price", "mode")},
-                    "ok": not (isinstance(result, dict) and result.get("error")),
-                })
-                if call["name"] == "post_forecast" and isinstance(result, dict) and not result.get("error"):
+                result = _execute_tool(AgentTools(engine), requested, call["arguments"], ctx, save_gate=save_gate)
+                valid, validation_reason, _ = validate_args_against_context(canonical, call["arguments"], ctx)
+                executed_ok, err = tool_result_status(result, canonical)
+                # 確認門屬授權驗證；引擎、行情或 saver 執行失敗則參數仍可能被接受。
+                if valid and err in ("save_requires_user_confirmation", "save_request_id_not_confirmed_by_user", "save_saver_unavailable"):
+                    valid, validation_reason = False, err
+                trace.append(_public_trace({
+                    "requested": requested, "tool": canonical, "tool_call_id": call["id"],
+                    "args": {k: (call["arguments"] or {}).get(k) for k in ("crop_id", "market_id", "current_price", "mode", "request_id")},
+                    "validation": "accepted" if valid else f"rejected:{validation_reason}",
+                    "ok": executed_ok, "error": err,
+                }))
+                if canonical == "post_forecast" and executed_ok:
                     forecast_result = result
+                if canonical == "get_market_quote" and executed_ok and result.get("ok"):
+                    quote_result = result
+                if canonical == "save_record" and executed_ok and result.get("ok"):
+                    save_ok = True
                 # S07：完整 JSON 回送，不從中間截斷（上限內的工具結果本就精簡）
                 messages.append({"role": "tool", "tool_call_id": call["id"],
                                  "content": json.dumps(result, ensure_ascii=False, default=str)})
@@ -456,18 +638,22 @@ def run_agent_loop(
                 "backend_used": "rule", "degraded": True, "degraded_reason": str(e)[:80],
                 "answer": _fallback_answer(parsed, forecast_result, str(e))}
 
-    tool_ok = bool(forecast_result and forecast_result.get("results") and not forecast_result.get("error"))
+    tool_outputs = {"forecast": forecast_result, "market_quote": quote_result, "save_ok": save_ok}
+    # save-only 對話（已確認保存、無預測主張）也允許回答；數字防線由驗證器把關
+    tool_ok = bool(forecast_result and forecast_result.get("results") and not forecast_result.get("error")) or bool(
+        quote_result and quote_result.get("ok")
+    ) or save_ok
     if not tool_ok:
         reason = "tool_budget_exhausted" if budget_exhausted else "no_tool_result_skip_llm"
         return {**base, "parsed": _pd(parsed), "tool_trace": trace, "forecast": forecast_result,
                 "backend_used": "rule", "degraded": True, "degraded_reason": reason,
-                "answer": RuleBackend().reply(parsed, {})}
+                "answer": _fallback_answer(parsed, None, reason, tool_outputs)}
 
-    ok, why = validate_qwen_answer(final_text or "", {"forecast": forecast_result})
+    ok, why = validate_qwen_answer(final_text or "", tool_outputs)
     if not ok:
         return {**base, "parsed": _pd(parsed), "tool_trace": trace, "forecast": forecast_result,
                 "backend_used": "rule", "degraded": True, "degraded_reason": f"llm_output_rejected:{why}",
-                "answer": RuleBackend().reply(parsed, {"forecast": forecast_result})}
+                "answer": _fallback_answer(parsed, forecast_result, why, tool_outputs)}
 
     return {**base, "parsed": _pd(parsed), "tool_trace": trace, "forecast": forecast_result, "answer": final_text}
 

@@ -1,0 +1,7 @@
+# Copy to .dev.vars for LOCAL ONLY; do not commit real values.
+# Keep separate secret values for the inbound testing token and Oracle API.
+# Only synthetic local tests may use the static bearer mode.
+# Production uses Cloudflare Access Managed OAuth and validates signed JWT.
+AUTH_MODE="legacy_bearer"
+MCP_CLIENT_BEARER_TOKEN="different-local-test-token-at-least-32-characters"
+FORECASTENGINE_API_TOKEN="different-upstream-local-test-token-at-least-32-characters"

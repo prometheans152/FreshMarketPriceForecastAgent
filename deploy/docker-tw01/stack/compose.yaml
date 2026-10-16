@@ -1,0 +1,135 @@
+name: tw01-portable
+
+# Self-contained public models/site: no private records or model training.
+# Bind only to the user's own loopback address by default (HTTP is not TLS).
+services:
+  forecast:
+    build:
+      context: .
+      dockerfile: docker/forecast.Dockerfile
+    image: tw01-portable-forecast:1.0.0
+    init: true
+    restart: unless-stopped
+    secrets: [origin_api_token]
+    environment:
+      TW01_ORIGIN_TOKEN_FILE: /run/secrets/origin_api_token
+      TW01_RELEASE_DIR: /app/models/releases/0.1.0
+      TW01_EXTENDED_CATALOG_DIR: /app/catalog
+      TW01_POOLED_ML_DIR: /app/models/pooled
+      TW01_PUBLIC_ORIGIN: ${TW01_PUBLIC_ORIGIN:-http://localhost:8080}
+      TZ: Asia/Taipei
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    expose: ["8767"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; assert urllib.request.urlopen('http://127.0.0.1:8767/healthz',timeout=18).status == 200"]
+      interval: 30s
+      timeout: 22s
+      retries: 3
+      start_period: 35s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 80
+    mem_limit: 768m
+    cpus: 1.0
+    networks: [tw01_internal]
+
+  mcp:
+    build:
+      context: .
+      dockerfile: docker/mcp.Dockerfile
+    image: tw01-portable-mcp:1.0.0
+    init: true
+    restart: unless-stopped
+    depends_on:
+      forecast:
+        condition: service_healthy
+    secrets: [origin_api_token, mcp_client_token]
+    environment:
+      TW01_ORIGIN_TOKEN_FILE: /run/secrets/origin_api_token
+      TW01_MCP_TOKEN_FILE: /run/secrets/mcp_client_token
+      TW01_MCP_AUTH_MODE: ${TW01_MCP_AUTH_MODE:-bearer}
+      TW01_ENGINE_URL: http://forecast:8767
+      NODE_OPTIONS: --max-old-space-size=110
+      NODE_ENV: production
+      TZ: Asia/Taipei
+    expose: ["9000"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 60
+    mem_limit: 192m
+    networks: [tw01_internal]
+
+  web:
+    image: nginx:1.28-alpine
+    init: true
+    restart: unless-stopped
+    depends_on:
+      forecast:
+        condition: service_healthy
+      mcp:
+        condition: service_healthy
+    ports:
+      - "${TW01_BIND_ADDRESS:-127.0.0.1}:${TW01_HTTP_PORT:-8080}:8080"
+    volumes:
+      - ./web:/usr/share/nginx/tw01:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    entrypoint: ["nginx", "-g", "daemon off;"]
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=16m,mode=1777
+      - /var/run:size=4m,mode=1777
+      - /tmp:size=8m,mode=1777
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 50
+    mem_limit: 96m
+    networks: [tw01_internal]
+
+  # Optional public TLS on hosts with a real DNS domain pointing to this box.
+  # Cloudflare VPC/Workers is separate; it cannot be copied into generic Docker.
+  https:
+    profiles: [https]
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_started
+    environment:
+      TW01_PUBLIC_DOMAIN: ${TW01_PUBLIC_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [tw01_internal]
+
+secrets:
+  origin_api_token:
+    file: ./.secrets/origin_api_token
+  mcp_client_token:
+    file: ./.secrets/mcp_client_token
+
+networks:
+  # Project-scoped: multiple independently installed TW01 stacks do not
+  # accidentally share an internal network.
+  tw01_internal: {}
+
+volumes:
+  caddy_data:
+  caddy_config:
