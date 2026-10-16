@@ -1,9 +1,8 @@
 # Cloudflare MCP tool contract
 
-> **Rename (2026-10-16):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
-> Until [RENAME_MIGRATION.md](../RENAME_MIGRATION.md) has been carried out, the live Oracle host and Worker
-> still use the old `tw01-*` names; before migration, operate or roll back with this file as of
-> `main@1062818`.
+> **Rename (2026-10-16/17):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
+> The Oracle host was migrated on 2026-10-17 except the certbot timer (`tw01-certbot-renew.*`);
+> the Cloudflare Worker is still the old `tw01-forecast-mcp`. Progress: [RENAME_MIGRATION.md](../RENAME_MIGRATION.md).
 
 Status (2026-10-15): **PUBLIC NO AUTH REMOTE MCP LIVE** through Cloudflare
 Workers VPC → Oracle HTTPS, 6/6 genuine remote server protocol/tool

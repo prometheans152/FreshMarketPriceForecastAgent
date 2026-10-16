@@ -1,8 +1,21 @@
 # 改名上線遷移手冊（第 3 步：PR 合併後執行）
 
-> **狀態：尚未執行。** 本檔是依 repo 內容整理的計畫，沒有在 Oracle 或 Cloudflare 上實測過。
+> **執行進度（2026-10-17 01:25 台灣時間）：Oracle 主機完成，Cloudflare／TLS／ChatGPT 未做。**
+> - **已完成：**
+>   - 3.3：7 個目錄搬到新名，舊路徑留 symlink；Compose 專案改為 `fresh-market-price-agent-oracle`。
+>   - 3.4：Nginx 檔名全部改名；新版回滾腳本 `--check-only` 為 READY。
+>   - 3.5：forecastengine（disabled）、origin-firewall（只剩 `fmpa_` 規則）、cloudflared（4 條連線）都已改用新名稱。
+>   - 驗證：舊 Worker 6/6 E2E 在搬遷後與全部改完後各跑一次，都 PASS；外部 HTTPS 200；ACME 路徑經 symlink 驗證正常。
+>   - 舊檔備份在主機 `/root/fmpa-rename-backup-20261017/`。
+> - **未做：**
+>   - 第 2 節新 Worker：wrangler 目前登入 publicai416 的 Cloudflare 帳號，服務在 Prometheans152 帳號。
+>   - 第 4 節 certbot timer：等憑證續期後再改，`tw01-certbot-renew.*` 仍是舊名，經 symlink 正常運作。
+>   - 第 5 節 ChatGPT 插件。
+> - 3.5 第 3 點的實際做法：cloudflared 切換的就緒檢查請用 `journalctl --since "@<epoch>"`；ISO 時間加 `Z` 會被 journalctl 拒絕。
+>
+> 以下第 2、4、5 節仍是計畫。
 > 執行者需在 Windows 本機（有 `~\.ssh\oracle_amd_ed25519` 與 wrangler 登入）逐步操作、逐步驗證並記錄。
-> 遷移前的日常維運與回滾，請照 `main@1062818` 版本的舊文件（`deploy/docker-tw01/oracle/ORACLE_DOCKER_OPERATIONS.md`）。
+> Oracle 已遷移：日常維運照 `deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md`；回滾用新版 `/opt/fresh-market-price-agent-docker/ops/rollback_oracle.py`（舊路徑經 symlink 同一檔）。
 
 ## 0. 原則
 

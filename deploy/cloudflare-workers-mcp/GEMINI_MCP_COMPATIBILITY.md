@@ -1,9 +1,8 @@
 # Shared MCP — ChatGPT + Gemini Compatibility (2026-10-14)
 
-> **Rename (2026-10-16):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
-> Until [RENAME_MIGRATION.md](../RENAME_MIGRATION.md) has been carried out, the live Oracle host and Worker
-> still use the old `tw01-*` names; before migration, operate or roll back with this file as of
-> `main@1062818`.
+> **Rename (2026-10-16/17):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
+> The Oracle host was migrated on 2026-10-17 except the certbot timer (`tw01-certbot-renew.*`);
+> the Cloudflare Worker is still the old `tw01-forecast-mcp`. Progress: [RENAME_MIGRATION.md](../RENAME_MIGRATION.md).
 
 > **CURRENT SERVER STATUS (2026-10-15):** The same public anonymous MCP
 > URL has actually completed 6/6 live Cloudflare VPC → Oracle protocol

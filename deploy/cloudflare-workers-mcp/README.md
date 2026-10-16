@@ -1,9 +1,8 @@
 # Fresh Market Price Forecast Agent Remote MCP — Cloudflare VPC → Oracle server E2E PASS
 
-> **Rename (2026-10-16):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
-> Until [RENAME_MIGRATION.md](../RENAME_MIGRATION.md) has been carried out, the live Oracle host and Worker
-> still use the old `tw01-*` names; before migration, operate or roll back with this file as of
-> `main@1062818`.
+> **Rename (2026-10-16/17):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
+> The Oracle host was migrated on 2026-10-17 except the certbot timer (`tw01-certbot-renew.*`);
+> the Cloudflare Worker is still the old `tw01-forecast-mcp`. Progress: [RENAME_MIGRATION.md](../RENAME_MIGRATION.md).
 
 This is ONLY the new **first-tier Cloudflare MCP adapter**. The Windows browser
 and personal stdio/Tunnel plugin remain untouched. This project does not load
