@@ -8,7 +8,7 @@
 
 ## 第 1 頁　封面
 
-- **標題（工作題名）**：現場菜價 7／14 天預測與分析代理人（TW01）
+- **標題（工作題名）**：現場菜價 7／14 天預測與分析代理人（Fresh Market Price Forecast Agent）
 - 組員名單：**待補**（組員未確認，分組≤4 人、一組交一份——[DELIVERY_CHECKLIST](DELIVERY_CHECKLIST.md)）
 - 課程名稱與日期：**待補**
 - 建議圖表：手機查價示意（可沿用 `outputs/e2e/ui_ab_mobile_390x844.png` 概念圖）

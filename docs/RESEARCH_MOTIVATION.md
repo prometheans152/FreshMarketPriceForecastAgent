@@ -1,4 +1,4 @@
-# TW01 研究動機與研究問題（P1）
+# 研究動機與研究問題（P1）
 
 產出日期：2026-10-04（P1／T04、T33）。下游：P2 相關研究、P3 貢獻與研究稿、P6 投影片第②③頁。
 證據副本：`outputs/proposal_delivery/run1_20261004/p1_motivation_sources.json`。

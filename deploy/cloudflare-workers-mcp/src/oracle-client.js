@@ -200,7 +200,7 @@ export async function callForecastEngine(name, argumentsObject, env, fetchImpl =
         const vpcCode = classifyVPCError(err);
         if (env.FORECASTENGINE_VPC_DIAGNOSTICS === "enabled") {
           console.warn(JSON.stringify({
-            system: "tw01-vpc", event: "sanitized_connection_failure",
+            system: "fresh-market-price-agent-vpc", event: "sanitized_connection_failure",
             ...safeVPCDiagnostic(err),
           }));
         }

@@ -1,4 +1,4 @@
-"""Read-only TW01 tools using the original frozen ForecastEngine and AgentTools."""
+"""Read-only FMPA tools using the original frozen ForecastEngine and AgentTools."""
 from __future__ import annotations
 
 import hashlib
@@ -47,7 +47,7 @@ def verified_release_snapshot(release_dir: Path):
     parent = os.environ.get("AIOT_MCP_SNAPSHOT_DIR")
     if parent:
         Path(parent).mkdir(parents=True, exist_ok=True)
-    with TemporaryDirectory(prefix="tw01_verified_", dir=parent) as work:
+    with TemporaryDirectory(prefix="fmpa_verified_", dir=parent) as work:
         snapshot = Path(work)
         for name, expected in FROZEN_SHA256.items():
             source = release_dir / name

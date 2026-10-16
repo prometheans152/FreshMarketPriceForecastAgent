@@ -13,7 +13,7 @@ const env = {
   ...VALID_TEST_ENV,
   AUTH_MODE: "access_jwt",
   ACCESS_TEAM_DOMAIN: "https://falling-rain-7383.cloudflareaccess.com",
-  ACCESS_AUDIENCE: "tw01-test-audience-not-real-20261014",
+  ACCESS_AUDIENCE: "fresh-market-price-agent-test-audience-not-real-20261014",
 };
 
 test("strict auth modes, config and owner price maximum", () => {

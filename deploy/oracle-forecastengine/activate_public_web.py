@@ -1,6 +1,6 @@
 """Enable an intentionally public, no-password web form with scoped rollback.
 
-Run only on the verified Oracle host. Operates on TW01's existing Nginx config,
+Run only on the verified Oracle host. Operates on FMPA's existing Nginx config,
 not on the frozen model, origin Bearer token or Windows web/records. Fails
 closed and restores the verified prechange Nginx config on any error.
 """
@@ -14,9 +14,9 @@ import subprocess
 from pathlib import Path
 
 
-SITE = Path("/etc/nginx/sites-available/tw01-tls.conf")
-RATE_LIMIT = Path("/etc/nginx/conf.d/tw01-public-web-rate-limit.conf")
-INDEX = Path("/var/www/tw01-website/index.html")
+SITE = Path("/etc/nginx/sites-available/fresh-market-price-agent-tls.conf")
+RATE_LIMIT = Path("/etc/nginx/conf.d/fresh-market-price-agent-public-web-rate-limit.conf")
+INDEX = Path("/var/www/fresh-market-price-agent-website/index.html")
 
 
 def digest(blob: bytes) -> str:
@@ -39,11 +39,11 @@ def main():
     if not args.backup_tag.replace("-", "").replace("_", "").isalnum():
         parser.error("Invalid backup tag")
     stage = args.stage.resolve(strict=True)
-    if not str(stage).startswith("/home/ubuntu/tw01-public-web-stage-"):
-        parser.error("Not a verified TW01 staging directory")
+    if not str(stage).startswith("/home/ubuntu/fresh-market-price-agent-public-web-stage-"):
+        parser.error("Not a verified FMPA staging directory")
     old = (stage / "nginx-web-snippet.conf").read_bytes()
     new = (stage / "nginx-web-public-snippet.conf").read_bytes()
-    limiter = (stage / "tw01-public-web-rate-limit.conf").read_bytes()
+    limiter = (stage / "fresh-market-price-agent-public-web-rate-limit.conf").read_bytes()
     page = (stage / "index-public.html").read_bytes()
     before = SITE.read_bytes()
     original_index = INDEX.read_bytes()
@@ -53,9 +53,9 @@ def main():
         parser.error("Existing Bearer-origin route not found")
     if before.count(b"location = /v1/market-quote {") != 1:
         parser.error("Existing Bearer quote route not found")
-    if not new.count(b"limit_req zone=tw01_public_web_per_ip"):
+    if not new.count(b"limit_req zone=fmpa_public_web_per_ip"):
         parser.error("Public web missing IP limit")
-    if b"auth_basic" in new or b"tw01-web-auth.conf" in new:
+    if b"auth_basic" in new or b"fresh-market-price-agent-web-auth.conf" in new:
         parser.error("Web is not actually password-free")
     if b"web/forecast" not in new or b"/v1/forecast" not in before:
         parser.error("Missing expected service routes")
@@ -77,7 +77,7 @@ def main():
         parser.error("Existing frontend controls missing")
     # Existing long-lived Nginx Basic hash + password are deliberately untouched
     # for rollback, but not included by any active website routes.
-    for svc in ("nginx.service", "tw01-forecastengine.service"):
+    for svc in ("nginx.service", "fresh-market-price-agent-forecastengine.service"):
         cmd("systemctl", "is-active", "--quiet", svc)
     shutil.copy2(SITE, backup_site)
     shutil.copy2(INDEX, backup_page)

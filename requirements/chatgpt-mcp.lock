@@ -1,4 +1,4 @@
-# TW01 independent stdio transport ONLY; never install into frozen ML environment.
+# FMPA independent stdio transport ONLY; never install into frozen ML environment.
 # Installed on Windows 5800X 2026-10-13.
 annotated-types==0.8.0
 anyio==4.15.1

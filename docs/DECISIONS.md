@@ -52,10 +52,11 @@
 | D43 | 2026-10-04，GLM 第五輪（依[第四輪獨立審查](../outputs/audits/round4_independent_f146b97/REVIEW_f146b97.md) S01–S09） | 全數修正：Hermes 依安裝版 0.19.0 真介面重寫（handler 回 JSON 字串、tool_complete_callback 權威追蹤、無事後補算）；import 前環境隔離＋顯式 base_url；TrustedContext 輸入忠實驗證；驗證器 (mode,horizon,field,unit) 分離；request_id 伺服器生成＋simulated 全流程；上游錯誤遮罩；工具上限真生效；解析器數量/日期完整語意；配置完整驗證＋private/.env 載入。測試 192→**227**（乾淨環境同數）；凍結工件全部不變（fixtures 因 S05 契約演進重生成，語義差異=0 已核對） | 詳[第五輪報告](ROUND5_REPAIR_REPORT.md)。真 GLM 仍待金鑰；真 Qwen/3090、T16/T32/T35 各自 HOLD。 |
 
 | D44 | 2026-10-04，使用者本次明確要求＋COS實讀L4-1 | 代理人問題暫擱，現有介面保留作展示；本輪改做研究動機、相關研究與差異、三項主要貢獻、design.md、OpenSpec管理及正式菜價投影片 | [来源核對](PROPOSAL_SOURCE_AUDIT_20261004.md)、[六工作包](PROPOSAL_DELIVERY_PLAN.md)、[GLM提示詞](GLM_PROPOSAL_HANDOFF.md)。暫停D41/D43的代理人優先執行順序，不刪未來Qwen3.8-27B/GLM切換方向，也不移除Hermes。文稿／簡報不依賴金鑰、SERVER或真店到期；不把未驗證能力寫成已驗收。只安排本機研究交付，不授權發布、重訓或產品修復。 |
+| D45 | 2026-10-16，使用者（claude.ai 交接＋本次對話選擇「全部改在同一個 PR」） | 專案改名：英文名 **Fresh Market Price Forecast Agent**、短名 `fresh-market-price-agent`、環境變數前綴 `FMPA_`；中文題目保留、Python 套件 `aiot_price` 不改 | 第 1～3 層（對外文字、程式名稱、線上資源名稱）在分支 `rename/fresh-market-price-agent` 一次改完；`TW01_*` 環境變數與 localStorage 舊鍵保留過渡相容；第 4 層（outputs/、private/、選題歷史、凍結模型與資料、hash 鎖定的 bundle/release、v1–v3 簡報）不動。線上 Oracle／Worker 依 [deploy/RENAME_MIGRATION.md](../deploy/RENAME_MIGRATION.md) 於合併後遷移。本表 D12–D33 的 TW01 是選題期候選編號，保留原文。 |
 
 ## 目前未決事項
 
-- 正式題名與初版品項／方法、真店資料可取得程度；TW01目前是本案執行方向。
+- 初版品項／方法、真店資料可取得程度；題名已於 D45 定為 Fresh Market Price Forecast Agent（選題期編號 TW01）。
 - 組員、時間、預算、設備、實作範圍與驗收指標。
 - 選中題目的全面查重、資料下載樣本、授權細節及可行性小實驗。
 - 課程要求中仍需釐清的部分，見 [COURSE_REQUIREMENTS.md](COURSE_REQUIREMENTS.md)。

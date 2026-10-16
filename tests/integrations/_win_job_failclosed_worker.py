@@ -54,7 +54,7 @@ def held_forever_after_spawn_parent(job, evidence: Path):
         await asyncio.Event().wait()  # deliberate permanent pending spawn
         return proc
 
-    mode = os.environ.get("TW01_SYNTHETIC_FAILCLOSE_MODE", "pending")
+    mode = os.environ.get("FMPA_SYNTHETIC_FAILCLOSE_MODE", "pending")
 
     async def run():
         asyncio.create_subprocess_exec = forever_after_launch
@@ -109,5 +109,5 @@ if __name__ == "__main__":
     elif sys.argv[1] == "blocked_loop":
         blocked_event_loop_parent(job, evidence_file)
     else:
-        os.environ["TW01_SYNTHETIC_FAILCLOSE_MODE"] = sys.argv[1]
+        os.environ["FMPA_SYNTHETIC_FAILCLOSE_MODE"] = sys.argv[1]
         held_forever_after_spawn_parent(job, evidence_file)

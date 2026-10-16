@@ -1,4 +1,4 @@
-"""TW01 public-origin API. A strict, stateless wrapper of the frozen ForecastEngine.
+"""FMPA public-origin API. A strict, stateless wrapper of the frozen ForecastEngine.
 
 No record storage, training, model mutation, LLMs, user-controlled paths or URLs.
 Run behind a publicly trusted HTTPS reverse proxy; never bind this ASGI app publicly.
@@ -36,20 +36,27 @@ from aiot_price.integrations.chatgpt_contracts import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-RELEASE = Path(os.getenv("TW01_RELEASE_DIR", str(ROOT / "models" / "releases" / "0.1.0")))
+
+
+def _env(name: str, default: str = "") -> str:
+    """FMPA_* wins; legacy TW01_* is read only while the new name is absent."""
+    return os.environ.get("FMPA_" + name, os.environ.get("TW01_" + name, default))
+
+
+RELEASE = Path(_env("RELEASE_DIR", str(ROOT / "models" / "releases" / "0.1.0")))
 MAX_BODY_BYTES = 4096
 TIMEOUT_SECONDS = 15.0
 RATE_LIMIT_PER_MINUTE = 30
 OBS_DATE_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}\Z")
 
 app = FastAPI(
-    title="TW01 ForecastEngine internal origin",
+    title="FMPA ForecastEngine internal origin",
     version="1",
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
 )
-_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="tw01_frozen_inference")
+_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="fmpa_frozen_inference")
 _busy = threading.Lock()
 _rate_lock = threading.Lock()
 _timestamps: deque[float] = deque()
@@ -61,7 +68,7 @@ def _error(status: int, code: str, message: str) -> JSONResponse:
 
 def _authenticated(req: Request) -> bool:
     """Constant-time comparison; missing origin secret fails closed."""
-    configured = os.environ.get("TW01_ORIGIN_API_TOKEN", "")
+    configured = _env("ORIGIN_API_TOKEN")
     header = req.headers.get("authorization", "")
     if len(configured) < 32 or len(header) > 256:
         return False
@@ -98,7 +105,7 @@ def _ready_metadata() -> dict:
 
 @app.get("/healthz")
 async def healthz():
-    if len(os.environ.get("TW01_ORIGIN_API_TOKEN", "")) < 32:
+    if len(_env("ORIGIN_API_TOKEN")) < 32:
         return JSONResponse(
             status_code=503,
             content={"status": "not_ready", "error": {"code": "not_ready", "message": "服務尚未安全初始化。"}},

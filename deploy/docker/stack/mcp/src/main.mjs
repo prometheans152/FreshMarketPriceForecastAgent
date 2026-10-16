@@ -1,4 +1,4 @@
-/** Self-hostable TW01 MCP Streamable HTTP adapter, internal Docker network.
+/** Self-hostable FMPA MCP Streamable HTTP adapter, internal Docker network.
  *
  * Exactly two tools from the user-approved first-version MCP contract.
  * NOT a general file/browser/shell/records interface. The existing Cloudflare
@@ -19,25 +19,27 @@ import { rejectDuplicateJsonKeys } from "./strict-json.js";
 const PORT = 9000;
 const MAX_BODY = 16384;
 const MAX_OUTPUT = 131072;
-const AUTH_MODE = process.env.TW01_MCP_AUTH_MODE ?? "bearer";
+// FMPA_* wins; legacy TW01_* is read only while the new name is absent.
+const setting = (name) => process.env["FMPA_" + name] ?? process.env["TW01_" + name];
+const AUTH_MODE = setting("MCP_AUTH_MODE") ?? "bearer";
 const ENGINE_URL = "http://forecast:8767";
 const DEFAULT_ERROR = "ForecastEngine 沒有可驗證的結果；拒絕提供數值。";
 if (!["bearer", "public_noauth"].includes(AUTH_MODE))
-  throw new Error("TW01 MCP mode unsupported");
-if (process.env.TW01_ENGINE_URL && process.env.TW01_ENGINE_URL !== ENGINE_URL)
-  throw new Error("TW01 backend route must be fixed to internal forecast only");
+  throw new Error("MCP mode unsupported");
+if (setting("ENGINE_URL") && setting("ENGINE_URL") !== ENGINE_URL)
+  throw new Error("Backend route must be fixed to internal forecast only");
 
 function readSecret(name) {
-  const path = process.env[name];
+  const path = setting(name);
   if (typeof path !== "string" || !path.startsWith("/run/secrets/"))
-    throw new Error("Required Docker secret path missing: " + name);
+    throw new Error("Required Docker secret path missing: FMPA_" + name);
   const token = readFileSync(path, "utf8").trim();
   if (token.length < 32 || token.length > 512 || /\s/.test(token))
     throw new Error("Required Docker secret malformed");
   return token;
 }
-const ORIGIN_TOKEN = readSecret("TW01_ORIGIN_TOKEN_FILE");
-const CLIENT_TOKEN = readSecret("TW01_MCP_TOKEN_FILE");
+const ORIGIN_TOKEN = readSecret("ORIGIN_TOKEN_FILE");
+const CLIENT_TOKEN = readSecret("MCP_TOKEN_FILE");
 if (ORIGIN_TOKEN === CLIENT_TOKEN)
   throw new Error("Origin and MCP client secrets must not match");
 
@@ -89,7 +91,7 @@ async function callEngine(name, args) {
 
 function newMcpServer() {
   const server = new McpServer({
-    name: "tw01-portable-docker-mcp",
+    name: "fresh-market-price-agent-portable-docker-mcp",
     version: "1.0.0",
   }, {
     instructions: "臺中公開行情及匿名A 7／14天預測；公開均價不是即時店價。" +
@@ -149,7 +151,7 @@ async function boundedJson(req) {
 async function serve(req) {
   if (req.url === "/healthz" && req.method === "GET")
     return new Response(JSON.stringify({
-      status: "configured", service: "tw01-portable-mcp",
+      status: "configured", service: "fresh-market-price-agent-portable-mcp",
       upstream_live: "not_probed", auth_mode: AUTH_MODE,
     }), { status: 200, headers: { "content-type": "application/json" } });
   if (req.url !== "/mcp") return jsonStatus("not_found", 404);
@@ -159,7 +161,7 @@ async function serve(req) {
     return new Response(JSON.stringify({ ok: false, code: "unauthorized" }), {
       status: 401,
       headers: { "content-type": "application/json",
-                 "www-authenticate": 'Bearer realm="tw01-portable-mcp"' },
+                 "www-authenticate": 'Bearer realm="fresh-market-price-agent-portable-mcp"' },
     });
   const data = req.method === "POST" ? await boundedJson(req) : { body: undefined };
   if (data.tooBig) return jsonStatus("payload_too_large", 413);

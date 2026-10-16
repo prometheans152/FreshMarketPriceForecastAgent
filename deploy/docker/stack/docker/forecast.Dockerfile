@@ -8,8 +8,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt && \
-    groupadd --gid 10001 tw01 && \
-    useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin tw01
+    groupadd --gid 10001 fmpa && \
+    useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin fmpa
 
 COPY src /app/src
 COPY deploy /app/deploy

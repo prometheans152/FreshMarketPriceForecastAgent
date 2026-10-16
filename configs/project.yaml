@@ -1,11 +1,11 @@
-# TW01 First Version Project Convergence Configuration (T02)
+# First Version Project Convergence Configuration (T02)
 # Engineering choices decided during design convergence; changes requiring data support (items, sanity range) will be updated after T06 and recorded in DECISIONS.md.
 # Flat threshold and related rules must be frozen before seeing final test results (MODEL_VALIDATION_PLAN §3.2).
 
 project:
   name: aiot-price
   display_name: On-site Vegetable Price 7/14-Day Forecast and Analysis Agent
-  working_title: TW01
+  working_title: Fresh Market Price Forecast Agent
   config_version: "0.1.0"
 
 forecast:

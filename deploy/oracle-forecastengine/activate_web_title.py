@@ -1,4 +1,4 @@
-"""Atomically change ONLY the TW01 public website title/header/meta on Oracle.
+"""Atomically change ONLY the FMPA public website title/header/meta on Oracle.
 
 Guarded by old/new SHA256, fixed deployed destination, unique rollback backup.
 Does not touch the API, models, login, records, other Nginx settings or Git.
@@ -12,7 +12,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-DEST = Path("/var/www/tw01-website/index.html")
+DEST = Path("/var/www/fresh-market-price-agent-website/index.html")
 
 
 def sha(data: bytes) -> str:
@@ -32,8 +32,8 @@ def main():
     if not args.tag.replace("_", "").replace("-", "").isalnum():
         parser.error("invalid backup tag")
     candidate = args.input.resolve(strict=True)
-    if not str(candidate).startswith("/home/ubuntu/tw01-web-title-stage-"):
-        parser.error("candidate must be in the dedicated TW01 staging directory")
+    if not str(candidate).startswith("/home/ubuntu/fresh-market-price-agent-web-title-stage-"):
+        parser.error("candidate must be in the dedicated FMPA staging directory")
     if candidate.is_symlink() or not candidate.is_file():
         parser.error("candidate must be a regular file")
     if not DEST.is_file() or DEST.is_symlink():
@@ -63,7 +63,7 @@ def main():
     shutil.copy2(DEST, backup)
     temp_path = None
     try:
-        fd, name = tempfile.mkstemp(prefix=".tw01-branding-", dir=DEST.parent)
+        fd, name = tempfile.mkstemp(prefix=".fresh-market-price-agent-branding-", dir=DEST.parent)
         temp_path = Path(name)
         with os.fdopen(fd, "wb") as output:
             output.write(new)
@@ -79,7 +79,7 @@ def main():
             temp_path.unlink()
         raise
 
-    print("TW01_WEB_BRANDING_UPDATED=YES")
+    print("FMPA_WEB_BRANDING_UPDATED=YES")
     print("VISIBLE_TITLE=菜市場現場價格預測")
     print("BROWSER_TITLE=菜市場現場價格預測")
     print("DEPLOYED_INDEX_SHA256=" + sha(DEST.read_bytes()))

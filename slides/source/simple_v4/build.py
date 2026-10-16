@@ -17,7 +17,7 @@ from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Inches, Pt
 
 VERSION='v4'
-NAME='TW01_菜價預測_研究提案_簡潔版_v4'
+NAME='菜價預測_研究提案_簡潔版_v4'
 FONT='Microsoft JhengHei'
 INK='222B33'; ACCENT='315A70'; MUTED='606B74'; LINE='CDD4DA'; LIGHT='F1F4F6'; WHITE='FFFFFF'
 WIDTH,HEIGHT=13.333333,7.5

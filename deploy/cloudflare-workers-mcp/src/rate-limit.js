@@ -1,4 +1,4 @@
-// TW01 public MCP abuse protection. These counters are Cloudflare location
+// FMPA public MCP abuse protection. These counters are Cloudflare location
 // local and eventually consistent, NOT an exact worldwide quota.
 // No binding or any binding error => deny, NEVER silently allow.
 export class RateLimitUnavailable extends Error {

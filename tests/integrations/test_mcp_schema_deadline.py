@@ -14,10 +14,11 @@ HELPER = Path(__file__).with_name("_mcp_schema_deadline_probe.py")
 
 def test_native_input_schema_stall_is_killed_before_it_can_resume(tmp_path):
     assert os.name == "nt", "Real Job Object acceptance requires Windows"
-    transport = os.environ.get("TW01_MCP_PYTHON")
-    assert transport and Path(transport).is_file(), "Native schema acceptance requires TW01_MCP_PYTHON"
+    transport = os.environ.get("FMPA_MCP_PYTHON", os.environ.get("TW01_MCP_PYTHON"))
+    assert transport and Path(transport).is_file(), "Native schema acceptance requires FMPA_MCP_PYTHON"
     from aiot_price.integrations.chatgpt_mcp import worker_environment
-    evidence_root = Path(os.environ.get("TW01_LIFECYCLE_EVIDENCE_DIR", str(tmp_path)))
+    evidence_root = Path(os.environ.get(
+        "FMPA_LIFECYCLE_EVIDENCE_DIR", os.environ.get("TW01_LIFECYCLE_EVIDENCE_DIR", str(tmp_path))))
     directory = evidence_root / ("schema_" + tmp_path.name)
     directory.mkdir(parents=True, exist_ok=False)
     env = worker_environment(directory / "client_home")

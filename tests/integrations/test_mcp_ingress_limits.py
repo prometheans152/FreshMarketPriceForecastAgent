@@ -61,11 +61,11 @@ def _read_one(raw):
 
 
 def _native_sdk_configuration():
-    sdk_python = os.environ.get("TW01_MCP_PYTHON")
+    sdk_python = os.environ.get("FMPA_MCP_PYTHON", os.environ.get("TW01_MCP_PYTHON"))
     if not sdk_python:
-        if os.environ.get("TW01_ACCEPTANCE") == "1":
-            pytest.fail("Native ingress acceptance requires TW01_MCP_PYTHON; skipping would hide missing coverage.")
-        pytest.skip("Set TW01_MCP_PYTHON to the isolated official SDK Python for actual stdio ingress")
+        if os.environ.get("FMPA_ACCEPTANCE", os.environ.get("TW01_ACCEPTANCE")) == "1":
+            pytest.fail("Native ingress acceptance requires FMPA_MCP_PYTHON; skipping would hide missing coverage.")
+        pytest.skip("Set FMPA_MCP_PYTHON to the isolated official SDK Python for actual stdio ingress")
     return sdk_python
 
 
@@ -154,8 +154,9 @@ def test_native_production_ingress_rejects_before_request_dispatch(raw, reason, 
 
 
 def test_native_acceptance_missing_sdk_fails_instead_of_skipping(monkeypatch):
+    monkeypatch.delenv("FMPA_MCP_PYTHON", raising=False)
     monkeypatch.delenv("TW01_MCP_PYTHON", raising=False)
-    monkeypatch.setenv("TW01_ACCEPTANCE", "1")
+    monkeypatch.setenv("FMPA_ACCEPTANCE", "1")
     with pytest.raises(pytest.fail.Exception):
         try:
             _native_sdk_configuration()
@@ -164,7 +165,9 @@ def test_native_acceptance_missing_sdk_fails_instead_of_skipping(monkeypatch):
 
 
 def test_native_optional_mode_missing_sdk_reports_skip(monkeypatch):
+    monkeypatch.delenv("FMPA_MCP_PYTHON", raising=False)
     monkeypatch.delenv("TW01_MCP_PYTHON", raising=False)
+    monkeypatch.delenv("FMPA_ACCEPTANCE", raising=False)
     monkeypatch.delenv("TW01_ACCEPTANCE", raising=False)
     with pytest.raises(pytest.skip.Exception):
         _native_sdk_configuration()

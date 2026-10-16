@@ -1,4 +1,9 @@
-# TW01 Shared MCP — ChatGPT + Gemini Compatibility (2026-10-14)
+# Shared MCP — ChatGPT + Gemini Compatibility (2026-10-14)
+
+> **Rename (2026-10-16):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
+> Until [RENAME_MIGRATION.md](../RENAME_MIGRATION.md) has been carried out, the live Oracle host and Worker
+> still use the old `tw01-*` names; before migration, operate or roll back with this file as of
+> `main@1062818`.
 
 > **CURRENT SERVER STATUS (2026-10-15):** The same public anonymous MCP
 > URL has actually completed 6/6 live Cloudflare VPC → Oracle protocol
@@ -14,7 +19,7 @@
 
 The intended **same remote MCP endpoint** is:
 
-`https://tw01-forecast-mcp.prometheans152.workers.dev/mcp`
+`https://fresh-market-price-agent.prometheans152.workers.dev/mcp`
 
 Supported tools remain **exactly**:
 - `get_market_quote` — current query of frozen public market data, not real-time individual shop prices.
@@ -24,15 +29,15 @@ No Gemini-specific ForecastEngine or additional Worker should be created.
 Keep standard **Streamable HTTP MCP** transport, JSON-RPC initialize,
 tools/list, tools/call, and tool schemas vendor-neutral.
 
-## Google official documented support (not yet E2E tested for TW01)
+## Google official documented support (not yet E2E tested for this project)
 
 1. **Gemini API Interactions API**: Remote MCP over Streamable HTTP,
-   `type: "mcp_server"`, `name: "tw01_forecast"` (snake_case),
+   `type: "mcp_server"`, `name: "fmpa_forecast"` (snake_case),
    `url` set to the endpoint above. Auth headers/credentials are
    optional and require proper user permission. No Gemini-specific model
    processing should be placed in Worker.
 2. **Gemini CLI**: Remote MCP via `httpUrl` or
-   `gemini mcp add --transport http tw01-forecast <URL>`.
+   `gemini mcp add --transport http fresh-market-price-agent-forecast <URL>`.
    The owner chose **public No Auth**, removing the need for
    Gemini-specific OAuth callback registration **once the separate
    Cloudflare Access app is disabled**.
@@ -52,8 +57,8 @@ Gemini CLI sample **config only** (do not put secrets into source):
 ```json
 {
   "mcpServers": {
-    "tw01-forecast": {
-      "httpUrl": "https://tw01-forecast-mcp.prometheans152.workers.dev/mcp"
+    "fresh-market-price-agent-forecast": {
+      "httpUrl": "https://fresh-market-price-agent.prometheans152.workers.dev/mcp"
     }
   }
 }
@@ -64,8 +69,8 @@ Gemini API Remote MCP Interactions example **tool descriptor only**:
 ```json
 {
   "type": "mcp_server",
-  "name": "tw01_forecast",
-  "url": "https://tw01-forecast-mcp.prometheans152.workers.dev/mcp"
+  "name": "fmpa_forecast",
+  "url": "https://fresh-market-price-agent.prometheans152.workers.dev/mcp"
 }
 ```
 
@@ -111,7 +116,7 @@ resource limits are recorded in `PUBLIC_NOAUTH_HANDOFF.md`.
 
 Public No Auth Worker code deployed, but existing TW01 Access app
 still performs OAuth 401 before the Worker. Oracle TLS health:
-verified separately. TW01 Gemini MCP `tools/call` E2E:
-**NOT VERIFIED**. TW01 ChatGPT MCP `tools/call` E2E:
+verified separately. Gemini MCP `tools/call` E2E:
+**NOT VERIFIED**. ChatGPT MCP `tools/call` E2E:
 **NOT VERIFIED**. Backend Worker Secret is still unprovisioned
 at last verified check; recheck only secret **NAMES**, never values.

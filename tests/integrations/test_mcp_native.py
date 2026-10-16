@@ -16,12 +16,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _transport_configuration():
-    run_dir = os.environ.get("TW01_MCP_RUN")
-    transport = os.environ.get("TW01_MCP_PYTHON")
+    run_dir = os.environ.get("FMPA_MCP_RUN", os.environ.get("TW01_MCP_RUN"))
+    transport = os.environ.get("FMPA_MCP_PYTHON", os.environ.get("TW01_MCP_PYTHON"))
     if not run_dir or not transport:
-        if os.environ.get("TW01_ACCEPTANCE") == "1":
-            pytest.fail("Native acceptance requires TW01_MCP_RUN and TW01_MCP_PYTHON; skipping would hide missing coverage.")
-        pytest.skip("Only the isolated transport SDK installation can run this test; set TW01_MCP_RUN and TW01_MCP_PYTHON.")
+        if os.environ.get("FMPA_ACCEPTANCE", os.environ.get("TW01_ACCEPTANCE")) == "1":
+            pytest.fail("Native acceptance requires FMPA_MCP_RUN and FMPA_MCP_PYTHON; skipping would hide missing coverage.")
+        pytest.skip("Only the isolated transport SDK installation can run this test; set FMPA_MCP_RUN and FMPA_MCP_PYTHON.")
     return Path(run_dir), Path(transport)
 
 
@@ -74,8 +74,10 @@ def _assert_native_session(session):
 
 
 def test_acceptance_cannot_silently_skip_native(monkeypatch):
-    monkeypatch.setenv("TW01_ACCEPTANCE", "1")
+    monkeypatch.setenv("FMPA_ACCEPTANCE", "1")
+    monkeypatch.delenv("FMPA_MCP_RUN", raising=False)
     monkeypatch.delenv("TW01_MCP_RUN", raising=False)
+    monkeypatch.delenv("FMPA_MCP_PYTHON", raising=False)
     monkeypatch.delenv("TW01_MCP_PYTHON", raising=False)
     with pytest.raises(pytest.fail.Exception, match="Native acceptance requires"):
         _transport_configuration()

@@ -15,6 +15,9 @@ function element(id) {
   return elements.get(id);
 }
 element('storeId').value = 'test-anonymous-label';
+// A record saved before the rename lives under the legacy key only.
+const legacyRecord = {record_id: 'legacy-record-id', crop_id: 'cabbage'};
+storage.set('tw01_web_browser_only_records_v1', JSON.stringify([legacyRecord]));
 const context = vm.createContext({
   console,
   setTimeout: () => {},
@@ -37,15 +40,19 @@ vm.runInContext(
   context
 );
 await vm.runInContext('saveCurrentRecord()', context);
-let entries = JSON.parse(storage.get('tw01_web_browser_only_records_v1'));
-assert.equal(entries.length, 1);
+let entries = JSON.parse(storage.get('fmpa_web_browser_only_records_v1'));
+assert.equal(entries.length, 2);
 assert.equal(entries[0].record_id, 'web-local-test-id');
+assert.equal(entries[1].record_id, 'legacy-record-id', 'legacy record migrated');
+assert.equal(JSON.parse(storage.get('tw01_web_browser_only_records_v1')).length, 1,
+  'legacy key is kept for rollback');
 assert.equal(entries[0].anonymous_store_label, 'test-anonymous-label');
 assert.equal(entries[0].request.current_price, 32);
 assert.equal(sentNetworkRequests, 0);
 await vm.runInContext("deleteRecord('web-local-test-id', {disabled:false})", context);
-entries = JSON.parse(storage.get('tw01_web_browser_only_records_v1'));
-assert.equal(entries.length, 0);
+entries = JSON.parse(storage.get('fmpa_web_browser_only_records_v1'));
+assert.equal(entries.length, 1);
+assert.equal(entries[0].record_id, 'legacy-record-id');
 assert.equal(sentNetworkRequests, 0);
 assert.doesNotMatch(source, /fetchJson\(API_RECORDS/);
 console.log('BROWSER_RECORDS_LOCAL_ONLY_AND_DELETION=PASS');

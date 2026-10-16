@@ -20,7 +20,7 @@ const envelope = (method, params = {}, id = 1) => ({
 const init = envelope("initialize", {
   protocolVersion: "2025-06-18",
   capabilities: {},
-  clientInfo: { name: "tw01-test-only", version: "1.0.0" },
+  clientInfo: { name: "fresh-market-price-agent-test-only", version: "1.0.0" },
 });
 const req = (rpc, overrideHeaders = headers) => new Request(endPoint, {
   method: "POST", headers: overrideHeaders, body: JSON.stringify(rpc),
@@ -92,7 +92,7 @@ test("real SDK Streamable HTTP initialize, tools/list, tools/call success via co
   const transport = async (request) => handler(request, VALID_TEST_ENV, context);
   const initialized = await parseMcp(await transport(req(init)));
   assert.equal(initialized.id, 1, JSON.stringify(initialized));
-  assert.equal(initialized.result.serverInfo.name, "tw01-forecastengine-remote");
+  assert.equal(initialized.result.serverInfo.name, "fresh-market-price-agent-forecastengine-remote");
   const listed = await parseMcp(await transport(req(envelope("tools/list", {}, 2))));
   assert.deepEqual(listed.result.tools.map(t => t.name), TOOL_NAMES);
   assert.deepEqual(listed.result.tools.map(t => t.annotations.readOnlyHint), [true, true]);

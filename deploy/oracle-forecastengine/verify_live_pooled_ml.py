@@ -68,8 +68,8 @@ def main():
     args = parser.parse_args()
     if args.output.exists():
         parser.error("refuse overwrite of acceptance evidence")
-    os.environ["TW01_EXTENDED_CATALOG_DIR"] = str(args.catalog_dir)
-    os.environ["TW01_POOLED_ML_DIR"] = str(args.ml_dir)
+    os.environ["FMPA_EXTENDED_CATALOG_DIR"] = str(args.catalog_dir)
+    os.environ["FMPA_POOLED_ML_DIR"] = str(args.ml_dir)
     from pooled_ml_runtime import forecast_ml
 
     cases = []

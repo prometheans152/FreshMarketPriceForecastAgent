@@ -1,4 +1,4 @@
-# TW01 Cloudflare Workers — Security assessment
+# Cloudflare Workers — Security assessment
 
 > **HISTORICAL assessment, superseded 2026-10-15.**
 > This file's blocked/secret-missing statements below describe an

@@ -16,7 +16,8 @@ def main():
     parser.add_argument('--host', required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    token = os.environ['TW01_ORIGIN_API_TOKEN']
+    # FMPA_* wins; legacy TW01_* is read only while the new name is absent.
+    token = os.environ.get('FMPA_ORIGIN_API_TOKEN', os.environ.get('TW01_ORIGIN_API_TOKEN', ''))
     assert len(token) >= 32
     base = {'crop_id': 'cabbage', 'market_id': '中義市場',
             'current_price': 32, 'price_unit': 'NTD_per_taiwan_jin',

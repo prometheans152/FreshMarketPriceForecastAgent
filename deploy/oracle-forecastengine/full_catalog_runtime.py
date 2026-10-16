@@ -41,13 +41,18 @@ STORE_PRICE_WARNING = (
 )
 
 
+def _env(name: str, default: str = "") -> str:
+    """FMPA_* wins; legacy TW01_* is read only while the new name is absent."""
+    return os.environ.get("FMPA_" + name, os.environ.get("TW01_" + name, default))
+
+
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 @lru_cache(maxsize=1)
 def data_bundle():
-    root = os.environ.get("TW01_EXTENDED_CATALOG_DIR", "")
+    root = _env("EXTENDED_CATALOG_DIR")
     if not root:
         raise RuntimeError("Full catalog not configured")
     folder = Path(root).resolve(strict=True)

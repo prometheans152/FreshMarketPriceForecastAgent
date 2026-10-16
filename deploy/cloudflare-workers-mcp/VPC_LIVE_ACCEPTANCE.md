@@ -1,4 +1,9 @@
-# TW01 — Cloudflare Workers VPC Remote MCP final server acceptance
+# Cloudflare Workers VPC Remote MCP final server acceptance
+
+> **Rename (2026-10-16):** this is the dated acceptance record of the pre-rename deployment,
+> so it keeps the names that were live then (`tw01-forecast-mcp`, `tw01-*`). The renamed
+> Worker `fresh-market-price-agent` needs its own 6/6 E2E run; see
+> [RENAME_MIGRATION.md](../RENAME_MIGRATION.md).
 
 **Original Worker acceptance: 2026-10-15 (Asia/Taipei).**
 **Independently re-verified after Docker cutover: 2026-10-15.**
@@ -110,7 +115,7 @@ Latest evidence:
 
 **Rollback:** No Cloudflare rollback is needed. In an authorized
 Oracle Docker incident, follow
-`../docker-tw01/oracle/ORACLE_DOCKER_OPERATIONS.md`:
+`../docker/oracle/ORACLE_DOCKER_OPERATIONS.md`:
 first run
 `sudo python3 /opt/tw01-docker/ops/rollback_oracle.py --tag 20261015_120629 --check-only`.
 Only when explicitly authorized execute without `--check-only`

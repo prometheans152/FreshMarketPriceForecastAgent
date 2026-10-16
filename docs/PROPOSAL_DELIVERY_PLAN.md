@@ -1,4 +1,4 @@
-# TW01 研究提案、設計與正式投影片執行計畫
+# 研究提案、設計與正式投影片執行計畫
 
 > 給 GLM：依本計畫逐項執行；具備 Superpowers 時使用 executing-plans 或 subagent-driven-development，無該技能也須保留相同的逐項證據與驗收。這是研究／文件／簡報製作批次，不是第六輪代理人修復。
 

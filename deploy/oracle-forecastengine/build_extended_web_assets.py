@@ -169,7 +169,7 @@ def build(catalog_path: Path, output: Path):
         "不需帳號密碼，支援 61 個官方市場品項（蔬菜、水果、魚肉蛋）；7／14 天來源與估計方法會明確標示。",
     )
     # Preserve the owner-approved public-facing name on future site rebuilds.
-    # This does not rename the TW01 source project or touch original Windows UI.
+    # This does not rename the source project or touch original Windows UI.
     html = replace_once(
         html, "<title>現場菜價預測（7／14 天）</title>",
         "<title>菜市場現場價格預測</title>",
@@ -180,7 +180,7 @@ def build(catalog_path: Path, output: Path):
     )
     html = replace_once(
         html,
-        'content="現場菜價 7／14 天預測（TW01，臺中公開市場行情參考）"',
+        'content="現場菜價 7／14 天預測（臺中公開市場行情參考）"',
         'content="菜市場現場價格預測（7／14 天，臺中公開市場行情參考）"',
     )
     html = replace_once(

@@ -70,7 +70,7 @@ test("anonymous MCP initialize and tools/list work without Authorization or clie
   const env = publicEnv();
   const initialized = await worker.fetch(req("initialize", {
     protocolVersion: "2025-06-18", capabilities: {},
-    clientInfo: { name: "tw01-public-test", version: "1" },
+    clientInfo: { name: "fresh-market-price-agent-public-test", version: "1" },
   }), env, context);
   assert.equal(initialized.status, 200);
   const listed = await worker.fetch(req("tools/list"), env, context);

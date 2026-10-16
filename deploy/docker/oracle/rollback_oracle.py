@@ -1,6 +1,6 @@
-"""Rollback ONLY the TW01 Oracle Docker cutover to the preserved systemd app.
+"""Rollback ONLY the FMPA Oracle Docker cutover to the preserved systemd app.
 
-This only operates on the exact scoped Nginx backup and TW01 systemd service.
+This only operates on the exact scoped Nginx backup and FMPA systemd service.
 It does not touch SSL/TLS certificates, Cloudflare Tunnel, source/model
 releases, private records, or unrelated Docker containers.
 """
@@ -12,8 +12,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-LIVE = Path("/etc/nginx/sites-available/tw01-tls.conf")
-UNIT = "tw01-forecastengine.service"
+LIVE = Path("/etc/nginx/sites-available/fresh-market-price-agent-tls.conf")
+UNIT = "fresh-market-price-agent-forecastengine.service"
 
 
 def run(*args):
@@ -41,7 +41,7 @@ def main():
         raise RuntimeError("Unexpected live vs backed-up config; refuse blind replacement")
     if args.check_only:
         print("ORIGINAL_NGINX_BACKUP_MATCHED=YES")
-        print("CURRENT_TW01_DOCKER_ROUTES_MATCHED=YES")
+        print("CURRENT_FMPA_DOCKER_ROUTES_MATCHED=YES")
         print("SCOPED_ROLLBACK_READY=YES")
         print("MUTATIONS=NONE")
         return

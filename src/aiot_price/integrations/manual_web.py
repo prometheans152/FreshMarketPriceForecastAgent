@@ -1,4 +1,4 @@
-"""Isolated, loopback-only TW01 A/B form launcher."""
+"""Isolated, loopback-only FMPA A/B form launcher."""
 from __future__ import annotations
 
 import argparse
@@ -46,7 +46,7 @@ def isolated_environment(home: Path, release_dir: Path, records_dir: Path | None
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="TW01 manual form; no LLM required")
+    parser = argparse.ArgumentParser(description="FMPA manual form; no LLM required")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8766)
     parser.add_argument("--release-dir", type=Path, default=PROJECT_ROOT / "models" / "releases" / "0.1.0")

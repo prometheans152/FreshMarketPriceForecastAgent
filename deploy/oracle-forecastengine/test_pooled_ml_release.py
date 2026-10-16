@@ -1,4 +1,4 @@
-"""TW01 new supervised models: exact-split/test labels, runtime and isolation.
+"""FMPA new supervised models: exact-split/test labels, runtime and isolation.
 
 This file runs in a fresh pytest process from legacy oracle_web_site tests
 because the new ASGI overlay intentionally redirects ONLY expanded crop calls
@@ -21,8 +21,8 @@ from fastapi.testclient import TestClient
 ROOT = Path(__file__).resolve().parents[2]
 OVERLAY = ROOT / "deploy/oracle-forecastengine"
 sys.path.insert(0, str(OVERLAY))
-os.environ.setdefault("TW01_ORIGIN_API_TOKEN", "test_only_" + "r" * 48)
-os.environ["TW01_RELEASE_DIR"] = str(ROOT / "models/releases/0.1.0")
+os.environ.setdefault("FMPA_ORIGIN_API_TOKEN", "test_only_" + "r" * 48)
+os.environ["FMPA_RELEASE_DIR"] = str(ROOT / "models/releases/0.1.0")
 
 from pooled_ml_runtime import (
     ML_WARNING, QUALITY_WARNING, check_ml_release_integrity,

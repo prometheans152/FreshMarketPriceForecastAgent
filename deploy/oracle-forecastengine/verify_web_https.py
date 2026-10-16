@@ -30,7 +30,7 @@ SITE_ORIGIN = "https://" + HOST
 def web_auth_header() -> str:
     # No secrets in CLI args, process environment, logs or report contents.
     pairs = dict(line.split(": ", 1) for line in Path(
-        "/etc/tw01-forecastengine/web-login.txt"
+        "/etc/fresh-market-price-agent-forecastengine/web-login.txt"
     ).read_text(encoding="utf-8").splitlines())
     assert pairs["Username"] and len(pairs["Password"]) >= 28
     encoded = base64.b64encode(

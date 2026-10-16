@@ -1,6 +1,6 @@
 """New, independently trained pooled ML inference for 57 additional items.
 
-Never feeds unseen items to TW01's frozen 0.1.0 RF/HGB. The existing website
+Never feeds unseen items to the frozen 0.1.0 RF/HGB. The existing website
 keeps its proven public quote/data-sufficiency guardrails and B comparability
 rule, but 7/14 changes now come from real supervised ML estimators.
 """
@@ -21,7 +21,7 @@ from aiot_price.data.labels import classify_direction
 from aiot_price.data.schema import to_taiwan_jin
 from aiot_price.models.store_adapter import ALPHA_EXPERIMENTAL
 from full_catalog_runtime import (
-    FROZEN_CROPS, STORE_PRICE_WARNING, data_bundle, forecast_baseline,
+    FROZEN_CROPS, STORE_PRICE_WARNING, _env, data_bundle, forecast_baseline,
 )
 from pooled_ml_features import (
     FEATURES, design_matrix, features_at, quotes_as_arrays,
@@ -48,7 +48,7 @@ def sha(path: Path) -> str:
 
 @lru_cache(maxsize=1)
 def ml_release():
-    directory = os.environ.get("TW01_POOLED_ML_DIR", "")
+    directory = _env("POOLED_ML_DIR")
     if not directory:
         raise RuntimeError("Pooled ML release is not configured")
     location = Path(directory).resolve(strict=True)
@@ -86,7 +86,7 @@ def ml_release():
 
 def check_ml_release_integrity() -> dict:
     manifest, report, models = ml_release()
-    folder = Path(os.environ["TW01_POOLED_ML_DIR"]).resolve(strict=True)
+    folder = Path(_env("POOLED_ML_DIR")).resolve(strict=True)
     for item in manifest["models"]:
         if sha(folder / item["file"]) != item["sha256"]:
             raise RuntimeError("Pooled ML release changed after loading")

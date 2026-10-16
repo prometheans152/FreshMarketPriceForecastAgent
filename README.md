@@ -1,4 +1,4 @@
-# TW01 現場菜價 7／14 天預測與分析代理人
+# 現場菜價 7／14 天預測與分析代理人（Fresh Market Price Forecast Agent）
 
 **AIoT 應用與資料分析期末專題・Proposal v5 r3（2026-10-09；本機正式主版，提案獨立驗收通過）**
 組員：待填（≤4 人，組長待填）｜正式發表日期：待填｜[本機重現入口](#本機使用與重現)見文末
@@ -46,7 +46,7 @@
 | Deep Research（五思維、三爭論、十問題） | [DEEP_RESEARCH.md](docs/proposal_v5/DEEP_RESEARCH.md) |
 | 教授指定的八欄文獻表 | [ARTICLE_SUMMARY_TABLE.md](docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md) |
 | Agent Architecture、Flowchart、41行 Pseudocode | [AGENT_DESIGN.md](docs/proposal_v5/AGENT_DESIGN.md) |
-| 可編輯簡報／同源 PDF | slides/proposal_v5/TW01_Proposal_v5.pptx 與同名 PDF（23主講＋10附錄） |
+| 可編輯簡報／同源 PDF | slides/proposal_v5/FMPA_Proposal_v5.pptx 與同名 PDF（23主講＋10附錄） |
 | 講稿、來源與重建說明 | [逐頁講稿](slides/proposal_v5/SLIDE_NOTES_v5.md)・[來源](slides/proposal_v5/SOURCES.md)・[重建 README](slides/proposal_v5/README.md) |
 | 工程設計與正式驗收 | [design.md §6](design.md)・[驗收狀態](docs/PROPOSAL_ACCEPTANCE.md) |
 
@@ -96,15 +96,15 @@
 
 ## 歷史與輔助文件（選題已完成，以下僅供追溯）
 
-本專題選題已定為 TW01，不再重新選題；舊規則與清單僅屬歷史。執行狀態主入口是 [TASKS.md](TASKS.md) 與 [docs/GLM_PROGRESS.md](docs/GLM_PROGRESS.md)；決策紀錄見 [docs/DECISIONS.md](docs/DECISIONS.md)。
+本專題選題已定，不再重新選題；舊規則與清單僅屬歷史（選題期的候選編號 TW01 只留在歷史文件與檔名）。執行狀態主入口是 [TASKS.md](TASKS.md) 與 [docs/GLM_PROGRESS.md](docs/GLM_PROGRESS.md)；決策紀錄見 [docs/DECISIONS.md](docs/DECISIONS.md)。
 
 | 類別 | 文件 |
 | --- | --- |
 | 執行與審查 | [TASKS.md](TASKS.md)｜[GLM_PROGRESS.md](docs/GLM_PROGRESS.md)｜[D44 修訂報告](docs/D44_REVISION_REPORT.md)｜[來源核對](docs/PROPOSAL_SOURCE_AUDIT_20261004.md)｜[修訂工作單](docs/GLM_D44_R01_R06_REVISION_20261004.md) |
 | 工程與模型 | [MODEL_VALIDATION_PLAN.md](docs/MODEL_VALIDATION_PLAN.md)｜[MODEL_CARD](docs/MODEL_CARD.md)｜[公開評估](docs/PUBLIC_MODEL_EVALUATION.md)｜[資料卡](docs/DATA_CARD.md)｜[資料品質](docs/DATA_QUALITY_REPORT.md)｜[標籤契約](docs/LABEL_CONTRACT.md) |
-| 課程與背景 | [課程要求](docs/COURSE_REQUIREMENTS.md)｜[專案背景](docs/PROJECT_CONTEXT.md)｜[AGENTS.md](AGENTS.md)｜[代理人方向](docs/AGENT_RUNTIME_DIRECTION.md)｜[交付清單](docs/DELIVERY_CHECKLIST.md)｜[TW01 需求與歷史](docs/ideas/TW01_VEGETABLE_BASKET.md) |
+| 課程與背景 | [課程要求](docs/COURSE_REQUIREMENTS.md)｜[專案背景](docs/PROJECT_CONTEXT.md)｜[AGENTS.md](AGENTS.md)｜[代理人方向](docs/AGENT_RUNTIME_DIRECTION.md)｜[交付清單](docs/DELIVERY_CHECKLIST.md)｜[選題需求與歷史](docs/ideas/TW01_VEGETABLE_BASKET.md) |
 | 選題歷史（全數已結案） | [U01–U50](docs/ORDINARY50_TOPIC_CATALOG.md)｜[G01–G50](docs/GENERAL50_TOPIC_CATALOG.md)｜[H01–H16](docs/H16_TOPIC_CATALOG.md)｜[W01–W50](docs/WORK50_TOPIC_CATALOG.md)｜[N01–N50](docs/NEW50_TOPIC_CATALOG.md)｜[臺灣短名單](docs/TAIWAN_TOPIC_SHORTLIST.md)｜[原 50 題](docs/TOPIC_CATALOG.md)｜[保留備案 N18/G02/G41](docs/DECISIONS.md) |
-| 前作查核（歷史輪） | [TW01 菜價重查](docs/research/TW01_RELATED_WORK_RECHECK.md)｜[TW01 零售公開資料](docs/research/TW01_PUBLIC_RETAIL_DATA.md)｜[G02/G41 重查](docs/research/G02_G41_RELATED_WORK_RECHECK.md) |
+| 前作查核（歷史輪） | [菜價重查](docs/research/TW01_RELATED_WORK_RECHECK.md)｜[零售公開資料](docs/research/TW01_PUBLIC_RETAIL_DATA.md)｜[G02/G41 重查](docs/research/G02_G41_RELATED_WORK_RECHECK.md) |
 
 ## 版本管理附註
 

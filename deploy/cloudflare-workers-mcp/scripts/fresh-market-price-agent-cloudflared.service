@@ -1,5 +1,5 @@
 [Unit]
-Description=TW01-only Cloudflare Workers VPC Tunnel (QUIC)
+Description=FMPA-only Cloudflare Workers VPC Tunnel (QUIC)
 Wants=network-online.target
 After=network-online.target
 
@@ -7,7 +7,7 @@ After=network-online.target
 Type=simple
 User=tw01tunnel
 Group=tw01tunnel
-ExecStart=/usr/bin/cloudflared tunnel --no-autoupdate --protocol quic --loglevel info run --token-file /etc/tw01-cloudflared/token
+ExecStart=/usr/bin/cloudflared tunnel --no-autoupdate --protocol quic --loglevel info run --token-file /etc/fresh-market-price-agent-cloudflared/token
 Restart=on-failure
 RestartSec=5s
 TimeoutStartSec=30

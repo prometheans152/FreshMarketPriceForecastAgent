@@ -8,7 +8,7 @@ if (!(Test-Path -LiteralPath $keyPath)) {
 }
 Write-Host 'Open: https://161.33.19.220/web/'
 Write-Host 'Your separate website login (do not paste credentials into chat):'
-& ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -i $keyPath ubuntu@161.33.19.220 'sudo cat /etc/tw01-forecastengine/web-login.txt'
+& ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -i $keyPath ubuntu@161.33.19.220 'sudo cat /etc/fresh-market-price-agent-forecastengine/web-login.txt'
 if ($LASTEXITCODE -ne 0) {
     throw "Unable to display website credentials. Check Windows COS SSH connectivity."
 }

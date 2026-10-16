@@ -9,12 +9,12 @@ import { getAuthMode, ACCESS_AUTH_MODE } from "./auth.js";
 const OUTPUT_MAX = 131072;
 function safeLog(code, name) {
   // This is the entire diagnostic footprint: never log full input, price or tokens.
-  console.warn(JSON.stringify({ system: "tw01-mcp", code, tool: name }));
+  console.warn(JSON.stringify({ system: "fresh-market-price-agent-mcp", code, tool: name }));
 }
 
 export function createServer(env, engineClient = callForecastEngine, requestSignal = null) {
   const server = new McpServer({
-    name: "tw01-forecastengine-remote",
+    name: "fresh-market-price-agent-forecastengine-remote",
     version: "0.1.0",
   }, {
     instructions: "僅供臺中指定市場的公開行情及匿名 A 模式 7/14 天推估。公開均價不等於即時店價。必須有有效 ForecastEngine 工具結果才可提供數值；禁止 B、保存、機率或因果推斷。",

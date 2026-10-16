@@ -1,4 +1,9 @@
-# TW01 Cloudflare MCP tool contract
+# Cloudflare MCP tool contract
+
+> **Rename (2026-10-16):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
+> Until [RENAME_MIGRATION.md](../RENAME_MIGRATION.md) has been carried out, the live Oracle host and Worker
+> still use the old `tw01-*` names; before migration, operate or roll back with this file as of
+> `main@1062818`.
 
 Status (2026-10-15): **PUBLIC NO AUTH REMOTE MCP LIVE** through Cloudflare
 Workers VPC → Oracle HTTPS, 6/6 genuine remote server protocol/tool
@@ -11,7 +16,7 @@ Source of truth for the **upstream**: immutable-for-this-conversation
 
 ## Transport
 
-- Exact entry: `https://tw01-forecast-mcp.prometheans152.workers.dev/mcp`,
+- Exact entry: `https://fresh-market-price-agent.prometheans152.workers.dev/mcp`,
   public No Auth stateless Streamable HTTP. Actual initialize/list/
   Oracle quote/forecast calls have all succeeded in a standalone
   real remote MCP client, but ChatGPT's own UI is not connected yet.
@@ -35,7 +40,7 @@ for `161.33.19.220`. Host Nginx forwards the same fixed,
 Bearer-protected `/v1/market-quote` and `/v1/forecast`
 to host `127.0.0.1:8080` → Docker Web Nginx →
 Docker ForecastEngine. Docker's separate self-hosted
-`tw01-oracle-mcp-1`, internal port 9000, is **not** used
+`fresh-market-price-agent-oracle-mcp-1`, internal port 9000, is **not** used
 by this Worker. Internal Docker ports 8767/9000 are not
 publicly exposed.
 

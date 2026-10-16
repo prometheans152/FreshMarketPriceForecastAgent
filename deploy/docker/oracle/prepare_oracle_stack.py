@@ -1,4 +1,4 @@
-"""Install immutable TW01 Docker Compose release on the EXISTING Oracle VM.
+"""Install the immutable portable Docker Compose release on the EXISTING Oracle VM.
 
 The production Nginx/site/systemd services are NOT touched by this script.
 The EXISTING origin credential is copied from its root-only Oracle env into
@@ -18,11 +18,14 @@ import tempfile
 import zipfile
 from pathlib import Path, PurePosixPath
 
-BASE = Path("/opt/tw01-docker")
-ORIGIN_ENV = Path("/etc/tw01-forecastengine/origin.env")
+BASE = Path("/opt/fresh-market-price-agent-docker")
+ORIGIN_ENV = Path("/etc/fresh-market-price-agent-forecastengine/origin.env")
 ZIP_SHA256 = "dcd0c7b0362bfe823a22efe42e3caf55cf3d2cd4ad7cf1cc231074e5ad3e2336"
 IMAGE_SHA256 = "841dc2d12b7fb5e0dd3bd9275faaf1d033f958c947b18e3b240624d1401331a2"
+# Pinned to the frozen, Windows-verified v1.0.0 release built before the
+# rename: its ZIP root, image archive and compose variables keep TW01 names.
 RELEASE_NAME = "TW01_Docker_Portable_v1.0.0"
+RELEASE_IMAGES = "tw01_verified_linux_amd64_images.tar.gz"
 
 
 def sha(path: Path) -> str:
@@ -35,14 +38,17 @@ def origin_token() -> str:
     if (ORIGIN_ENV.stat().st_mode & 0o077) != 0:
         raise RuntimeError("Oracle original secret file permissions are unsafe")
     text = ORIGIN_ENV.read_text(encoding="utf-8")
-    candidates = []
+    found = {"FMPA_": [], "TW01_": []}
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped.startswith("TW01_ORIGIN_API_TOKEN="):
-            token = stripped.split("=", 1)[1].strip()
-            if token.startswith(("'", '"')) and token[-1:] == token[:1]:
-                token = token[1:-1]
-            candidates.append(token)
+        for prefix, candidates in found.items():
+            if stripped.startswith(prefix + "ORIGIN_API_TOKEN="):
+                token = stripped.split("=", 1)[1].strip()
+                if token.startswith(("'", '"')) and token[-1:] == token[:1]:
+                    token = token[1:-1]
+                candidates.append(token)
+    # FMPA_* wins; a not-yet-migrated env file still carries legacy TW01_*.
+    candidates = found["FMPA_"] or found["TW01_"]
     if len(candidates) != 1 or not (32 <= len(candidates[0]) <= 220):
         raise RuntimeError("Expected exactly one safe origin secret in original env")
     if any(c.isspace() or ord(c) < 33 or ord(c) > 126 for c in candidates[0]):
@@ -113,10 +119,10 @@ def main():
     if not a.tag.replace("_", "").replace("-", "").isalnum():
         args.error("Invalid release tag")
     stage = a.stage.resolve(strict=True)
-    if not str(stage).startswith("/home/ubuntu/tw01-oracle-docker-stage-"):
+    if not str(stage).startswith("/home/ubuntu/fresh-market-price-agent-oracle-docker-stage-"):
         args.error("Refusing nonstandard staging path")
     public_zip = stage / (RELEASE_NAME + ".zip")
-    archived_images = stage / "tw01_verified_linux_amd64_images.tar.gz"
+    archived_images = stage / RELEASE_IMAGES
     if sha(public_zip) != ZIP_SHA256 or sha(archived_images) != IMAGE_SHA256:
         raise RuntimeError("Windows-verified portable release or images SHA256 mismatch")
 
@@ -125,7 +131,7 @@ def main():
     target = stacks / a.tag
     if target.exists() or target.is_symlink():
         raise FileExistsError("Oracle Docker release tag already installed")
-    with tempfile.TemporaryDirectory(prefix="tw01-docker-staging-", dir=stacks) as temp:
+    with tempfile.TemporaryDirectory(prefix="fresh-market-price-agent-docker-staging-", dir=stacks) as temp:
         extracted = safe_extract(public_zip, Path(temp))
         local = extracted
         secret_dir = local / ".secrets"
@@ -144,6 +150,11 @@ def main():
         if env_path.exists():
             raise RuntimeError("Portable release contained an unsafe .env file")
         env_path.write_text(
+            "FMPA_BIND_ADDRESS=127.0.0.1\n"
+            "FMPA_HTTP_PORT=8080\n"
+            "FMPA_PUBLIC_ORIGIN=https://161.33.19.220\n"
+            "FMPA_MCP_AUTH_MODE=bearer\n"
+            # The pinned v1.0.0 compose.yaml interpolates only these legacy names.
             "TW01_BIND_ADDRESS=127.0.0.1\n"
             "TW01_HTTP_PORT=8080\n"
             "TW01_PUBLIC_ORIGIN=https://161.33.19.220\n"

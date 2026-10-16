@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/aiot-finishproject/contracts/forecast.schema.json",
-  "title": "TW01 預測請求與回應契約",
+  "title": "預測請求與回應契約",
   "description": "本機推論、HTTP API、Qwen 工具與網頁共用的輸入輸出語意。版本隨 configs/project.yaml config_version 更新；欄位只增不刪（來源與驗證邊界欄位不得移除）。",
   "definitions": {
     "PriceUnit": {

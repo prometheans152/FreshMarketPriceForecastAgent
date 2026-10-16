@@ -29,7 +29,7 @@ def install_transport_job():
     """
     global _TRANSPORT_JOB_HANDLE
     if os.name != "nt":
-        raise RuntimeError("TW01 private MCP transport requires a Windows Job Object")
+        raise RuntimeError("FMPA private MCP transport requires a Windows Job Object")
     if _TRANSPORT_JOB_HANDLE is not None:
         return _TRANSPORT_JOB_HANDLE
 
@@ -215,7 +215,7 @@ class TransportDeadlineWatchdog:
         self._stopped = False
         self._started = False
         self._thread = threading.Thread(
-            target=self._loop, name="tw01-mcp-job-failclosed-watchdog", daemon=True,
+            target=self._loop, name="fresh-market-price-agent-mcp-job-failclosed-watchdog", daemon=True,
         )
 
     def start(self):

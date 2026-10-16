@@ -1,4 +1,4 @@
-"""Build a self-contained, shareable TW01 Compose folder and secret-free ZIP.
+"""Build a self-contained, shareable FMPA Compose folder and secret-free ZIP.
 
 Copies ONLY audited code, public quotes, trained weights, static UI and the
 two exact MCP contracts. It never copies private/, any .env, keys, database,
@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = Path(__file__).resolve().parent
-NAME = "TW01_Docker_Portable_v1.0.0"
+NAME = "FMPA_Docker_Portable_v1.1.0"
 FROZEN_SHA256 = {
     "manifest.json": "6f82dac547a72a692f8352a14ece77d7b94a53b85f7844dba0aa2eb291e15f5d",
     "fixtures.json": "235a7e23d2fa31c23cab26e878dbd842ab81d923e775aa93f6d0503b94e284c6",
@@ -73,7 +73,9 @@ def portable_site_api(text: str):
         (
             'origin = request.headers.get("origin", "")',
             'origin = request.headers.get("origin", "")\n'
-            '    public_origin = os.environ.get("TW01_PUBLIC_ORIGIN", "http://localhost:8080").rstrip("/")\n'
+            '    public_origin = os.environ.get(\n'
+            '        "FMPA_PUBLIC_ORIGIN", os.environ.get("TW01_PUBLIC_ORIGIN", "http://localhost:8080"),\n'
+            '    ).rstrip("/")\n'
             '    if not public_origin.startswith(("http://localhost:", "http://127.0.0.1:", "https://")):\n'
             '        return _failure(503, "not_ready", "請設定可信任的網站來源位址。")',
         ),
