@@ -1,5 +1,5 @@
 [Unit]
-Description=TW01 ForecastEngine A-only private ASGI origin
+Description=FMPA ForecastEngine A-only private ASGI origin
 After=network-online.target
 Wants=network-online.target
 StartLimitIntervalSec=120
@@ -9,15 +9,15 @@ StartLimitBurst=5
 Type=simple
 User=tw01forecast
 Group=tw01forecast
-WorkingDirectory=/opt/tw01-forecastengine/current
-EnvironmentFile=/etc/tw01-forecastengine/origin.env
-Environment=PYTHONPATH=/opt/tw01-forecastengine/current/src
+WorkingDirectory=/opt/fresh-market-price-agent-forecastengine/current
+EnvironmentFile=/etc/fresh-market-price-agent-forecastengine/origin.env
+Environment=PYTHONPATH=/opt/fresh-market-price-agent-forecastengine/current/src
 Environment=PYTHONUNBUFFERED=1
 Environment=OMP_NUM_THREADS=1
 Environment=OPENBLAS_NUM_THREADS=1
 Environment=MKL_NUM_THREADS=1
 Environment=NUMEXPR_NUM_THREADS=1
-ExecStart=/opt/tw01-forecastengine/venv/bin/python -m uvicorn forecastengine_api:app --app-dir /opt/tw01-forecastengine/current/deploy/oracle-forecastengine --host 127.0.0.1 --port 8767 --workers 1 --no-access-log --log-level warning --timeout-keep-alive 4
+ExecStart=/opt/fresh-market-price-agent-forecastengine/venv/bin/python -m uvicorn forecastengine_api:app --app-dir /opt/fresh-market-price-agent-forecastengine/current/deploy/oracle-forecastengine --host 127.0.0.1 --port 8767 --workers 1 --no-access-log --log-level warning --timeout-keep-alive 4
 Restart=on-failure
 RestartSec=4s
 TimeoutStartSec=60

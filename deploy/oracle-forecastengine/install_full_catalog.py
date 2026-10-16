@@ -15,13 +15,13 @@ import subprocess
 import time
 from pathlib import Path
 
-NGINX = Path("/etc/nginx/sites-available/tw01-tls.conf")
-OVERRIDE = Path("/etc/systemd/system/tw01-forecastengine.service.d/20-web-frontend.conf")
-WEBSITE = Path("/var/www/tw01-website")
-BASE = Path("/opt/tw01-forecastengine-web")
-RELEASE = Path("/opt/tw01-forecastengine/current/models/releases/0.1.0")
+NGINX = Path("/etc/nginx/sites-available/fresh-market-price-agent-tls.conf")
+OVERRIDE = Path("/etc/systemd/system/fresh-market-price-agent-forecastengine.service.d/20-web-frontend.conf")
+WEBSITE = Path("/var/www/fresh-market-price-agent-website")
+BASE = Path("/opt/fresh-market-price-agent-forecastengine-web")
+RELEASE = Path("/opt/fresh-market-price-agent-forecastengine/current/models/releases/0.1.0")
 PUBLIC_CATALOG_ROUTE = b'''location = /web/catalog.json {
-    alias /var/www/tw01-website/catalog.json;
+    alias /var/www/fresh-market-price-agent-website/catalog.json;
     default_type application/json;
     add_header Cache-Control "no-store" always;
     add_header X-Content-Type-Options nosniff always;
@@ -65,8 +65,8 @@ def verify_readable(file: Path):
 
 def install(stage: Path, tag: str):
     stage = stage.resolve(strict=True)
-    if not str(stage).startswith("/home/ubuntu/tw01-full-catalog-stage-"):
-        raise ValueError("Stage is not a dedicated approved TW01 upload location")
+    if not str(stage).startswith("/home/ubuntu/fresh-market-price-agent-full-catalog-stage-"):
+        raise ValueError("Stage is not a dedicated approved FMPA upload location")
     if not tag.replace("_", "").replace("-", "").isalnum():
         raise ValueError("Invalid version ID")
     files = [
@@ -114,18 +114,19 @@ def install(stage: Path, tag: str):
     if current_nginx.count(b"location = /v1/market-quote {") != 1:
         raise RuntimeError("Origin quote API boundary absent")
     new_snippet = old_snippet.replace(
-        b"location @tw01_web_rate_limit_error {",
-        PUBLIC_CATALOG_ROUTE + b"\nlocation @tw01_web_rate_limit_error {",
+        b"location @fmpa_web_rate_limit_error {",
+        PUBLIC_CATALOG_ROUTE + b"\nlocation @fmpa_web_rate_limit_error {",
         1,
     )
     if new_snippet.count(PUBLIC_CATALOG_ROUTE) != 1:
         raise RuntimeError("Public catalog endpoint insertion failed")
     original_service = OVERRIDE.read_text(encoding="utf-8")
-    old_dir = "--app-dir /opt/tw01-forecastengine-web/site_overlay"
-    if original_service.count(old_dir) != 1 or "TW01_EXTENDED_CATALOG_DIR" in original_service:
+    old_dir = "--app-dir /opt/fresh-market-price-agent-forecastengine-web/site_overlay"
+    if original_service.count(old_dir) != 1 or any(
+            p + "EXTENDED_CATALOG_DIR" in original_service for p in ("FMPA_", "TW01_")):
         raise RuntimeError("Systemd original Web overlay version mismatch")
     new_service = original_service.replace(old_dir, "--app-dir " + str(deployed_overlay))
-    new_service += f"\nEnvironment=TW01_EXTENDED_CATALOG_DIR={deployed_catalog}\n"
+    new_service += f"\nEnvironment=FMPA_EXTENDED_CATALOG_DIR={deployed_catalog}\n"
     saved = {
         NGINX: NGINX.with_name(NGINX.name + ".pre-catalog-" + tag),
         OVERRIDE: OVERRIDE.with_name(OVERRIDE.name + ".pre-catalog-" + tag),
@@ -137,7 +138,7 @@ def install(stage: Path, tag: str):
         *saved.values(), deployed_catalog, deployed_overlay, new_public_catalog
     )):
         raise FileExistsError("Refuse overwrite of existing catalog release/backup")
-    execute("systemctl", "is-active", "--quiet", "tw01-forecastengine.service")
+    execute("systemctl", "is-active", "--quiet", "fresh-market-price-agent-forecastengine.service")
     execute("systemctl", "is-active", "--quiet", "nginx.service")
     # Scope is fixed; leave original frozen releases completely untouched.
     for source, backup in saved.items():
@@ -164,8 +165,8 @@ def install(stage: Path, tag: str):
         service_touched = True
         execute("nginx", "-t")
         execute("systemctl", "daemon-reload")
-        execute("systemctl", "restart", "tw01-forecastengine.service")
-        execute("systemctl", "is-active", "--quiet", "tw01-forecastengine.service")
+        execute("systemctl", "restart", "fresh-market-price-agent-forecastengine.service")
+        execute("systemctl", "is-active", "--quiet", "fresh-market-price-agent-forecastengine.service")
         # Check original origin live before touching public Nginx worker routes.
         wait_http_ready("http://127.0.0.1:8767/healthz")
         execute("systemctl", "reload", "nginx.service")
@@ -179,7 +180,7 @@ def install(stage: Path, tag: str):
             new_public_catalog.unlink()
         if service_touched:
             execute("systemctl", "daemon-reload")
-            execute("systemctl", "restart", "tw01-forecastengine.service")
+            execute("systemctl", "restart", "fresh-market-price-agent-forecastengine.service")
         execute("nginx", "-t")
         execute("systemctl", "reload", "nginx.service")
         raise

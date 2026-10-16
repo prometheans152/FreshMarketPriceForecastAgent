@@ -1,4 +1,4 @@
-# TW01 菜價預測專案：TRAIN_LOCAL 訓練端 Python 套件定義（T03）
+# 菜價預測專案：TRAIN_LOCAL 訓練端 Python 套件定義（T03）
 # 本檔不含任何秘密；秘密一律用環境變數，見 .env.example 與 docs/LOCAL_ENVIRONMENT.md。
 
 [build-system]
@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aiot-price"
 version = "0.1.0"
-description = "TW01 現場菜價 7/14 天預測與分析代理人：資料、特徵與模型訓練套件"
+description = "Fresh Market Price Forecast Agent（現場菜價 7/14 天預測與分析代理人）：資料、特徵與模型訓練套件"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -37,3 +37,7 @@ mcp = ["mcp==1.30.0", "tzdata==2025.3"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+# A bare `pytest` must not collect same-named copies under outputs/ evidence runs.
+testpaths = ["tests"]

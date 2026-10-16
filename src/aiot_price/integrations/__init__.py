@@ -1,1 +1,1 @@
-"""TW01 isolated manual and MCP entrypoints."""
+"""FMPA isolated manual and MCP entrypoints."""

@@ -11,19 +11,19 @@ if [ "$#" -ne 2 ] || [ "$(id -u)" -ne 0 ]; then
 fi
 STAGE="$1"
 TAG="$2"
-case "$STAGE" in /home/ubuntu/tw01-web-stage-*) ;; *) echo "invalid stage path" >&2; exit 2;; esac
+case "$STAGE" in /home/ubuntu/fresh-market-price-agent-web-stage-*) ;; *) echo "invalid stage path" >&2; exit 2;; esac
 if [[ ! "$TAG" =~ ^[a-zA-Z0-9_-]+$ ]]; then exit 2; fi
 
-SITE_ROOT=/var/www/tw01-website
-OVERLAY_ROOT=/opt/tw01-forecastengine-web
-CONF=/etc/nginx/sites-available/tw01-tls.conf
-ACME_CONF=/etc/nginx/sites-available/tw01-acme.conf
+SITE_ROOT=/var/www/fresh-market-price-agent-website
+OVERLAY_ROOT=/opt/fresh-market-price-agent-forecastengine-web
+CONF=/etc/nginx/sites-available/fresh-market-price-agent-tls.conf
+ACME_CONF=/etc/nginx/sites-available/fresh-market-price-agent-acme.conf
 BACKUP_TLS="$CONF.pre-web-$TAG"
 BACKUP_HTTP="$ACME_CONF.pre-web-$TAG"
-HTPASSWD=/etc/nginx/.tw01-web.htpasswd
-LOGIN_FILE=/etc/tw01-forecastengine/web-login.txt
-SNIPPET=/etc/nginx/snippets/tw01-web-auth.conf
-OVERRIDE=/etc/systemd/system/tw01-forecastengine.service.d/20-web-frontend.conf
+HTPASSWD=/etc/nginx/.fresh-market-price-agent-web.htpasswd
+LOGIN_FILE=/etc/fresh-market-price-agent-forecastengine/web-login.txt
+SNIPPET=/etc/nginx/snippets/fresh-market-price-agent-web-auth.conf
+OVERRIDE=/etc/systemd/system/fresh-market-price-agent-forecastengine.service.d/20-web-frontend.conf
 installed_override=0
 backup_complete=0
 
@@ -38,7 +38,7 @@ rollback() {
         if [ "$installed_override" = 1 ]; then
             rm -f "$OVERRIDE"
             systemctl daemon-reload || true
-            systemctl restart tw01-forecastengine.service || true
+            systemctl restart fresh-market-price-agent-forecastengine.service || true
         fi
         nginx -t && systemctl reload nginx.service || true
     fi
@@ -48,7 +48,7 @@ trap rollback EXIT
 
 for item in \
     "$STAGE/oracle_web_site.py" "$STAGE/nginx-web-snippet.conf" \
-    "$STAGE/tw01-web-service-override.conf" "$STAGE/nginx-acme.conf" \
+    "$STAGE/fresh-market-price-agent-web-service-override.conf" "$STAGE/nginx-acme.conf" \
     "$STAGE/site/index.html" "$STAGE/site/app.js" "$STAGE/site/style.css"; do
     test -f "$item" && test ! -L "$item"
 done
@@ -61,11 +61,11 @@ for item in \
     fi
 done
 test -f "$CONF" && test -f "$ACME_CONF"
-test "$(systemctl is-active tw01-forecastengine.service)" = active
+test "$(systemctl is-active fresh-market-price-agent-forecastengine.service)" = active
 test "$(systemctl is-active nginx.service)" = active
-test "$(stat -c %a /etc/tw01-forecastengine/origin.env)" = 600
-test "$(readlink /etc/nginx/sites-enabled/tw01-tls.conf)" = "$CONF"
-test -d /opt/tw01-forecastengine/current/models/releases/0.1.0
+test "$(stat -c %a /etc/fresh-market-price-agent-forecastengine/origin.env)" = 600
+test "$(readlink /etc/nginx/sites-enabled/fresh-market-price-agent-tls.conf)" = "$CONF"
+test -d /opt/fresh-market-price-agent-forecastengine/current/models/releases/0.1.0
 getent group www-data >/dev/null
 
 install -d -m 0755 -o root -g root "$SITE_ROOT" "$OVERLAY_ROOT" "$OVERLAY_ROOT/site_overlay"
@@ -78,8 +78,8 @@ install -d -m 0755 -o root -g root /etc/nginx/snippets
 python3 - <<'PY'
 import grp,os,secrets,subprocess
 from pathlib import Path
-login_file=Path("/etc/tw01-forecastengine/web-login.txt")
-hash_file=Path("/etc/nginx/.tw01-web.htpasswd")
+login_file=Path("/etc/fresh-market-price-agent-forecastengine/web-login.txt")
+hash_file=Path("/etc/nginx/.fresh-market-price-agent-web.htpasswd")
 password=secrets.token_urlsafe(26)
 username="tw01web"
 digest=subprocess.run(["openssl","passwd","-apr1","-stdin"],
@@ -96,7 +96,7 @@ os.chown(hash_file,0,grp.getgrnam("www-data").gr_gid)
 os.chmod(hash_file,0o640)
 print("SEPARATE_WEB_LOGIN_GENERATED=YES;VALUE_NOT_PRINTED")
 PY
-printf 'auth_basic "TW01 Private Forecast Web";\nauth_basic_user_file /etc/nginx/.tw01-web.htpasswd;\n' > "$SNIPPET"
+printf 'auth_basic "FMPA Private Forecast Web";\nauth_basic_user_file /etc/nginx/.fresh-market-price-agent-web.htpasswd;\n' > "$SNIPPET"
 chmod 0644 "$SNIPPET"
 chown root:root "$SNIPPET"
 
@@ -119,12 +119,12 @@ PY
 install -m 0644 -o root -g root "$STAGE/nginx-acme.conf" "$ACME_CONF"
 nginx -t
 
-install -d -m 0755 -o root -g root /etc/systemd/system/tw01-forecastengine.service.d
-install -m 0644 -o root -g root "$STAGE/tw01-web-service-override.conf" "$OVERRIDE"
+install -d -m 0755 -o root -g root /etc/systemd/system/fresh-market-price-agent-forecastengine.service.d
+install -m 0644 -o root -g root "$STAGE/fresh-market-price-agent-web-service-override.conf" "$OVERRIDE"
 installed_override=1
 systemctl daemon-reload
-systemctl restart tw01-forecastengine.service
-systemctl is-active --quiet tw01-forecastengine.service
+systemctl restart fresh-market-price-agent-forecastengine.service
+systemctl is-active --quiet fresh-market-price-agent-forecastengine.service
 
 # Keep the original Origin API protected and healthy before Nginx reload.
 curl --fail --silent --show-error --max-time 25 http://127.0.0.1:8767/healthz >/dev/null
@@ -135,4 +135,4 @@ test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
 systemctl reload nginx.service
 curl --fail --silent --show-error --max-time 20 https://161.33.19.220/healthz >/dev/null
 echo "WEB_OVERLAY_INSTALLED=YES"
-systemctl show tw01-forecastengine.service -p ActiveState -p MainPID -p MemoryCurrent --no-pager
+systemctl show fresh-market-price-agent-forecastengine.service -p ActiveState -p MainPID -p MemoryCurrent --no-pager

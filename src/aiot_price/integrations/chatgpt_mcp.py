@@ -1,4 +1,4 @@
-"""Personal TW01 stdio MCP transport, no ML or model API SDK in this interpreter.
+"""Personal FMPA stdio MCP transport, no ML or model API SDK in this interpreter.
 
 One worker per tool call (serial). Every call has an unmodifiable 15s deadline.
 On timeout the actual worker process is killed, then a human must restart this
@@ -339,7 +339,7 @@ async def serve(worker_python: Path, release_dir: Path, home: Path):
         validate_arguments,
     )
 
-    srv = Server("tw01-personal-prices", version="0.1.0",
+    srv = Server("fresh-market-price-agent-personal-prices", version="0.1.0",
                  instructions="只讀公開行情與 A 預測；必須問清品項、臺中市場與店價及單位。"
                               "不可聲稱即時店價、同店準確或提供 B／保存。")
     lock = asyncio.Lock()
@@ -419,7 +419,7 @@ async def serve(worker_python: Path, release_dir: Path, home: Path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="TW01 personal stdio MCP server")
+    parser = argparse.ArgumentParser(description="FMPA personal stdio MCP server")
     parser.add_argument("--release-dir", type=Path, required=True)
     parser.add_argument("--worker-python", type=Path, required=True)
     parser.add_argument("--home", type=Path, required=True)

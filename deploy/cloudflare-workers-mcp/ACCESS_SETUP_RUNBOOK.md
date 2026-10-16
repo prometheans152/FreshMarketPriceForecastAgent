@@ -1,4 +1,4 @@
-# TW01 Remote MCP — Cloudflare Access Managed OAuth setup and remaining acceptance
+# Remote MCP — Cloudflare Access Managed OAuth setup and remaining acceptance
 
 > **HISTORICAL, NOT CURRENT.** The owner subsequently selected **No Auth**
 > for one shared ChatGPT/Gemini MCP endpoint. The current working

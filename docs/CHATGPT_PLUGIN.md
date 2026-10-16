@@ -1,4 +1,4 @@
-## 最新 TW01 私人連線驗證（2026-10-14T04:54:46.111969+08:00；本節優先）
+## 最新私人連線驗證（2026-10-14T04:54:46.111969+08:00；本節優先）
 
 本人專用「TW01 菜價查詢與 A 預測」已建立、已連線，且已取得真正 ChatGPT 原始 application 工具呼叫與結果；目前是 SELF_CHECK_ACCOUNT_CANDIDATE，正式 EXTERNAL_PASS 仍 HOLD。此節以下較早的 DE10／DE11 HOLD 是歷史狀態，原文完整保留。
 
@@ -16,7 +16,7 @@
 
 ## 最新 Codex 候選（2026-10-14；本節優先）
 
-# TW01 本輪候選交付
+# 本輪候選交付
 
 更新：2026-10-14T00:52:48.571008+08:00；主機 Windows 5800X；HEAD `9e29cddce8687489dcd07bc2f8d673d2e0a72ce3`。
 
@@ -38,7 +38,7 @@ pwsh -NoProfile -File "C:\Users\prometheans\Documents\AIOT_FinishProject\outputs
 
 實際可使用網址：http://127.0.0.1:8766/ ，本輪再次health=ready、manual/chat_disabled；既有PID80052未重啟。另自行啟停隔離candidate跑22個真正HTTP請求。Chrome自動化拒開`ERR_BLOCKED_BY_CLIENT`，本輪無新桌面/手機圖，不將HTTP或舊37checks當新Chrome验收。
 
-架構：manual browser→manual_web→原API /forecast、/records→凍結ForecastEngine（RF7/HGB14，A/B固定alpha0.3）；ChatGPT（未接通）→TW01專用私人Tunnel（未成立）→tunnel-client→官方SDK stdio/Binary ingress guard→兩工具嚴格schema/watchdog→每呼叫suspended worker Job→原ML隔離worker→adapter/AgentTools/同一凍結release。兩入口各自程序，不走/agent/query，不需要模型API。
+架構：manual browser→manual_web→原API /forecast、/records→凍結ForecastEngine（RF7/HGB14，A/B固定alpha0.3）；ChatGPT（未接通）→本專案專用私人Tunnel（未成立）→tunnel-client→官方SDK stdio/Binary ingress guard→兩工具嚴格schema/watchdog→每呼叫suspended worker Job→原ML隔離worker→adapter/AgentTools/同一凍結release。兩入口各自程序，不走/agent/query，不需要模型API。
 
 真回歸：整合 **120 passed/127 warnings**；產品tests **564 passed/6995 warnings**；repository **593 passed/6995 warnings（明示--ignore=outputs）**，各exit0/skip0。三組範圍嵌套，不相加。裸repo本輪exit2/22 collection errors，源於outputs的歷史及本輪可逆backup同名檔，不刪封存或稱裸全repoPASS。
 
@@ -57,7 +57,7 @@ pwsh -NoProfile -File "C:\Users\prometheans\Documents\AIOT_FinishProject\outputs
 
 ---
 
-# TW01 個人 ChatGPT 插件 — Windows MCP 試用候選
+# 個人 ChatGPT 插件 — Windows MCP 試用候選
 
 **日期：2026-10-13；執行者：本輪 ChatGPT + Windows COS；驗收層級：SELF_CHECK（非獨立或本人 ChatGPT E2E）。**
 
@@ -138,7 +138,7 @@ $env:PYTHONIOENCODING='utf-8'
 
 ## 測試與回滾
 
-- 新整合測試：`& .\.venv\Scripts\python.exe -X utf8 -m pytest tests/integrations -q`（需 `TW01_MCP_RUN` 和 `TW01_MCP_PYTHON` 指向本輪 SDK 環境，才會執行 native 交握而非跳過）。
+- 新整合測試：`& .\.venv\Scripts\python.exe -X utf8 -m pytest tests/integrations -q`（需 `FMPA_MCP_RUN` 和 `FMPA_MCP_PYTHON`（舊名 `TW01_*` 仍可用）指向本輪 SDK 環境，才會執行 native 交握而非跳過）。
 - 全產品：`pytest tests -q`；裸 `pytest -q` 會收集多年 output 封存下同名腳本而衝突，保留失敗、再明示 `--ignore=outputs` 重跑。全部 log 在本輪 `DE07`。
 - 範例／逆向：`DE01/contract_checker.py` 與 `DE05/result_checker.py`，故意污染 copy 的 schema／價格必須非零；`DE07/protected_positive.json` 19/19 SHA 不變，修改 baseline 副本 checker 非零。
 - 不動任何受保護模型/資料；同目錄 `backups` 包含本輪開始前已 dirty 的原始允許改檔版本。回滾先核對 file SHA 和 Git diff，再逐檔手動恢復特定本輪增量，禁止 `git reset --hard` 或 `git clean`。不要以歷史備份覆寫在本輪以後可能由他人再修改的檔案。
@@ -151,7 +151,7 @@ $env:PYTHONIOENCODING='utf-8'
 
 新的 Windows COS 續作封存：`outputs/quality_runs/chatgpt_dual_entry_followup_20261013_1516_Windows5800X/`，沒有覆寫前輪基準與舊有錯誤。正式 stdio server 仍在 `src/aiot_price/integrations/chatgpt_mcp.py`，但已改用 async worker subprocess，**從接到工具呼叫時起**計算固定15秒，連等待 serial lock 一併計入；在逾時或呼叫取消時確實 kill child/確認退出才回應，避免背景殘留。新增測試 `tests/integrations/test_mcp_dispatch_deadline.py`，4 passed；整合 49 passed、`pytest -q --ignore=outputs` 全庫 522 passed，另有新原生 MCP session 2工具／6呼叫成功。結果與完整首次失敗/返修詳見 `DE09/test_results.md`。
 
-本人 Platform 的 Tunnels 頁 `https://platform.openai.com/settings/organization/tunnels` 已可查看清單，並有建立/編輯操作入口；但未真測 Manage/Use、沒有建立**TW01 專用**通道或碰現有 COS／3090 通道。2026-10-06 公開的官方 Windows `tunnel-client v0.0.16` 已在續作 `DE10/transport_candidate_v0.0.16/extracted/tunnel-client.exe` 隔離放置，下載 ZIP 的 SHA256 與官方 release `SHA256SUMS.txt`、GitHub API digest 相同，`--version` exit0。沒有 runtime key，故 **`init`、`doctor`、`run` 全部 NOT_RUN**，不能用 `--version` 冒稱私人 tunnel 成功。部署前仍需新的獨立 DE08 reviewer 和本人進行帳號私用授權。
+本人 Platform 的 Tunnels 頁 `https://platform.openai.com/settings/organization/tunnels` 已可查看清單，並有建立/編輯操作入口；但未真測 Manage/Use、沒有建立**本專案專用**通道或碰現有 COS／3090 通道。2026-10-06 公開的官方 Windows `tunnel-client v0.0.16` 已在續作 `DE10/transport_candidate_v0.0.16/extracted/tunnel-client.exe` 隔離放置，下載 ZIP 的 SHA256 與官方 release `SHA256SUMS.txt`、GitHub API digest 相同，`--version` exit0。沒有 runtime key，故 **`init`、`doctor`、`run` 全部 NOT_RUN**，不能用 `--version` 冒稱私人 tunnel 成功。部署前仍需新的獨立 DE08 reviewer 和本人進行帳號私用授權。
 
 ## 最新 Windows 5800X 本機安全收尾（2026-10-13 22 時後）
 
@@ -159,7 +159,7 @@ $env:PYTHONIOENCODING='utf-8'
 
 最新版驗證：`DE06/race_native_target_stdout.log` 的 9 項定點通過，`DE06/integrations_after_race_stdout.log` 的 77 項整合通過，`DE07/after_race_tests_stdout.log` 的 521 項產品測試通過，`DE07/after_race_repo_ignore_outputs_stdout.log` 的 550 項明示排除封存回歸通過；原 14+5 baseline 仍一致，ML `.venv` freeze 104 行前後相同。**這些全部只是作者 SELF_CHECK**，不是獨立正式驗收；早期裸 `pytest -q` 的封存同名測試 collection error 仍保留。
 
-最新獨立 reviewer 無法安全啟動，DE08 仍 `HOLD/REQUEST_CHANGES`；Windows 候選 `tunnel-client v0.0.16 --version` exit0（新紀錄 `DE10/candidate_client_status.json`），但尚無 TW01 專用 tunnel、使用者的 runtime 通道憑證與所需操作權限驗證，**doctor/run 與本人 ChatGPT 真 E2E 均 NOT_RUN**。DE10、DE11 繼續 `HOLD`，沒有公開部署、借用既有 tunnel、或使用模型 API key。最新版分層證據在 `DE12/acceptance_matrix.md`，不可引用舊版 checksum 充當新 source 雜湊。
+最新獨立 reviewer 無法安全啟動，DE08 仍 `HOLD/REQUEST_CHANGES`；Windows 候選 `tunnel-client v0.0.16 --version` exit0（新紀錄 `DE10/candidate_client_status.json`），但尚無本專案專用 tunnel、使用者的 runtime 通道憑證與所需操作權限驗證，**doctor/run 與本人 ChatGPT 真 E2E 均 NOT_RUN**。DE10、DE11 繼續 `HOLD`，沒有公開部署、借用既有 tunnel、或使用模型 API key。最新版分層證據在 `DE12/acceptance_matrix.md`，不可引用舊版 checksum 充當新 source 雜湊。
 
 ## 23 時新版方向驗證返修及實際 Platform／ChatGPT 權限觀察
 
@@ -167,4 +167,4 @@ $env:PYTHONIOENCODING='utf-8'
 
 文字審查指出 `chatgpt_adapter.py` 對相對變化靠近 ±5% 四位小數門檻時原先跳過方向驗證。原本 mock 假資料在模型結果中注入 `unknown`、反方向、`insufficient_data` 時會錯誤通過；`DE05/direction_red_stdout.log` 是 **5 failed／4 passed**。只修 adapter 中允許 `flat/up/down`、正常結果僅 `unvalidated`，近門檻只准持平或符合正負號的相鄰方向，原始 RF/HGB 價格和規則完全不動。返修後 `test_chatgpt_mcp.py` **21 passed**；全整合 **86 passed**、產品 `tests/` **530 passed**、指定 `--ignore=outputs` repository **559 passed**（全 exit0）。仍有審查未關閉的工作/清理時間界線、潛在 worker 後代清理證據和 MCP inbound 尺寸證明，見新 `DE08/static_review_disposition.md`；不可擅自宣稱 DE06 形式化嚴格 15 秒總 OS deadline 或完整程序樹無 orphan。
 
-同輪透過 **Windows COS Desktop 真實已登入瀏覽器**，見 Platform `Personal Organization` Tunnels 清單既有 COS Core／Desktop／Antigravity／Ubuntu3090 四條**非 TW01** 通道；ChatGPT Plugins 畫面有 `新增` 入口。顯示建立按鈕並不等於已驗證 Platform Tunnels `Read/Manage/Use`、ChatGPT workspace custom MCP 的最終許可或已完成本人風險授權。官方 2026-10-13 文檔 [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels)／[Connect and test your plugin](https://developers.openai.com/plugins/deploy/connect-chatgpt) 要求本人專用 `tunnel_id`、runtime key、組織／工作區關聯及真正 `doctor/run`、ChatGPT `@` 工具呼叫。**本輪未創建/借用任何通道，doctor/run 和 DE11 真 E2E 都 NOT_RUN；DE10/DE11 仍 HOLD。** 新證據見 `DE10/permissions_observed.md`／`DE11/status.md`。
+同輪透過 **Windows COS Desktop 真實已登入瀏覽器**，見 Platform `Personal Organization` Tunnels 清單既有 COS Core／Desktop／Antigravity／Ubuntu3090 四條**非本專案**通道；ChatGPT Plugins 畫面有 `新增` 入口。顯示建立按鈕並不等於已驗證 Platform Tunnels `Read/Manage/Use`、ChatGPT workspace custom MCP 的最終許可或已完成本人風險授權。官方 2026-10-13 文檔 [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels)／[Connect and test your plugin](https://developers.openai.com/plugins/deploy/connect-chatgpt) 要求本人專用 `tunnel_id`、runtime key、組織／工作區關聯及真正 `doctor/run`、ChatGPT `@` 工具呼叫。**本輪未創建/借用任何通道，doctor/run 和 DE11 真 E2E 都 NOT_RUN；DE10/DE11 仍 HOLD。** 新證據見 `DE10/permissions_observed.md`／`DE11/status.md`。

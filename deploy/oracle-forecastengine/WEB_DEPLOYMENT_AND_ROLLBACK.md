@@ -1,6 +1,6 @@
-# TW01 Oracle HTTPS 網頁 — 使用與回滾
+# Oracle HTTPS 網頁 — 使用與回滾
 
-> **新版正式架構提醒（2026-10-15）：Oracle 網頁與模型運算已安全切換到 Docker Compose，以下是切換前的歷史 systemd/網站資料，不再代表目前運作路由。** 新版維運、Nginx upstream、回滾、Cloudflare MCP 6/6 驗收與正式目錄見 deploy/docker-tw01/oracle/ORACLE_DOCKER_OPERATIONS.md。原 systemd 目前 disabled/inactive，但完整保留；不可直接照下面舊操作撤回整個網頁。
+> **新版正式架構提醒（2026-10-15）：Oracle 網頁與模型運算已安全切換到 Docker Compose，以下是切換前的歷史 systemd/網站資料，不再代表目前運作路由。** 新版維運、Nginx upstream、回滾、Cloudflare MCP 6/6 驗收與正式目錄見 deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md。原 systemd 目前 disabled/inactive，但完整保留；不可直接照下面舊操作撤回整個網頁。
 
 最新：2026-10-15 已部署官方價格欄完整品項 61 項的公開雲端網頁。直接輸入 http://161.33.19.220 會跳轉 HTTPS。**原 3 種 v0.1.0 模型不變，另外 57 種有行情品項已另行訓練出 7／14 天兩個真正的 HGB 監督式 ML 模型。留出測試 MAE 未勝不變價基準，須如實標示。**
 

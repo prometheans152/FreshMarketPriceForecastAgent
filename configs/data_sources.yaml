@@ -1,4 +1,4 @@
-# TW01 公開資料來源設定（T05）
+# 公開資料來源設定（T05）
 # 採用原則：只列實際查核過的來源；「不採用」欄位保留查核結論，避免之後誤當訓練輸入。
 # 單位與 0 值意義是資料契約的一部分，修改前先更新 docs/DATA_CARD.md 與 docs/DECISIONS.md。
 
@@ -37,5 +37,5 @@ sources:
   kaohsiung_market_daily:
     adopted: false
     name: 高雄市零售市場每日價格
-    reason: 來源頁面已下架，下載連結回404（查核紀錄見docs/research/TW01_PUBLIC_RETAIL_DATA.md）
+    reason: 來源頁面已下架，下載連結回404（查核紀錄見docs/research/FMPA_PUBLIC_RETAIL_DATA.md）
     decision: 不採用：已下架/404，失效來源不列為訓練輸入

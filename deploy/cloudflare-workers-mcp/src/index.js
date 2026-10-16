@@ -94,7 +94,7 @@ export default {
         if (getAuthMode(env) === PUBLIC_AUTH_MODE) validatePublicLimits(env);
       } catch { ready = false; }
       return new Response(JSON.stringify({
-        service: "tw01-workers-mcp", status: ready ? "configured" : "blocked",
+        service: "fresh-market-price-agent-workers-mcp", status: ready ? "configured" : "blocked",
         upstream_live: "not_probed", oracle_e2e: "not_verified",
       }), { status: ready ? 200 : 503, headers: jsonHeaders });
     }
@@ -120,8 +120,8 @@ export default {
       return new Response(JSON.stringify({ ok: false, code: "unauthorized" }), {
         status: 401,
         headers: { ...jsonHeaders, "www-authenticate": managed
-          ? 'Bearer realm="tw01-managed-access"'
-          : 'Bearer realm="tw01-mcp"' },
+          ? 'Bearer realm="fresh-market-price-agent-managed-access"'
+          : 'Bearer realm="fresh-market-price-agent-mcp"' },
       });
     }
     let bounded = request;

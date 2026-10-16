@@ -1,6 +1,6 @@
 # TW01 Proposal v5 逐頁講稿
 
-配套：TW01_Proposal_v5.pptx；23頁主講＋10頁附錄。
+配套：FMPA_Proposal_v5.pptx；23頁主講＋10頁附錄。
 主講設計估時：10分40秒；尚未配音或錄製。
 
 PPT備註與本檔同源；詳細引用見每頁備註與SOURCES.md。

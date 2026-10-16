@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// This list mirrors the EXISTING Windows TW01 chatgpt_contracts.py; it is not
+// This list mirrors the EXISTING Windows FMPA chatgpt_contracts.py; it is not
 // permission to change the existing Python contract, market data, or model.
 export const CROPS = Object.freeze(["cabbage", "bok_choy", "sponge_gourd"]);
 export const MARKETS = Object.freeze([
@@ -66,7 +66,7 @@ export function offsetDay(ymd, number) {
 }
 
 export function validateArguments(name, value, now = new Date()) {
-  if (!TOOL_NAMES.includes(name)) throw new ContractError("unknown_tool", "未知工具，TW01 僅提供兩項工具。");
+  if (!TOOL_NAMES.includes(name)) throw new ContractError("unknown_tool", "未知工具，本服務僅提供兩項工具。");
   if (value === null || Array.isArray(value) || typeof value !== "object")
     throw new ContractError("invalid_args", "工具參數必須為 JSON object。");
   if (Object.keys(value).length > 5)

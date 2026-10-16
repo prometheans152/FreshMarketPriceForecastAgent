@@ -1,4 +1,4 @@
-# TW01 Public No Auth MCP — 2026-10-14 deployment handoff
+# Public No Auth MCP — 2026-10-14 deployment handoff
 
 > **HISTORICAL / SUPERSEDED 2026-10-15.** This describes the interim
 > state before Cloudflare Access was removed, the Oracle Secret was

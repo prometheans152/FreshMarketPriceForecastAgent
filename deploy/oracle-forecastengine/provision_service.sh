@@ -11,9 +11,9 @@ if [[ $# -ne 2 ]]; then
 fi
 SOURCE="$1"
 RELEASE_ID="$2"
-ROOT=/opt/tw01-forecastengine
+ROOT=/opt/fresh-market-price-agent-forecastengine
 case "$SOURCE" in
-  /home/ubuntu/tw01-forecastengine-stage-*/bundle) ;;
+  /home/ubuntu/fresh-market-price-agent-forecastengine-stage-*/bundle) ;;
   *) echo "unapproved staging path" >&2; exit 2 ;;
 esac
 if [[ ! "$RELEASE_ID" =~ ^[a-zA-Z0-9_-]+$ ]]; then
@@ -25,7 +25,7 @@ if [[ "$(id -u)" != 0 ]]; then
   exit 2
 fi
 DEST="$ROOT/releases/$RELEASE_ID"
-if [[ -e "$DEST" || -L "$ROOT/current" || -e /etc/systemd/system/tw01-forecastengine.service ]]; then
+if [[ -e "$DEST" || -L "$ROOT/current" || -e /etc/systemd/system/fresh-market-price-agent-forecastengine.service ]]; then
   echo "existing release/current/unit; do not overwrite existing deployment" >&2
   exit 2
 fi
@@ -76,26 +76,26 @@ PY
 if ! id tw01forecast &>/dev/null; then
   useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin --user-group tw01forecast
 fi
-install -d -o root -g root -m 0700 /etc/tw01-forecastengine
-if [[ -e /etc/tw01-forecastengine/origin.env ]]; then
+install -d -o root -g root -m 0700 /etc/fresh-market-price-agent-forecastengine
+if [[ -e /etc/fresh-market-price-agent-forecastengine/origin.env ]]; then
   echo "secret file already exists; refusing to reuse a previous deployment secret" >&2
   exit 2
 fi
 python3 - <<'PY'
 import os,secrets
-path="/etc/tw01-forecastengine/origin.env"
+path="/etc/fresh-market-price-agent-forecastengine/origin.env"
 fd=os.open(path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
 with os.fdopen(fd,"w",encoding="ascii") as stream:
-    stream.write("TW01_ORIGIN_API_TOKEN="+secrets.token_urlsafe(48)+"\n")
+    stream.write("FMPA_ORIGIN_API_TOKEN="+secrets.token_urlsafe(48)+"\n")
 print("DEDICATED_NEW_ORIGIN_SECRET_CREATED=1")  # never output the value
 PY
 ln -s "$DEST" "$ROOT/current"
-install -o root -g root -m 0644 "$SOURCE/../tw01-forecastengine.service" /etc/systemd/system/tw01-forecastengine.service
+install -o root -g root -m 0644 "$SOURCE/../fresh-market-price-agent-forecastengine.service" /etc/systemd/system/fresh-market-price-agent-forecastengine.service
 systemctl daemon-reload
-systemctl enable --now tw01-forecastengine.service
-systemctl is-active --quiet tw01-forecastengine.service
+systemctl enable --now fresh-market-price-agent-forecastengine.service
+systemctl is-active --quiet fresh-market-price-agent-forecastengine.service
 sleep 2
 curl --fail --silent --show-error --max-time 20 http://127.0.0.1:8767/healthz
 printf '\nSERVICE_INSTALLED=1\n'
-systemctl show tw01-forecastengine.service -p ActiveState -p SubState -p MainPID -p Restart -p MemoryMax -p MemoryHigh -p CPUQuotaPerSecUSec --no-pager
+systemctl show fresh-market-price-agent-forecastengine.service -p ActiveState -p SubState -p MainPID -p Restart -p MemoryMax -p MemoryHigh -p CPUQuotaPerSecUSec --no-pager
 ss -lntp | grep -F '127.0.0.1:8767'

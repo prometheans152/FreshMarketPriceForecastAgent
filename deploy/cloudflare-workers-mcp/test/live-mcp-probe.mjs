@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { VALID_TEST_ENV } from "./fixtures.js";
 
-const address = process.env.TW01_LOCAL_PROBE_URL ?? "http://127.0.0.1:8797";
+const address = process.env.FMPA_LOCAL_PROBE_URL ?? process.env.TW01_LOCAL_PROBE_URL ?? "http://127.0.0.1:8797";
 if (!address.startsWith("http://127.0.0.1:") && !address.startsWith("http://localhost:"))
   throw new Error("Refusing to send synthetic bearer credentials off loopback");
 
@@ -37,7 +37,7 @@ const initialized = await runRpc(rpc("initialize", {
   capabilities: {}, clientInfo: { name: "real-workerd-probe", version: "1.0.0" },
 }, 2));
 assert.equal(initialized.status, 200);
-assert.equal(initialized.body.result?.serverInfo?.name, "tw01-forecastengine-remote");
+assert.equal(initialized.body.result?.serverInfo?.name, "fresh-market-price-agent-forecastengine-remote");
 results.initialize = "PASS";
 const listed = await runRpc(rpc("tools/list", {}, 3));
 assert.equal(listed.status, 200);

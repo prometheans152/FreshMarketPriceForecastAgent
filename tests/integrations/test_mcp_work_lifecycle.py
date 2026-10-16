@@ -37,10 +37,11 @@ def pid_running(pid):
 
 def run_disposable(mode, tmp_path):
     assert os.name == "nt", "Acceptance requires the authorized Windows host"
-    transport = os.environ.get("TW01_MCP_PYTHON")
-    assert transport and Path(transport).is_file(), "TW01_MCP_PYTHON is required for acceptance"
+    transport = os.environ.get("FMPA_MCP_PYTHON", os.environ.get("TW01_MCP_PYTHON"))
+    assert transport and Path(transport).is_file(), "FMPA_MCP_PYTHON is required for acceptance"
     from aiot_price.integrations.chatgpt_mcp import worker_environment
-    evidence_root = Path(os.environ.get("TW01_LIFECYCLE_EVIDENCE_DIR", str(tmp_path)))
+    evidence_root = Path(os.environ.get(
+        "FMPA_LIFECYCLE_EVIDENCE_DIR", os.environ.get("TW01_LIFECYCLE_EVIDENCE_DIR", str(tmp_path))))
     directory = evidence_root / (mode + "_" + tmp_path.name)
     directory.mkdir(parents=True, exist_ok=False)
     env = worker_environment(directory / "transport_home")
@@ -138,9 +139,10 @@ def test_worker_descendants_stop_while_transport_is_still_alive(mode, outcome, t
 @pytest.mark.parametrize("mode", ["assign_failure", "resume_failure"])
 def test_suspended_worker_ownership_failure_cannot_execute_or_leak(mode, tmp_path):
     from aiot_price.integrations.chatgpt_mcp import worker_environment
-    transport = os.environ.get("TW01_MCP_PYTHON")
-    assert transport and Path(transport).is_file(), "TW01_MCP_PYTHON is required for acceptance"
-    evidence_root = Path(os.environ.get("TW01_LIFECYCLE_EVIDENCE_DIR", str(tmp_path)))
+    transport = os.environ.get("FMPA_MCP_PYTHON", os.environ.get("TW01_MCP_PYTHON"))
+    assert transport and Path(transport).is_file(), "FMPA_MCP_PYTHON is required for acceptance"
+    evidence_root = Path(os.environ.get(
+        "FMPA_LIFECYCLE_EVIDENCE_DIR", os.environ.get("TW01_LIFECYCLE_EVIDENCE_DIR", str(tmp_path))))
     directory = evidence_root / (mode + "_" + tmp_path.name)
     directory.mkdir(parents=True, exist_ok=False)
     env = worker_environment(directory / "transport_home")

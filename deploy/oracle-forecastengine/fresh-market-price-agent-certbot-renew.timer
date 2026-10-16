@@ -5,7 +5,7 @@ Description=Check six-day ForecastEngine IP certificate renewal twice daily
 OnCalendar=*-*-* 00,12:17:00
 RandomizedDelaySec=1800
 Persistent=true
-Unit=tw01-certbot-renew.service
+Unit=fresh-market-price-agent-certbot-renew.service
 
 [Install]
 WantedBy=timers.target

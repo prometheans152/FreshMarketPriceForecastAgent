@@ -12,8 +12,8 @@ from fastapi.testclient import TestClient
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = Path(__file__).resolve().parent
 sys.path.insert(0, str(SOURCE))
-os.environ["TW01_RELEASE_DIR"] = str(ROOT / "models" / "releases" / "0.1.0")
-os.environ["TW01_ORIGIN_API_TOKEN"] = "test_only_" + "x" * 48
+os.environ["FMPA_RELEASE_DIR"] = str(ROOT / "models" / "releases" / "0.1.0")
+os.environ["FMPA_ORIGIN_API_TOKEN"] = "test_only_" + "x" * 48
 from oracle_web_site import app, api
 
 HEADERS = {

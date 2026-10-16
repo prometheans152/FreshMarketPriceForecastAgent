@@ -1,0 +1,9 @@
+[Unit]
+Description=Renew FMPA Let's Encrypt short-lived IP certificate and reload Nginx
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/fresh-market-price-agent-forecastengine/acme-venv/bin/certbot renew --non-interactive --quiet --deploy-hook "/usr/bin/systemctl reload nginx"
+TimeoutStartSec=900

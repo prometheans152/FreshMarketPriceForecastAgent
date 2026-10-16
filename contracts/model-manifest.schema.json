@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/aiot-finishproject/contracts/model-manifest.schema.json",
-  "title": "TW01 模型包 Manifest 契約",
+  "title": "模型包 Manifest 契約",
   "description": "自足模型包的中繼資料；載入端必須驗 artifact sha256 與依賴相容後才標 ready。",
   "type": "object",
   "required": ["manifest_version", "model_version", "created_at", "source", "labels", "features", "models", "evaluation", "capability"],

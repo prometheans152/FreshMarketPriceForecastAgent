@@ -36,8 +36,8 @@ BASE = {
 def bundle(tmp_path, monkeypatch):
     directory = tmp_path / "new_public_catalog"
     manifest = build(SOURCE, directory)
-    monkeypatch.setenv("TW01_EXTENDED_CATALOG_DIR", str(directory))
-    monkeypatch.setenv("TW01_ORIGIN_API_TOKEN", "test_only_" + "x" * 48)
+    monkeypatch.setenv("FMPA_EXTENDED_CATALOG_DIR", str(directory))
+    monkeypatch.setenv("FMPA_ORIGIN_API_TOKEN", "test_only_" + "x" * 48)
     expanded.data_bundle.cache_clear()
     api._timestamps.clear()
     yield directory, manifest

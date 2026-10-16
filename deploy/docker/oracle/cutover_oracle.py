@@ -1,8 +1,8 @@
-"""Atomic scoped migration of existing Oracle TW01 HTTPS routes to Docker.
+"""Atomic scoped migration of existing Oracle FMPA HTTPS routes to Docker.
 
 The live TLS private key, port 80 ACME verification, Cloudflare tunnel,
 unrelated Nginx sites and existing frozen model files are NEVER changed.
-Only exact TW01 HTTPS upstreams/static asset routing are switched to the
+Only exact FMPA HTTPS upstreams/static asset routing are switched to the
 already healthy Docker Nginx on 127.0.0.1:8080.
 
 If any post-cutover verification fails, restore Nginx original config,
@@ -23,8 +23,8 @@ import tempfile
 import time
 from pathlib import Path
 
-NGINX = Path("/etc/nginx/sites-available/tw01-tls.conf")
-ORIGINAL_SERVICE = "tw01-forecastengine.service"
+NGINX = Path("/etc/nginx/sites-available/fresh-market-price-agent-tls.conf")
+ORIGINAL_SERVICE = "fresh-market-price-agent-forecastengine.service"
 DOCKER_HOST_PORT = "127.0.0.1:8080"
 ORIGIN_HOSTNAME = "161.33.19.220"
 BODY_A = {
@@ -163,7 +163,7 @@ def compare_app_endpoints(*, live: bool):
 
 def install_nginx_config(new_text: str, existing: Path):
     fd, temporary = tempfile.mkstemp(
-        prefix=".tw01-docker-switch-", dir=existing.parent
+        prefix=".fresh-market-price-agent-docker-switch-", dir=existing.parent
     )
     with os.fdopen(fd, "w", encoding="utf-8") as stream:
         stream.write(new_text)
@@ -179,12 +179,12 @@ def render(original: str):
         ("proxy_pass http://127.0.0.1:8767;", "proxy_pass http://127.0.0.1:8080;", 3),
         ("proxy_pass http://127.0.0.1:8767/site/forecast;",
          "proxy_pass http://127.0.0.1:8080/web/forecast;", 1),
-        ("alias /var/www/tw01-website/;\n    index index.html;",
+        ("alias /var/www/fresh-market-price-agent-website/;\n    index index.html;",
          "proxy_pass http://127.0.0.1:8080;", 1),
-        ("alias /var/www/tw01-website/index.html;", "proxy_pass http://127.0.0.1:8080;", 1),
-        ("alias /var/www/tw01-website/app.js;", "proxy_pass http://127.0.0.1:8080;", 1),
-        ("alias /var/www/tw01-website/style.css;", "proxy_pass http://127.0.0.1:8080;", 1),
-        ("alias /var/www/tw01-website/catalog.json;", "proxy_pass http://127.0.0.1:8080;", 1),
+        ("alias /var/www/fresh-market-price-agent-website/index.html;", "proxy_pass http://127.0.0.1:8080;", 1),
+        ("alias /var/www/fresh-market-price-agent-website/app.js;", "proxy_pass http://127.0.0.1:8080;", 1),
+        ("alias /var/www/fresh-market-price-agent-website/style.css;", "proxy_pass http://127.0.0.1:8080;", 1),
+        ("alias /var/www/fresh-market-price-agent-website/catalog.json;", "proxy_pass http://127.0.0.1:8080;", 1),
     ]
     result = original
     for before, after, count in changes:
@@ -192,7 +192,7 @@ def render(original: str):
             raise RuntimeError("Live Nginx config differs from approved version: " + before[:50])
         result = result.replace(before, after, count)
     if result.count("proxy_pass http://127.0.0.1:8080") != 9:
-        raise RuntimeError("Not all 9 TW01 endpoint upstreams are Docker-bound")
+        raise RuntimeError("Not all 9 FMPA endpoint upstreams are Docker-bound")
     if result.count("location = /v1/forecast {") != 1:
         raise RuntimeError("Cannot identify original MCP route")
     if result.count("ssl_certificate_key /etc/letsencrypt/") != 1:
@@ -213,7 +213,7 @@ def main():
     if not tag.replace("_", "").replace("-", "").isalnum():
         parser.error("Invalid tag")
     stack = values.stack.resolve(strict=True)
-    if not str(stack).startswith("/opt/tw01-docker/stacks/"):
+    if not str(stack).startswith("/opt/fresh-market-price-agent-docker/stacks/"):
         parser.error("Unapproved immutable stack path")
     origin_secret = stack / ".secrets" / "origin_api_token"
     if not origin_secret.is_file() or origin_secret.stat().st_mode & 0o077:
@@ -225,7 +225,7 @@ def main():
     # Read-only staging smoke first: systemd and actual public HTTPS unchanged.
     check_active("nginx.service")
     check_active(ORIGINAL_SERVICE)
-    check_active("tw01-cloudflared.service")
+    check_active("fresh-market-price-agent-cloudflared.service")
     compare_app_endpoints(live=False)
 
     before = NGINX.read_text(encoding="utf-8")
@@ -242,7 +242,7 @@ def main():
         call("systemctl", "disable", "--now", ORIGINAL_SERVICE)
         old_service_stopped = True
         check_active("nginx.service")
-        check_active("tw01-cloudflared.service")
+        check_active("fresh-market-price-agent-cloudflared.service")
         # Avoid replaying 3 more ML computations into the public rate limiter.
         # The full HTTPS ML and MCP suite ran successfully immediately above;
         # after stopping only the UNUSED old process, assert health stays up.

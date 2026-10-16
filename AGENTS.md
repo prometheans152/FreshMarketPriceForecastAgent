@@ -1,4 +1,4 @@
-# TW01 — GLM Coding Agent 工作與品質管線（AGENTS.md）
+# Fresh Market Price Forecast Agent — GLM Coding Agent 工作與品質管線（AGENTS.md）
 
 > 本檔是 `C:\Users\prometheans\Documents\AIOT_FinishProject` 的常駐工作規範，ZCode／GLM coding agent 每次接手必須先讀；是否由工具自動載入需依實際設定確認。
 > **GLM 是執行者；ChatGPT（透過 COS）是外部獨立審查者。** 專案產品內的「Domain AI Agent」不是 GLM coding agent。
@@ -14,7 +14,7 @@
 
 ## 1. 不變的專題定義
 
-- 正式題目 **TW01「現場菜價 7／14 天預測與分析代理人」**；禁止重新找題、換題、恢復整籃採買或另開正式專案。
+- 正式題目 **「現場菜價 7／14 天預測與分析代理人」（Fresh Market Price Forecast Agent；選題期編號 TW01，歷史文件仍以此稱呼）**；禁止重新找題、換題、恢復整籃採買或另開正式專案。
 - 使用者在市場看到**今天單店、單品項價格**；上週**同店、同品項、同規格**價格選填。A＝今天店價＋公開歷史；B＝再納入可比的上週價；兩者從使用者當天 `t` 算**精確 t+7／t+14 日曆日**，沒有 B 仍可用 A。
 - 公開市場均價 **不是** 個店真值。0＝無報價／缺測，不是零元；不拿公開 t−7 冒充私人店價；不拿市場測試分數冒充店價準確率。
 - 正式菜價預測值來自 **ForecastEngine／已訓練 RF（7天）與 HGB（14天）**，不是 LLM 猜價。B 的 `α=0.3` 是固定實驗規則，**非**學得增益。真店 A/B 到期配對驗證尚無證據，不可寫已成功。
@@ -75,7 +75,7 @@
 - Proposal 規範：Abstract A–F；Introduction 六要素；Related Work AI Technology＋Domain Know-how 約 1:1；八欄 Article Summary（Ref/Year/Problem/AI Method/Domain Knowledge/Dataset/Findings/Limitation）；Existing→Limitations→Gap→Our Project；Deep Research **5 Core Mindsets＋3 Controversies＋10 Deep Questions**；Architecture＋Flowchart＋有行號 Pseudocode；GitHub 與 DESIGN 文件交付狀態分開。
 - Domain Know-how 包括：批發／零售傳導、單店與均價區別、品種品質促銷、台斤／公斤、缺測、供給與天氣、時間延遲、風險與決策效用。不是只列 RF/LSTM/HGB 就說有 Domain。
 - 依序實查 **原論文/PDF→摘要→官網/商店文案→他人整理**。每個來源標 `full/abstract/page/report/notes`、頁次、年份、查核日；**只讀 11/15 頁就寫 11/15**，不能說全份讀完。找不到資料標 `UNKNOWN`，不把「未查到」寫成「不存在」；不要捏造 2025–2026 文獻或數字。
-- Team17（同課程）與 TW01 同為菜價預測，但 Team17 主要是市場＋氣象 LightGBM、五天採購指南；TW01 的研究差異是**當日單店價錨定＋選填上週同店資料＋7／14天固定期限＋同店到期 A/B 驗證設計**，不是換模型、換菜名。Team17 的 R²/RMSE/MAE 和 TW01 的 macro-F1 不得直接比較。
+- Team17（同課程）與本專題同為菜價預測，但 Team17 主要是市場＋氣象 LightGBM、五天採購指南；本專題的研究差異是**當日單店價錨定＋選填上週同店資料＋7／14天固定期限＋同店到期 A/B 驗證設計**，不是換模型、換菜名。Team17 的 R²/RMSE/MAE 和本專題的 macro-F1 不得直接比較。
 - 所有數值主張需對 `outputs/evaluation/public/public_test_results.json`、`stats_master.json` 或可定位原始研究逐項核對；列分母、單位、日期、範圍與假設；32/28/-4.1% 等教學例不可說成真店實驗。
 - Proposal 階段的「已有公開市場結果」與「尚缺真店、LLM Planner、使用者測試」分開。不要因文件完成就宣稱產品 Domain Agent 達老師最終要求。
 

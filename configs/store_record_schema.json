@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "configs/store_record_schema.json",
-  "title": "TW01 同店報價與預測紀錄 schema（T10）",
+  "title": "同店報價與預測紀錄 schema（T10）",
   "description": "定義兩種紀錄：store_quote（單筆現場店價觀測）與 prediction_record（預測當時凍結的A/B輸出與7/14天到期回填）。任何一筆 JSON 紀錄必須符合其中一種。規則與採集協議見 docs/STORE_DATA_PROTOCOL.md；品項與單位對應 configs/project.yaml。匿名範例見 configs/store_record_example.json（全為模擬資料）。帶 simulated:true 的紀錄是市場模擬或示範資料，永遠不得作為私人真值匯入 private/ 下的正式紀錄。",
   "oneOf": [
     { "$ref": "#/definitions/store_quote" },

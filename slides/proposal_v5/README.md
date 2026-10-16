@@ -1,4 +1,4 @@
-# TW01｜Proposal v5 r3（第三輪獨立複審通過；本機正式提案主版本）
+# Proposal v5 r3（第三輪獨立複審通過；本機正式提案主版本）
 
 本版依教授最新 Proposal 要求（AI Agent＋Domain Knowledge＋Data Analytics＋Real-World Application）在 v4 簡潔研究版基礎上擴充：Deep Research（五思維／三爭論／十問題）、教授八欄 Article Summary Table、Research Gap、Domain Agent 設計三種表示（五群組架構①–⑤＋虛線 PROPOSED 區、D1–D9 決策流程圖、Algorithm 1 主講 10 步＋附錄完整 41 行）。**Agent 邊界如實標注：CURRENT（規則式：parse_query＋get_market_quote/post_forecast 兩工具＋驗證器僅 Qwen 路徑）／PARTIAL（/records 保存 API 未工具化、到期機制無真值、資料過期僅警告）／PROPOSED（LLM Planner、save_record 工具化、嚴格過期 hard gate）。** 題目、資料、模型與封存結果不變；v1–v4 與試片原樣保留。
 
@@ -6,7 +6,7 @@
 
 ## 開啟檔案
 
-- `TW01_Proposal_v5.pptx`：可編輯投影片，**23 頁主講＋10 頁附錄**（附錄 A5＝Algorithm 1 完整 41 行）。
+- `FMPA_Proposal_v5.pptx`：可編輯投影片，**23 頁主講＋10 頁附錄**（附錄 A5＝Algorithm 1 完整 41 行）。
 - 同名 `.pdf`：由 PowerPoint 匯出（安全匯出器：唯讀未命名副本、不 Quit 共享實例）。
 - `SLIDE_NOTES_v5.md`：逐頁講稿、補充與引用索引（與 PPT 內嵌備註同源 `notes_v5.json`）。
 - `SOURCES.md`：24 個來源條目與查核層級。

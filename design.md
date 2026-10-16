@@ -1,4 +1,4 @@
-# TW01 設計藍圖：現場菜價 7／14 天預測與分析代理人
+# 設計藍圖：現場菜價 7／14 天預測與分析代理人
 
 **2026-10-09 現行提案設計入口：** [Proposal v5 r3](docs/proposal_v5/PROPOSAL.md)、[Agent 設計](docs/proposal_v5/AGENT_DESIGN.md)、[Deep Research](docs/proposal_v5/DEEP_RESEARCH.md)、[文獻表](docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md)；[第三輪獨立複審](outputs/audits/proposal_v5_r3_independent_20261009_01/REVIEW_R3.md) 已對**提案文件及簡報**判定 EXTERNAL_PASS。既有 §0–§5 與舊草案保留，最新 CURRENT/PARTIAL/PROPOSED 映射見下方 §6；產品 LLM、同店驗證及 SERVER 仍未完成。
 
@@ -116,7 +116,7 @@
 
 # 歷史附錄：2026-10-03 設計草案（原文保留）
 
-# TW01設計草案：現場菜價7／14天預測與分析代理人
+# 設計草案：現場菜價7／14天預測與分析代理人
 
 **D44 本輪優先（2026-10-04）：** 暫擱代理人整合，保留現有介面；先按 [PROPOSAL_DELIVERY_PLAN](docs/PROPOSAL_DELIVERY_PLAN.md) 完成研究／設計／OpenSpec與正式投影片。本檔全面重整安排在P4，本次只更新範圍入口；以下混有歷史設計與目標狀態，GLM须依現況整理，不因此重寫產品程式、重訓、接GLM或部署SERVER。
 

@@ -7,7 +7,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-NGINX_TLS = Path("/etc/nginx/sites-available/tw01-tls.conf")
+NGINX_TLS = Path("/etc/nginx/sites-available/fresh-market-price-agent-tls.conf")
 
 
 def main():

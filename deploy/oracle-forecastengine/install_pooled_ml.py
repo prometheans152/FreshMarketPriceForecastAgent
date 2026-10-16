@@ -1,4 +1,4 @@
-"""Safely activate new supervised ML for TW01's public 57-crop browser site.
+"""Safely activate new supervised ML for FMPA's public 57-crop browser site.
 
 No changes to the frozen RF/HGB 0.1.0 release, /v1 MCP Bearer API,
 Nginx TLS/auth/rate limits, Windows original web, or private records.
@@ -15,10 +15,10 @@ import subprocess
 import time
 from pathlib import Path
 
-ROOT = Path("/opt/tw01-forecastengine-web")
-WEBSITE = Path("/var/www/tw01-website")
-OVERRIDE = Path("/etc/systemd/system/tw01-forecastengine.service.d/20-web-frontend.conf")
-FROZEN = Path("/opt/tw01-forecastengine/current/models/releases/0.1.0")
+ROOT = Path("/opt/fresh-market-price-agent-forecastengine-web")
+WEBSITE = Path("/var/www/fresh-market-price-agent-website")
+OVERRIDE = Path("/etc/systemd/system/fresh-market-price-agent-forecastengine.service.d/20-web-frontend.conf")
+FROZEN = Path("/opt/fresh-market-price-agent-forecastengine/current/models/releases/0.1.0")
 OLD_COMPONENTS = {
     "cabbage", "bok_choy", "sponge_gourd",
 }
@@ -113,7 +113,7 @@ def install(stage: Path, tag: str):
     if os.geteuid() != 0:
         raise ValueError("Must be root on existing approved Oracle VPS")
     stage = stage.resolve(strict=True)
-    if not str(stage).startswith("/home/ubuntu/tw01-pooled-ml-stage-"):
+    if not str(stage).startswith("/home/ubuntu/fresh-market-price-agent-pooled-ml-stage-"):
         raise ValueError("Unexpected staging location")
     if not tag.replace("_", "").replace("-", "").isalnum():
         raise ValueError("Invalid new immutable ML release tag")
@@ -172,17 +172,18 @@ def install(stage: Path, tag: str):
     previous = OVERRIDE.read_text(encoding="utf-8")
     old_application = (
         "uvicorn oracle_web_site:app --app-dir "
-        "/opt/tw01-forecastengine-web/site_overlays/catalog-20261015_003810_r2"
+        "/opt/fresh-market-price-agent-forecastengine-web/site_overlays/catalog-20261015_003810_r2"
     )
-    if previous.count(old_application) != 1 or "TW01_POOLED_ML_DIR=" in previous:
+    if previous.count(old_application) != 1 or any(
+            p + "POOLED_ML_DIR=" in previous for p in ("FMPA_", "TW01_")):
         raise RuntimeError("Existing website systemd command differs from verified base")
     new = previous.replace(
         old_application,
         "uvicorn oracle_web_site_ml:app --app-dir " + str(target_overlay),
     )
-    new += "\nEnvironment=TW01_POOLED_ML_DIR=" + str(target_ml) + "\n"
+    new += "\nEnvironment=FMPA_POOLED_ML_DIR=" + str(target_ml) + "\n"
     run("systemctl", "is-active", "--quiet", "nginx.service")
-    run("systemctl", "is-active", "--quiet", "tw01-forecastengine.service")
+    run("systemctl", "is-active", "--quiet", "fresh-market-price-agent-forecastengine.service")
     for previous_file, backup_file in saved.items():
         shutil.copy2(previous_file, backup_file)
 
@@ -210,7 +211,7 @@ def install(stage: Path, tag: str):
         OVERRIDE.chmod(0o644)
         service_changed = True
         run("systemctl", "daemon-reload")
-        run("systemctl", "restart", "tw01-forecastengine.service")
+        run("systemctl", "restart", "fresh-market-price-agent-forecastengine.service")
         wait_until_ready()
         http_smoke()
     except Exception:
@@ -218,7 +219,7 @@ def install(stage: Path, tag: str):
             shutil.copy2(backup, live_file)
         if service_changed:
             run("systemctl", "daemon-reload")
-            run("systemctl", "restart", "tw01-forecastengine.service")
+            run("systemctl", "restart", "fresh-market-price-agent-forecastengine.service")
             wait_until_ready()
         raise
     print("NEW_TRAINED_POOLED_ML_DEPLOYED=TRUE")

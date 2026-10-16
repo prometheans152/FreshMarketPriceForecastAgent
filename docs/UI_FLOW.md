@@ -41,7 +41,7 @@
 | 今天價格 | `current_price` | number，前端驗證 > 0 |
 | 單位下拉 | `price_unit` | `元／台斤 → NTD_per_taiwan_jin`、`元／公斤 → NTD_per_kg`；顆／把／袋屬不可比單位，不提供輸入 |
 | 觀察日期＋時間 | `observed_at` | 組成 `{date}T{time}:00+08:00`（ISO8601，固定 Asia/Taipei +08:00） |
-| 匿名店號 | `store_id` | 選填；`^[A-Za-z0-9_-]+$`，預設 `store-a`，存 localStorage；空白則不送此欄位。**代理人請求的 `store_id` 與此欄同一來源（F07）**：一律讀表單 `#storeId` 現值（初始值來自 `tw01_ui_prefs_v1`），改店號後代理人請求跟著變；送出前同樣以正則驗證，格式錯誤時提示先修正表單 |
+| 匿名店號 | `store_id` | 選填；`^[A-Za-z0-9_-]+$`，預設 `store-a`，存 localStorage；空白則不送此欄位。**代理人請求的 `store_id` 與此欄同一來源（F07）**：一律讀表單 `#storeId` 現值（初始值來自 `fmpa_ui_prefs_v1`），改店號後代理人請求跟著變；送出前同樣以正則驗證，格式錯誤時提示先修正表單 |
 | 上週價格（選填） | `previous_price` | 開關打開才送；前端驗證 > 0 |
 | 上週實際日期（選填） | `previous_observed_at` | 組成 `{date}T00:00:00+08:00`（使用者只知道日期，時間以 00:00 送出；7±2 天判定由 server 依日期做） |
 | 上週單位（選填） | `previous_price_unit` | 預設同今天單位，可手動改；不同單位時 server 會判 B 不可比 |
@@ -79,7 +79,7 @@
 ## 5.5 代理人問答區塊（2026-10-03 第二輪新增；同日 F07 修訂）
 
 - 表單下方「用問的也可以」：文字框（≤2000字）＋「問代理人」按鈕（Enter 亦可送出）。
-- 呼叫 `POST /agent/query`（body：`{query, store_id}`）。**`store_id` 與主表單共用同一來源**：讀表單 `#storeId` 現值（初始值來自 localStorage `tw01_ui_prefs_v1` 的 `store_id`），不再使用舊的 `vp_store_id` 鍵；送出前驗證 `^[A-Za-z0-9_-]+$`，格式錯誤時提示先修正上方表單。
+- 呼叫 `POST /agent/query`（body：`{query, store_id}`）。**`store_id` 與主表單共用同一來源**：讀表單 `#storeId` 現值（初始值來自 localStorage `fmpa_ui_prefs_v1` 的 `store_id`），不再使用舊的 `vp_store_id` 鍵；送出前驗證 `^[A-Za-z0-9_-]+$`，格式錯誤時提示先修正上方表單。
 - 回應顯示三部分：
   1. **後端標示**（`backendLabel()`，textContent 呈現）：
      - `backend_used="qwen"` 且 `degraded=false` →「Qwen 代理人」
@@ -103,15 +103,16 @@
 - **已保存紀錄面板**：`<details>` 摺疊，第一次展開才 `GET /records`（後端未提供時顯示「無法載入紀錄…（查詢預測功能不受影響）」）；「重新整理」按鈕可重新載入。
 - **清單顯示**：每筆一張卡：品項・市場、保存時間、`mode_executed` 標籤（模式 A／模式 B／A／B 對照／上週不可比自動改用 A）、各期限摘要（`horizons[].horizon_days`＋方向（含箭頭）＋`target_date`）、`model_version` 小字，以及「刪除」按鈕。
 - **刪除**：confirm 後 `DELETE /records/{record_id}`；成功後重載清單，失敗只顯示訊息。
-- **匯出全部**：連結至 `GET /records/export`（`download="tw01_prediction_records.json"` 建議檔名；實際檔名以 server `Content-Disposition` 為準）。
+- **匯出全部**：連結至 `GET /records/export`（`download="fmpa_prediction_records.json"` 建議檔名；實際檔名以 server `Content-Disposition` 為準）。
 - 保存的資料在伺服器端（匿名摘要與完整紀錄由 server 管理）；前端 localStorage 仍只存 UI 偏好，不存價格或預測結果。
 
 ## 6. localStorage
 
-- 僅一個鍵 `tw01_ui_prefs_v1`，JSON：`{ crop_id, market_id, price_unit, store_id }`。
+- 僅一個鍵 `fmpa_ui_prefs_v1`，JSON：`{ crop_id, market_id, price_unit, store_id }`。
 - **不存任何價格、日期或預測結果**；無痕模式寫入失敗時靜默忽略，不影響查詢。
 - 預測保存（T22）改存伺服器端（見 5.6），與本鍵無關；舊鍵 `vp_store_id` 已不再讀取（F07 修訂）。
-- 鍵名前綴 `tw01_` 避免與其他站台衝突；清除瀏覽器網站資料即可移除。
+- 鍵名前綴 `fmpa_` 避免與其他站台衝突；清除瀏覽器網站資料即可移除。
+- 改名搬移（2026-10-16）：載入時若新鍵不存在而改名前的舊鍵 `tw01_ui_prefs_v1` 存在，複製一次到新鍵；舊鍵保留不刪，回滾到舊版仍讀得到。Oracle 網頁的瀏覽器紀錄 `fmpa_web_browser_only_records_v1` 以相同規則從 `tw01_web_browser_only_records_v1` 搬移。
 
 ## 7. 已知限制
 
@@ -143,6 +144,6 @@
   - 保存：`POST records` body 鍵 `forecast_response`／`request`；回應 `ok`／`record_id`／`saved_at`。
   - 清單：`records[].record_id`／`saved_at`／`crop_id`／`market_id`／`mode_executed`／`horizons[].horizon_days|target_date|direction`／`model_version`。
   - 刪除：`DELETE records/{record_id}`；匯出：`GET records/export`。
-  - `vp_store_id` 已無任何引用（店號單一來源 `#storeId`／`tw01_ui_prefs_v1`）。
+  - `vp_store_id` 已無任何引用（店號單一來源 `#storeId`／`fmpa_ui_prefs_v1`）。
   - 主表單與代理人結果卡共用 `forecastHtml()`，價格估計經 `fmtPrice(price_estimate, price_estimate_unit)` 一律附單位（元／台斤、元／公斤）。
 - 端到端實測（含 `/records` 端點與代理人新欄位的真後端串接）待後端契約完成後由主對話補（見 7.9）。

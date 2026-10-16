@@ -1,4 +1,4 @@
-"""Leakage-free daily as-of features for new TW01 pooled-crop ML models.
+"""Leakage-free daily as-of features for new FMPA pooled-crop ML models.
 
 Training and inference call the SAME functions. Input observations must be
 positive public market means with calendar-day dates, NOT shop price records.

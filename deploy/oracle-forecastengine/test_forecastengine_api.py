@@ -17,7 +17,7 @@ from aiot_price.agent.tools import AgentTools
 
 ROOT = Path(__file__).resolve().parents[2]
 RELEASE = ROOT / "models" / "releases" / "0.1.0"
-_spec = importlib.util.spec_from_file_location("tw01_oracle_api_test", Path(__file__).with_name("forecastengine_api.py"))
+_spec = importlib.util.spec_from_file_location("fmpa_oracle_api_test", Path(__file__).with_name("forecastengine_api.py"))
 api = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(api)
 
@@ -26,8 +26,8 @@ FAKE_TEST_TOKEN = "test_only_" + "x" * 48
 
 @pytest.fixture(autouse=True)
 def token(monkeypatch):
-    monkeypatch.setenv("TW01_ORIGIN_API_TOKEN", FAKE_TEST_TOKEN)
-    monkeypatch.setenv("TW01_RELEASE_DIR", str(RELEASE))
+    monkeypatch.setenv("FMPA_ORIGIN_API_TOKEN", FAKE_TEST_TOKEN)
+    monkeypatch.setenv("FMPA_RELEASE_DIR", str(RELEASE))
     # Avoid the global rate limiter impacting independent test scenarios.
     api._timestamps.clear()
 
@@ -170,9 +170,25 @@ def test_data_before_public_history_rejected(client):
 
 
 def test_health_fails_closed_without_origin_token(client, monkeypatch):
+    monkeypatch.delenv("FMPA_ORIGIN_API_TOKEN", raising=False)
     monkeypatch.delenv("TW01_ORIGIN_API_TOKEN", raising=False)
     assert client.get("/healthz").status_code == 503
     assert call(client, BASE).status_code == 401
+
+
+def test_legacy_origin_token_name_still_authenticates(client, monkeypatch):
+    # Hosts not yet migrated still ship origin.env with the pre-rename name.
+    monkeypatch.delenv("FMPA_ORIGIN_API_TOKEN", raising=False)
+    monkeypatch.setenv("TW01_ORIGIN_API_TOKEN", FAKE_TEST_TOKEN)
+    assert client.get("/healthz").status_code == 200
+    assert call(client, BASE).status_code == 200
+
+
+def test_new_origin_token_name_wins_over_legacy(client, monkeypatch):
+    legacy = "legacy_only_" + "y" * 48
+    monkeypatch.setenv("TW01_ORIGIN_API_TOKEN", legacy)
+    assert call(client, BASE).status_code == 200
+    assert call(client, BASE, token=legacy).status_code == 401
 
 
 def test_bad_request_wrong_body_shape(client):

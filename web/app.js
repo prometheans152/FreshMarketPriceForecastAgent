@@ -1,7 +1,7 @@
 'use strict';
 
 /* =========================================================
- * TW01 現場菜價預測 — 手機網頁（T21）
+ * 現場菜價預測 — 手機網頁（T21）
  * 純靜態、無外部 CDN 依賴、無追蹤。
  * API 為同源相對路徑（部署時 API server 直接 serve web/）。
  * 欄位語意依 contracts/forecast.schema.json。
@@ -62,7 +62,9 @@ const VALIDATION_SCOPE_LABELS = {
   unvalidated: '尚未驗證'
 };
 
-const STORAGE_KEY = 'tw01_ui_prefs_v1';
+const STORAGE_KEY = 'fmpa_ui_prefs_v1';
+// 改名前的舊鍵：新鍵不存在時複製一次；舊鍵保留，回滾到舊版仍讀得到。
+const LEGACY_STORAGE_KEY = 'tw01_ui_prefs_v1';
 const DEFAULT_STORE_ID = 'store-a';
 const STORE_ID_RE = /^[A-Za-z0-9_-]+$/;
 
@@ -146,7 +148,19 @@ async function fetchJson(url, options) {
 
 /* ---------- localStorage（只記選項與匿名店號，不記價格） ---------- */
 
+function migrateStorageKey(key, legacyKey) {
+  try {
+    if (localStorage.getItem(key) === null) {
+      const legacy = localStorage.getItem(legacyKey);
+      if (legacy !== null) localStorage.setItem(key, legacy);
+    }
+  } catch (err) {
+    /* 無痕模式等情境無法讀寫時略過，不影響查詢 */
+  }
+}
+
 function loadPrefs() {
+  migrateStorageKey(STORAGE_KEY, LEGACY_STORAGE_KEY);
   let prefs = null;
   try {
     prefs = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
@@ -171,7 +185,7 @@ function savePrefs() {
 }
 
 /* ---------- 店號單一來源（F07） ----------
- * 表單 #storeId 是唯一來源（初始值來自 tw01_ui_prefs_v1）；
+ * 表單 #storeId 是唯一來源（初始值來自 fmpa_ui_prefs_v1）；
  * 本機表單匿名店號，不涉及聊天。 */
 function currentStoreId() {
   const input = $('storeId');

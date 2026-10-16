@@ -1,8 +1,10 @@
-# TW01 ForecastEngine API v1 — Workers 對接契約
+# ForecastEngine API v1 — Workers 對接契約
+
+> **改名（2026-10-16）：** 本文已改用新名稱 `fresh-market-price-agent-*`／`FMPA_*`。線上 Oracle 主機與 Worker 在完成 [RENAME_MIGRATION.md](../../deploy/RENAME_MIGRATION.md) 之前仍是舊名 `tw01-*`；遷移前若需維運或回滾，請照 `main@1062818` 版本的本文件操作。
 
 > 2026-10-15 最新：免帳號密碼的 HTTPS 網頁 https://161.33.19.220/web/ 顯示官方 61 品項價資料。原 v0.1.0 RF/HGB 模型**仍只用於原三種菜**；其他 57 個有行情品項已**另外訓練並獨立測試兩個新的 HGB ML 模型 multi-crop-ml/1.0.0**，網頁依品項選用。HGB 在留出測試的 7/14 天 MAE **都未優於不變價基準**，且均未有同店真價驗證。牛心柿全 0 缺測，不能預測。**這不是 Workers API v1 的變更**：以下兩條 Bearer Token 保護的 /v1 POST 仍只接舊三種菜、只提供匿名 A／行情；Token 和舊模型不變。雲端網頁保存紀錄只在使用者瀏覽器，Windows 本機 A/B 與私人紀錄維持原樣。另見 docs/deployment/POOLED_ML_MODEL_CARD_V1.md。
 
-狀態（2026-10-15）：**同一 Oracle VPS 已正式改用 Docker Compose 運算，對外 HTTPS Origin、原 IP-SAN 憑證與 /v1 契約不變，Windows 外網真模型跨平台 14/14 PASS；原 Cloudflare Workers MCP → Oracle Docker 真實端到端 6/6 PASS**。ChatGPT/Gemini 各自的原生客戶端 UI 接線仍需另外驗證，不能把伺服端 E2E PASS 冒稱每個客戶端都已連通。新部署與安全回滾詳見 deploy/docker-tw01/oracle/ORACLE_DOCKER_OPERATIONS.md。此文件不含任何秘密。
+狀態（2026-10-15）：**同一 Oracle VPS 已正式改用 Docker Compose 運算，對外 HTTPS Origin、原 IP-SAN 憑證與 /v1 契約不變，Windows 外網真模型跨平台 14/14 PASS；原 Cloudflare Workers MCP → Oracle Docker 真實端到端 6/6 PASS**。ChatGPT/Gemini 各自的原生客戶端 UI 接線仍需另外驗證，不能把伺服端 E2E PASS 冒稱每個客戶端都已連通。新部署與安全回滾詳見 deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md。此文件不含任何秘密。
 
 ## 1. 路由與基底網址
 

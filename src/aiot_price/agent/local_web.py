@@ -1,4 +1,4 @@
-"""Launch the existing TW01 UI on loopback with dedicated Hermes credentials.
+"""Launch the existing FMPA UI on loopback with dedicated Hermes credentials.
 
 Default: local, personal Hermes demonstration using the Coding Plan endpoint.
 --general-api: ordinary product API usage; requires general API resources.

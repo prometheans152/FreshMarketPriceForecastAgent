@@ -1,4 +1,4 @@
-"""TW01 independent 57-item SUPERVISED ML website extension.
+"""FMPA independent 57-item SUPERVISED ML website extension.
 
 The original Oracle origin API is imported, not forked. For the old three
 crops the frozen RF/HGB logic is identical. For 57 new public crop IDs,

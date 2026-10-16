@@ -1,4 +1,4 @@
-# 菜市場現場價格預測 — TW01 Portable Docker
+# 菜市場現場價格預測 — Portable Docker（Fresh Market Price Forecast Agent）
 
 **完整可複製版：網頁 + 已訓練的 7／14 天模型 + A/B 比較 + 兩工具 MCP Server。**
 
@@ -11,8 +11,8 @@
 Windows PowerShell：
 
 ~~~powershell
-Expand-Archive .\TW01_Docker_Portable_v1.0.0.zip -DestinationPath .\
-cd .\TW01_Docker_Portable_v1.0.0
+Expand-Archive .\FMPA_Docker_Portable_v1.1.0.zip -DestinationPath .\
+cd .\FMPA_Docker_Portable_v1.1.0
 python setup.py
 docker compose up -d --build
 docker compose ps
@@ -21,8 +21,8 @@ docker compose ps
 Linux/macOS：
 
 ~~~bash
-unzip TW01_Docker_Portable_v1.0.0.zip
-cd TW01_Docker_Portable_v1.0.0
+unzip FMPA_Docker_Portable_v1.1.0.zip
+cd FMPA_Docker_Portable_v1.1.0
 python3 setup.py
 docker compose up -d --build
 docker compose ps
@@ -87,19 +87,19 @@ Get-Content .\.secrets\mcp_client_token
 
 Linux/macOS：cat .secrets/mcp_client_token。MCP 用戶端送 Authorization: Bearer（其後接 MCP Token）。切勿將值貼到 Git、聊天或公開截圖。
 
-若連接的客戶端只支援 No Auth，必須先為自己的部署設定 TLS 與流量配額，再將 .env 中 TW01_MCP_AUTH_MODE 改成 public_noauth；公開模式所有人都能使用兩項工具。**絕對不能以網頁免登入為由取消 /v1/forecast、/v1/market-quote 的服務端 Bearer**。
+若連接的客戶端只支援 No Auth，必須先為自己的部署設定 TLS 與流量配額，再將 .env 中 FMPA_MCP_AUTH_MODE 改成 public_noauth；公開模式所有人都能使用兩項工具。**絕對不能以網頁免登入為由取消 /v1/forecast、/v1/market-quote 的服務端 Bearer**。
 
 MCP 僅提供原版 3 品項、匿名 A 及公開行情，禁止 B、私人紀錄、任意 URL 或程式；新增 57 品項的 HGB 僅供網頁。Cloudflare Workers 的 VPC/Secret 屬原先另一個雲端整合，**不能直接隨 Docker 複製**；這份 ZIP 內的 mcp 服務是可自架替代入口，並非原 Cloudflare 設定。
 
 ## 五、公開 HTTPS 網址
 
-**預設僅本機 HTTP**：TW01_BIND_ADDRESS=127.0.0.1，TW01_HTTP_PORT=8080。想開放給其他人，應使用公網 DNS 域名 + TLS；不要將 HTTP 8080 直接改綁 0.0.0.0，否則 API/MCP Token 可能在網路中遭窺探。
+**預設僅本機 HTTP**：FMPA_BIND_ADDRESS=127.0.0.1，FMPA_HTTP_PORT=8080。（v1.0.0 舊 .env 的 TW01_* 變數名仍可讀，新名優先；建議改成 FMPA_*。）想開放給其他人，應使用公網 DNS 域名 + TLS；不要將 HTTP 8080 直接改綁 0.0.0.0，否則 API/MCP Token 可能在網路中遭窺探。
 
 在自己的新 Docker VPS 設定 DNS A/AAAA 指向主機，在 .env 中新增：
 
 ~~~dotenv
-TW01_PUBLIC_DOMAIN=tw01.yourdomain.example
-TW01_PUBLIC_ORIGIN=https://tw01.yourdomain.example
+FMPA_PUBLIC_DOMAIN=forecast.yourdomain.example
+FMPA_PUBLIC_ORIGIN=https://forecast.yourdomain.example
 ~~~
 
 在真正的 DNS 指向/防火牆 80、443 可用後執行：
@@ -110,7 +110,7 @@ docker compose --profile https up -d --build
 
 域名是範例，不能直接複製使用。首頁為 https://你的域名/web/、MCP 為 https://你的域名/mcp。IP 位址自動 TLS 是否受支援取決於證書提供方，不應沿用原 Oracle 的 IP-SAN 憑證或跳過 TLS 驗證。
 
-若已有 Cloudflare Tunnel/其他反向代理，也能將其 HTTPS 上游代理到 loopback 8080，並將 TW01_PUBLIC_ORIGIN 改成使用者瀏覽器看到的真實 HTTPS 原點。**Public Origin 必須精確相符**，否則同源安全驗證會拒絕網頁預測。代理後的 IP 限流可能共用單個代理 IP，公網還應在外層設流量配額與存取政策。
+若已有 Cloudflare Tunnel/其他反向代理，也能將其 HTTPS 上游代理到 loopback 8080，並將 FMPA_PUBLIC_ORIGIN 改成使用者瀏覽器看到的真實 HTTPS 原點。**Public Origin 必須精確相符**，否則同源安全驗證會拒絕網頁預測。代理後的 IP 限流可能共用單個代理 IP，公網還應在外層設流量配額與存取政策。
 
 ## 六、備份、搬家與安全
 

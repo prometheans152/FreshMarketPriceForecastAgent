@@ -6,10 +6,10 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { verifyOracleEnvelope, TOOL_NAMES } from "../src/contracts.js";
 
-const endpoint = "https://tw01-forecast-mcp.prometheans152.workers.dev/mcp";
+const endpoint = "https://fresh-market-price-agent.prometheans152.workers.dev/mcp";
 const output = process.argv[2];
 if (!output || !/\.json$/i.test(output))
-  throw new Error("Provide a private output JSON file path in TW01 quality_runs.");
+  throw new Error("Provide a private output JSON file path under outputs/quality_runs.");
 
 const quoteArgs = { crop_id: "cabbage", market_id: "中義市場" };
 const forecastCases = [
@@ -18,7 +18,7 @@ const forecastCases = [
 ];
 const testCases = [
   ["initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: {
-    name: "windows-tw01-real-remote-acceptance", version: "1.0",
+    name: "windows-fresh-market-price-agent-real-remote-acceptance", version: "1.0",
   } }],
   ["tools/list", {}],
   ["tools/call", { name: "get_market_quote", arguments: quoteArgs }],
@@ -62,7 +62,7 @@ for (let i = 0; i < testCases.length; i++) {
     if (method === "initialize") {
       record.serverInfo = payload.result?.serverInfo ?? null;
       record.pass = response.status === 200 &&
-        record.serverInfo?.name === "tw01-forecastengine-remote";
+        record.serverInfo?.name === "fresh-market-price-agent-forecastengine-remote";
     } else if (method === "tools/list") {
       record.tool_names = payload.result?.tools?.map(x => x.name) ?? [];
       record.tool_annotations = payload.result?.tools?.map(x => x.annotations) ?? [];

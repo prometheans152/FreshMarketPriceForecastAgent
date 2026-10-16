@@ -1,4 +1,4 @@
-# TW01 Cloudflare Workers → ForecastEngine Origin 交接（2026-10-14）
+# Cloudflare Workers → ForecastEngine Origin 交接（2026-10-14）
 
 Oracle ForecastEngine 第二層已完成實際 HTTPS、正式 Bearer API、原模型一致性及錯誤恢復驗收；這不代表 Workers/ChatGPT MCP 端到端已成功。Workers 對話只修改 deploy/cloudflare-workers-mcp，不可改此 Oracle API 契約或模型。
 

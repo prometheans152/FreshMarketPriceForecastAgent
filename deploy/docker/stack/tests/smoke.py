@@ -1,4 +1,4 @@
-"""True local TW01 Docker end-to-end acceptance; Python standard library only.
+"""True local FMPA Docker end-to-end acceptance; Python standard library only.
 
 Includes public A/B trained ML, original RF/HGB, strict Origin Token API, and
 MCP JSON-RPC initialize/tools/list/tools/call. Does NOT print or store tokens,
@@ -169,7 +169,7 @@ def run(base: str):
     assert origin_token != client_token and len(client_token) >= 32
     status, init, _, _ = rpc("initialize", 101, token=client_token,
         params={"protocolVersion":"2025-06-18","capabilities":{},
-                "clientInfo":{"name":"tw01-docker-smoke","version":"1.0"}})
+                "clientInfo":{"name":"fresh-market-price-agent-docker-smoke","version":"1.0"}})
     add("self_hosted_mcp_initialize", status == 200 and
         isinstance(init, dict) and "result" in init, status)
     status, listed, _, _ = rpc("tools/list", 102, token=client_token,

@@ -14,10 +14,16 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "web"
 
 LOCAL_RECORDS_IMPL = r"""
-const REMOTE_RECORDS_KEY = 'tw01_web_browser_only_records_v1';
+const REMOTE_RECORDS_KEY = 'fmpa_web_browser_only_records_v1';
+// Pre-rename key: copied once while the new key is absent; kept for rollback.
+const LEGACY_REMOTE_RECORDS_KEY = 'tw01_web_browser_only_records_v1';
 
 function readBrowserRecords() {
   try {
+    if (localStorage.getItem(REMOTE_RECORDS_KEY) === null) {
+      const legacy = localStorage.getItem(LEGACY_REMOTE_RECORDS_KEY);
+      if (legacy !== null) localStorage.setItem(REMOTE_RECORDS_KEY, legacy);
+    }
     const parsed = JSON.parse(localStorage.getItem(REMOTE_RECORDS_KEY) || '[]');
     return Array.isArray(parsed) ? parsed : [];
   } catch (_) {
@@ -99,7 +105,7 @@ function exportBrowserRecords(event) {
   const url = URL.createObjectURL(new Blob([bytes], {type:'application/json'}));
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'tw01_oracle_browser_only_records.json';
+  link.download = 'fmpa_oracle_browser_only_records.json';
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -143,8 +149,8 @@ def build(dst: Path):
     )
     html = replace_once(
         html,
-        'href="records/export" download="tw01_prediction_records.json"',
-        'href="#" download="tw01_oracle_browser_only_records.json"',
+        'href="records/export" download="fmpa_prediction_records.json"',
+        'href="#" download="fmpa_oracle_browser_only_records.json"',
     )
     html = replace_once(
         html,

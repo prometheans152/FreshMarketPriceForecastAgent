@@ -9,17 +9,22 @@ from pathlib import Path
 
 
 def main():
-    file = Path(os.environ.get("TW01_ORIGIN_TOKEN_FILE", "/run/secrets/origin_api_token"))
+    # FMPA_* wins; legacy TW01_* is read only while the new name is absent.
+    file = Path(os.environ.get(
+        "FMPA_ORIGIN_TOKEN_FILE",
+        os.environ.get("TW01_ORIGIN_TOKEN_FILE", "/run/secrets/origin_api_token"),
+    ))
     if not file.is_file() or file.is_symlink() or file.stat().st_size > 4096:
-        raise SystemExit("TW01 origin Docker secret missing or malformed")
+        raise SystemExit("Origin Docker secret missing or malformed")
     token = file.read_text(encoding="utf-8").strip()
     if len(token) < 32 or "\n" in token or "\r" in token:
-        raise SystemExit("TW01 origin Docker secret is invalid")
+        raise SystemExit("Origin Docker secret is invalid")
     if os.geteuid() != 0:
         raise SystemExit("Docker secret bootstrap must start as root")
     env = dict(os.environ)
+    env.pop("FMPA_ORIGIN_TOKEN_FILE", None)
     env.pop("TW01_ORIGIN_TOKEN_FILE", None)
-    env["TW01_ORIGIN_API_TOKEN"] = token
+    env["FMPA_ORIGIN_API_TOKEN"] = token
     os.setgroups([])
     os.setgid(10001)
     os.setuid(10001)
