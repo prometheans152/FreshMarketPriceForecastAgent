@@ -310,11 +310,11 @@ class Deck:
         self.line(s,7.30,4.00,7.30,3.04,tint=ACCENT,width=1.6,arrow=True);self.text(s,7.45,3.40,.9,.34,'查閱',12,tint=ACCENT)
         self.text(s,.75,3.30,3.2,.9,'現況工具：get_market_quote、\npost_forecast（②固定序列）；\n保存經Web另呼 /records。',12.5,tint=MUTED,linespace=1.15)
         dz=self.box(s,.75,5.12,11.75,.78,WHITE,ACCENT,dash=True)
-        self.text(s,.95,5.24,11.35,.56,'PROPOSED（虛線，未實作未部署）：LLM Planner／自主選工具／save_record工具化；GLM API・Qwen3.8-27B・Hermes＝②的語言層（非猜菜價）；SERVER_3090',13.5,tint=ACCENT)
+        self.text(s,.95,5.24,11.35,.56,'PROPOSED（虛線，未實作未部署）：LLM Planner／自主選工具／save_record工具化；GLM API・Hermes＝②的語言層（非猜菜價；Qwen3.8-27B封存）；SERVER_3090',13.5,tint=ACCENT)
         self.line(s,6.65,3.04,6.65,5.12,tint=ACCENT,width=1.4,arrow=True,dash=True)
         self.text(s,.75,6.04,11.85,.34,'圖例：實線＝現況已存在（規則式②、兩工具、ForecastEngine、/records保存API）；虛線＝PROPOSED。④⑤之間無連線（公開與私人儲存分離）。',12,tint=MUTED)
         self.text(s,.75,6.50,11.85,.34,'LLM只進②的語言層；菜價一律由③計算——此界線不因後端替換而改變。',16.5,bold=True,tint=ACCENT)
-        self.note(s,'系統架構（五群組）',40,'請按編號看。①使用者以表單或自然語言提交查詢；②Agent查詢處理檢查必要資訊與單位、驗證上週價可比性，通過後呼叫③；③預測引擎唯讀載入④的公開歷史，用封存模型算出相對變化並做A與B，結果回②；②組裝附期限、截止日、來源與狀態的回答回①。使用者自願保存時走／records保存API寫入⑤，與④完全分離——保存目前由網頁另行呼叫、還不是Agent工具。實線都是目前實際存在的元件與資料流：規則式②、get_market_quote與post_forecast兩個工具、預測引擎、保存API。虛線是Proposed：LLM Planner、自主選工具、save_record工具化、GLM、Qwen、Hermes與SERVER，都還沒實作或還沒部署，而且LLM只掛在②的語言層、不用來猜菜價。',['A1','AD1','M2'],'①→②提交、②→③計算、③→④唯讀、③→②回傳、②→①回答、②→⑤保存/查閱（保存現況經Web／records，非Agent工具）。LLM後端與工具抽象屬Proposed，不宣稱已驗收。')
+        self.note(s,'系統架構（五群組）',40,'請按編號看。①使用者以表單或自然語言提交查詢；②Agent查詢處理檢查必要資訊與單位、驗證上週價可比性，通過後呼叫③；③預測引擎唯讀載入④的公開歷史，用封存模型算出相對變化並做A與B，結果回②；②組裝附期限、截止日、來源與狀態的回答回①。使用者自願保存時走／records保存API寫入⑤，與④完全分離——保存目前由網頁另行呼叫、還不是Agent工具。實線都是目前實際存在的元件與資料流：規則式②、get_market_quote與post_forecast兩個工具、預測引擎、保存API。虛線是Proposed：LLM Planner、自主選工具、save_record工具化、GLM、Hermes與SERVER，都還沒實作或還沒部署；Qwen目前封存，而且LLM只掛在②的語言層、不用來猜菜價。',['A1','AD1','M2'],'①→②提交、②→③計算、③→④唯讀、③→②回傳、②→①回答、②→⑤保存/查閱（保存現況經Web／records，非Agent工具）。LLM後端與工具抽象屬Proposed，不宣稱已驗收。')
 
     def p_flowchart(self):
         s=self.page('查詢流程圖：十類決策分支（Proposed Agent）','Agent設計 3/3','[AD1] 流程圖描述目標系統；節點標CURRENT／PARTIAL；未標注＝CURRENT；完整對照見AGENT_DESIGN.md §8')
@@ -331,8 +331,8 @@ class Deck:
             y=y0+i*pitch
             self.line(s,x0+w0,y+h/2,x0+w0+.28,y+h/2,tint=MUTED,width=1.1,arrow=True)
             self.text(s,x0+w0+.58,y+.02,6.3,h-.04,t,11,tint=MUTED,linespace=1.0)
-        self.text(s,6.15,6.54,6.5,.42,'未標注＝CURRENT；D5＝PARTIAL（>3日僅警告，無特徵才拒）；D7驗證器僅Qwen路徑\nD8/D9/T3＝PARTIAL（API與機制有，orchestration屬Proposed）；LLM＝PROPOSED',11,tint=MUTED,linespace=1.12)
-        self.note(s,'查詢流程圖',30,'這張流程圖描述目標系統，節點會標注現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以系統今天預填、只有明示但無法解析的日期才追問；單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A；公開資料目前是落後超過三天先警告、該品項該市場沒有可用特徵才明確拒絕；然後呼叫白名單工具——現在對應post_forecast，失敗就報錯不補值；回答層的模板由工具事實逐字組文，驗證器目前只掛在Qwen路徑。最後三個節點是PARTIAL：保存走／records API、還沒封裝成Agent工具；到期核對的機制有、真店真值還沒收集。右側是每個分支的具體行為。',['AD1','A1'],'流程圖為Proposed Agent Flowchart；節點標注依實際程式核對（AGENT_DESIGN §7）；「除了LLM之外全部完成」的概括不成立；嚴格資料過期hard gate屬Proposed。')
+        self.text(s,6.15,6.54,6.5,.42,'未標注＝CURRENT；D5＝PARTIAL（>3日僅警告，無特徵才拒）；D7驗證器僅LLM路徑\nD8/D9/T3＝PARTIAL（API與機制有，orchestration屬Proposed）；LLM＝PROPOSED',11,tint=MUTED,linespace=1.12)
+        self.note(s,'查詢流程圖',30,'這張流程圖描述目標系統，節點會標注現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以系統今天預填、只有明示但無法解析的日期才追問；單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A；公開資料目前是落後超過三天先警告、該品項該市場沒有可用特徵才明確拒絕；然後呼叫白名單工具——現在對應post_forecast，失敗就報錯不補值；回答層的模板由工具事實逐字組文，驗證器目前只用在LLM回答、規則模板不經過。最後三個節點是PARTIAL：保存走／records API、還沒封裝成Agent工具；到期核對的機制有、真店真值還沒收集。右側是每個分支的具體行為。',['AD1','A1'],'流程圖為Proposed Agent Flowchart；節點標注依實際程式核對（AGENT_DESIGN §7）；「除了LLM之外全部完成」的概括不成立；嚴格資料過期hard gate屬Proposed。')
 
     def p_pseudocode(self):
         s=self.page('Algorithm 1：Domain Price Agent（主講10步）','Agent設計（續）','[AD1] 完整41行版見AGENT_DESIGN.md §8；LLM不計算菜價')
@@ -356,9 +356,9 @@ class Deck:
             tint=WARN if 'PROPOSED' in status else (MUTED if status.startswith('PARTIAL') else ACCENT)
             self.text(s,9.5,y,3.1,.3,status,11.5,bold=True,tint=tint,linespace=1.0)
             y+=0.40
-        self.text(s,.72,6.08,11.9,.52,'CURRENT對應實際程式：parse_query／get_market_quote／post_forecast／RuleBackend模板（tests 227項；驗證器僅掛Qwen路徑）。\nPARTIAL：保存走/records（未工具化）、到期機制有真值未有；PROPOSED：LLM Planner與LLM解釋、嚴格資料過期hard gate（暫緩）。',12.5,tint=MUTED)
+        self.text(s,.72,6.08,11.9,.52,'CURRENT對應實際程式：parse_query／get_market_quote／post_forecast／RuleBackend模板（tests 227項；驗證器僅掛LLM路徑）。\nPARTIAL：保存走/records（未工具化）、到期機制有真值未有；PROPOSED：LLM Planner與LLM解釋、嚴格資料過期hard gate（暫緩）。',12.5,tint=MUTED)
         self.text(s,.72,6.62,11.9,.32,'LLM不算菜價：數字一律出自ForecastEngine與驗證後的工具輸出。',15.5,bold=True,tint=ACCENT)
-        self.note(s,'演算法一（主講10步）',20,'主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。每步標注現況：現況的固定序列對應get_market_quote與post_forecast兩個工具加模板回答——驗證器目前只掛在Qwen路徑，規則模板直接由工具事實逐字組文；保存與到期核對是PARTIAL——保存API有但還不是Agent工具、真店真值還沒收集；LLM Planner、LLM解釋與嚴格的資料過期強制拒絕屬PROPOSED。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。',['AD1','A1'],'α=0.3為固定實驗規則（未訓練）；完整版41行含Input/Output與邊界聲明見AGENT_DESIGN.md；Pseudocode↔實作映射見AGENT_DESIGN §8。')
+        self.note(s,'演算法一（主講10步）',20,'主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。每步標注現況：現況的固定序列對應get_market_quote與post_forecast兩個工具加模板回答——驗證器目前只用在LLM回答，規則模板直接由工具事實逐字組文；保存與到期核對是PARTIAL——保存API有但還不是Agent工具、真店真值還沒收集；LLM Planner、LLM解釋與嚴格的資料過期強制拒絕屬PROPOSED。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。',['AD1','A1'],'α=0.3為固定實驗規則（未訓練）；完整版41行含Input/Output與邊界聲明見AGENT_DESIGN.md；Pseudocode↔實作映射見AGENT_DESIGN §8。')
 
     def p_data(self):
         s=self.page('資料來源與整理','資料與方法','[D1] 臺中市政府公開資料快照；[D2] 既有資料品質與標籤統計')

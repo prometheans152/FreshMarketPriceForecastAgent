@@ -53,6 +53,7 @@
 
 | D44 | 2026-10-04，使用者本次明確要求＋COS實讀L4-1 | 代理人問題暫擱，現有介面保留作展示；本輪改做研究動機、相關研究與差異、三項主要貢獻、design.md、OpenSpec管理及正式菜價投影片 | [来源核對](PROPOSAL_SOURCE_AUDIT_20261004.md)、[六工作包](PROPOSAL_DELIVERY_PLAN.md)、[GLM提示詞](GLM_PROPOSAL_HANDOFF.md)。暫停D41/D43的代理人優先執行順序，不刪未來Qwen3.8-27B/GLM切換方向，也不移除Hermes。文稿／簡報不依賴金鑰、SERVER或真店到期；不把未驗證能力寫成已驗收。只安排本機研究交付，不授權發布、重訓或產品修復。 |
 | D45 | 2026-10-16，使用者（claude.ai 交接＋本次對話選擇「全部改在同一個 PR」） | 專案改名：英文名 **Fresh Market Price Forecast Agent**、短名 `fresh-market-price-agent`、環境變數前綴 `FMPA_`；中文題目保留、Python 套件 `aiot_price` 不改 | 第 1～3 層（對外文字、程式名稱、線上資源名稱）在分支 `rename/fresh-market-price-agent` 一次改完；`TW01_*` 環境變數與 localStorage 舊鍵保留過渡相容；第 4 層（outputs/、private/、選題歷史、凍結模型與資料、hash 鎖定的 bundle/release、v1–v3 簡報）不動。線上 Oracle／Worker 依 [deploy/RENAME_MIGRATION.md](../deploy/RENAME_MIGRATION.md) 於合併後遷移。本表 D12–D33 的 TW01 是選題期候選編號，保留原文。 |
+| D46 | 2026-10-17，使用者本次對話：「沒廢棄但封存」 | 本機語言模型 Qwen3.8-27B 改為**封存**：不刪程式與文件、不列入目前規劃，也不自動恢復 | 期中簡報 v7 第 10–12 頁改標「Qwen3.8-27B 封存」，驗證器改寫為「只用在 LLM 回答、規則模板不經過」（程式 `validate_qwen_answer()` 名稱未改，GLM／Hermes 路徑也會呼叫）；AGENTS.md 同步。取代 D41 中「本機模型確定為 Qwen3.8-27B」的規劃地位。 |
 
 ## 目前未決事項
 

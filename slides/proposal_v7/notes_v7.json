@@ -142,40 +142,40 @@
       "kind": "主講",
       "title": "系統架構（五群組）",
       "seconds": 40,
-      "script": "請按編號看。①使用者以表單或自然語言提交查詢；②Agent查詢處理檢查必要資訊與單位、驗證上週價可比性，通過後呼叫③；③預測引擎唯讀載入④的公開歷史，用封存模型算出相對變化並做A與B，結果回②；②組裝附期限、截止日、來源與狀態的回答回①。使用者自願保存時走／records保存API寫入⑤，與④完全分離——保存目前由網頁另行呼叫、還不是Agent工具。實線都是目前實際存在的元件與資料流：規則式②、get_market_quote與post_forecast兩個工具、預測引擎、保存API。虛線是Proposed：LLM Planner、自主選工具、save_record工具化、GLM、Qwen、Hermes與SERVER，都還沒實作或還沒部署，而且LLM只掛在②的語言層、不用來猜菜價。",
+      "script": "請按編號看。①使用者以表單或自然語言提交查詢；②Agent查詢處理檢查必要資訊與單位、驗證上週價可比性，通過後呼叫③；③預測引擎唯讀載入④的公開歷史，用封存模型算出相對變化並做A與B，結果回②；②組裝附期限、截止日、來源與狀態的回答回①。使用者自願保存時走／records保存API寫入⑤，與④完全分離——保存目前由網頁另行呼叫、還不是Agent工具。實線都是目前實際存在的元件與資料流：規則式②、get_market_quote與post_forecast兩個工具、預測引擎、保存API。虛線是Proposed：LLM Planner、自主選工具、save_record工具化、GLM、Hermes與SERVER，都還沒實作或還沒部署；Qwen目前封存，而且LLM只掛在②的語言層、不用來猜菜價。",
       "extra": "①→②提交、②→③計算、③→④唯讀、③→②回傳、②→①回答、②→⑤保存/查閱（保存現況經Web／records，非Agent工具）。LLM後端與工具抽象屬Proposed，不宣稱已驗收。",
       "source_ids": [
         "A1",
         "AD1",
         "M2"
       ],
-      "notes_text": "主講 第10頁｜系統架構（五群組）\n\n請按編號看。①使用者以表單或自然語言提交查詢；②Agent查詢處理檢查必要資訊與單位、驗證上週價可比性，通過後呼叫③；③預測引擎唯讀載入④的公開歷史，用封存模型算出相對變化並做A與B，結果回②；②組裝附期限、截止日、來源與狀態的回答回①。使用者自願保存時走／records保存API寫入⑤，與④完全分離——保存目前由網頁另行呼叫、還不是Agent工具。實線都是目前實際存在的元件與資料流：規則式②、get_market_quote與post_forecast兩個工具、預測引擎、保存API。虛線是Proposed：LLM Planner、自主選工具、save_record工具化、GLM、Qwen、Hermes與SERVER，都還沒實作或還沒部署，而且LLM只掛在②的語言層、不用來猜菜價。\n\n補充／證據邊界\n①→②提交、②→③計算、③→④唯讀、③→②回傳、②→①回答、②→⑤保存/查閱（保存現況經Web／records，非Agent工具）。LLM後端與工具抽象屬Proposed，不宣稱已驗收。\n\n來源\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[M2] src/aiot_price/models/store_adapter.py: ALPHA_EXPERIMENTAL=0.3；docs/STORE_DATA_PROTOCOL.md。A為乘法錨定；B為固定規則，不是學得的增益。\n\n預估講解時間：40秒（非實測配音長度）"
+      "notes_text": "主講 第10頁｜系統架構（五群組）\n\n請按編號看。①使用者以表單或自然語言提交查詢；②Agent查詢處理檢查必要資訊與單位、驗證上週價可比性，通過後呼叫③；③預測引擎唯讀載入④的公開歷史，用封存模型算出相對變化並做A與B，結果回②；②組裝附期限、截止日、來源與狀態的回答回①。使用者自願保存時走／records保存API寫入⑤，與④完全分離——保存目前由網頁另行呼叫、還不是Agent工具。實線都是目前實際存在的元件與資料流：規則式②、get_market_quote與post_forecast兩個工具、預測引擎、保存API。虛線是Proposed：LLM Planner、自主選工具、save_record工具化、GLM、Hermes與SERVER，都還沒實作或還沒部署；Qwen目前封存，而且LLM只掛在②的語言層、不用來猜菜價。\n\n補充／證據邊界\n①→②提交、②→③計算、③→④唯讀、③→②回傳、②→①回答、②→⑤保存/查閱（保存現況經Web／records，非Agent工具）。LLM後端與工具抽象屬Proposed，不宣稱已驗收。\n\n來源\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[M2] src/aiot_price/models/store_adapter.py: ALPHA_EXPERIMENTAL=0.3；docs/STORE_DATA_PROTOCOL.md。A為乘法錨定；B為固定規則，不是學得的增益。\n\n預估講解時間：40秒（非實測配音長度）"
     },
     {
       "page": 11,
       "kind": "主講",
       "title": "查詢流程圖",
       "seconds": 30,
-      "script": "這張流程圖描述目標系統，節點會標注現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以系統今天預填、只有明示但無法解析的日期才追問；單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A；公開資料目前是落後超過三天先警告、該品項該市場沒有可用特徵才明確拒絕；然後呼叫白名單工具——現在對應post_forecast，失敗就報錯不補值；回答層的模板由工具事實逐字組文，驗證器目前只掛在Qwen路徑。最後三個節點是PARTIAL：保存走／records API、還沒封裝成Agent工具；到期核對的機制有、真店真值還沒收集。右側是每個分支的具體行為。",
+      "script": "這張流程圖描述目標系統，節點會標注現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以系統今天預填、只有明示但無法解析的日期才追問；單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A；公開資料目前是落後超過三天先警告、該品項該市場沒有可用特徵才明確拒絕；然後呼叫白名單工具——現在對應post_forecast，失敗就報錯不補值；回答層的模板由工具事實逐字組文，驗證器目前只用在LLM回答、規則模板不經過。最後三個節點是PARTIAL：保存走／records API、還沒封裝成Agent工具；到期核對的機制有、真店真值還沒收集。右側是每個分支的具體行為。",
       "extra": "流程圖為Proposed Agent Flowchart；節點標注依實際程式核對（AGENT_DESIGN §7）；「除了LLM之外全部完成」的概括不成立；嚴格資料過期hard gate屬Proposed。",
       "source_ids": [
         "AD1",
         "A1"
       ],
-      "notes_text": "主講 第11頁｜查詢流程圖\n\n這張流程圖描述目標系統，節點會標注現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以系統今天預填、只有明示但無法解析的日期才追問；單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A；公開資料目前是落後超過三天先警告、該品項該市場沒有可用特徵才明確拒絕；然後呼叫白名單工具——現在對應post_forecast，失敗就報錯不補值；回答層的模板由工具事實逐字組文，驗證器目前只掛在Qwen路徑。最後三個節點是PARTIAL：保存走／records API、還沒封裝成Agent工具；到期核對的機制有、真店真值還沒收集。右側是每個分支的具體行為。\n\n補充／證據邊界\n流程圖為Proposed Agent Flowchart；節點標注依實際程式核對（AGENT_DESIGN §7）；「除了LLM之外全部完成」的概括不成立；嚴格資料過期hard gate屬Proposed。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n\n預估講解時間：30秒（非實測配音長度）"
+      "notes_text": "主講 第11頁｜查詢流程圖\n\n這張流程圖描述目標系統，節點會標注現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以系統今天預填、只有明示但無法解析的日期才追問；單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A；公開資料目前是落後超過三天先警告、該品項該市場沒有可用特徵才明確拒絕；然後呼叫白名單工具——現在對應post_forecast，失敗就報錯不補值；回答層的模板由工具事實逐字組文，驗證器目前只用在LLM回答、規則模板不經過。最後三個節點是PARTIAL：保存走／records API、還沒封裝成Agent工具；到期核對的機制有、真店真值還沒收集。右側是每個分支的具體行為。\n\n補充／證據邊界\n流程圖為Proposed Agent Flowchart；節點標注依實際程式核對（AGENT_DESIGN §7）；「除了LLM之外全部完成」的概括不成立；嚴格資料過期hard gate屬Proposed。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n\n預估講解時間：30秒（非實測配音長度）"
     },
     {
       "page": 12,
       "kind": "主講",
       "title": "演算法一（主講10步）",
       "seconds": 20,
-      "script": "主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。每步標注現況：現況的固定序列對應get_market_quote與post_forecast兩個工具加模板回答——驗證器目前只掛在Qwen路徑，規則模板直接由工具事實逐字組文；保存與到期核對是PARTIAL——保存API有但還不是Agent工具、真店真值還沒收集；LLM Planner、LLM解釋與嚴格的資料過期強制拒絕屬PROPOSED。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。",
+      "script": "主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。每步標注現況：現況的固定序列對應get_market_quote與post_forecast兩個工具加模板回答——驗證器目前只用在LLM回答，規則模板直接由工具事實逐字組文；保存與到期核對是PARTIAL——保存API有但還不是Agent工具、真店真值還沒收集；LLM Planner、LLM解釋與嚴格的資料過期強制拒絕屬PROPOSED。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。",
       "extra": "α=0.3為固定實驗規則（未訓練）；完整版41行含Input/Output與邊界聲明見AGENT_DESIGN.md；Pseudocode↔實作映射見AGENT_DESIGN §8。",
       "source_ids": [
         "AD1",
         "A1"
       ],
-      "notes_text": "主講 第12頁｜演算法一（主講10步）\n\n主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。每步標注現況：現況的固定序列對應get_market_quote與post_forecast兩個工具加模板回答——驗證器目前只掛在Qwen路徑，規則模板直接由工具事實逐字組文；保存與到期核對是PARTIAL——保存API有但還不是Agent工具、真店真值還沒收集；LLM Planner、LLM解釋與嚴格的資料過期強制拒絕屬PROPOSED。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。\n\n補充／證據邊界\nα=0.3為固定實驗規則（未訓練）；完整版41行含Input/Output與邊界聲明見AGENT_DESIGN.md；Pseudocode↔實作映射見AGENT_DESIGN §8。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n\n預估講解時間：20秒（非實測配音長度）"
+      "notes_text": "主講 第12頁｜演算法一（主講10步）\n\n主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。每步標注現況：現況的固定序列對應get_market_quote與post_forecast兩個工具加模板回答——驗證器目前只用在LLM回答，規則模板直接由工具事實逐字組文；保存與到期核對是PARTIAL——保存API有但還不是Agent工具、真店真值還沒收集；LLM Planner、LLM解釋與嚴格的資料過期強制拒絕屬PROPOSED。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。\n\n補充／證據邊界\nα=0.3為固定實驗規則（未訓練）；完整版41行含Input/Output與邊界聲明見AGENT_DESIGN.md；Pseudocode↔實作映射見AGENT_DESIGN §8。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n\n預估講解時間：20秒（非實測配音長度）"
     },
     {
       "page": 13,
