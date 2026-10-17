@@ -69,7 +69,7 @@
       "kind": "主講",
       "title": "文獻摘要表（精選）",
       "seconds": 25,
-      "script": "教授指定的八欄格式：問題、AI方法、領域知識、資料集、發現與限制。主講挑五件最關鍵的：兩篇學術、一個產品、一個課程前作。完整十件在ARTICLE_SUMMARY_TABLE.md。閱讀方式是把AI方法與領域知識兩欄並列——菜價預測的文獻裡，領域知識（單位、層級、季節、災後結構）與演算法同等重要。各分數屬於各自的任務與資料，不能互比。",
+      "script": "教授指定的八欄格式：問題、AI方法、領域知識、資料集、發現與限制。主講挑四件最關鍵的：兩篇學術、一個產品、一個課程前作。完整十件在ARTICLE_SUMMARY_TABLE.md。閱讀方式是把AI方法與領域知識兩欄並列——菜價預測的文獻裡，領域知識（單位、層級、季節、災後結構）與演算法同等重要。各分數屬於各自的任務與資料，不能互比。",
       "extra": "R05/R07/R10/W1與本案自列見ARTICLE_SUMMARY_TABLE.md；每件附來源與查核層級。",
       "source_ids": [
         "G1",
@@ -78,7 +78,7 @@
         "R06",
         "H17"
       ],
-      "notes_text": "主講 第5頁｜文獻摘要表（精選）\n\n教授指定的八欄格式：問題、AI方法、領域知識、資料集、發現與限制。主講挑五件最關鍵的：兩篇學術、一個產品、一個課程前作。完整十件在ARTICLE_SUMMARY_TABLE.md。閱讀方式是把AI方法與領域知識兩欄並列——菜價預測的文獻裡，領域知識（單位、層級、季節、災後結構）與演算法同等重要。各分數屬於各自的任務與資料，不能互比。\n\n補充／證據邊界\nR05/R07/R10/W1與本案自列見ARTICLE_SUMMARY_TABLE.md；每件附來源與查核層級。\n\n來源\n[G1] docs/proposal_v5/DEEP_RESEARCH.md（五思維／三爭論／十問題，含證據與推理）；docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md（八欄表10件＋來源層級）。\n[R01] 陳泯宏（2024），《國產大宗蔬菜價格預測模型之比較》，臺灣大學統計碩士學位學程。DOI 10.6342/NTU202400875；https://tdr.lib.ntu.edu.tw/handle/123456789/92775 。沿用既有摘要全文查核，未讀全文。\n[R02] 李岱鑫（2015），《高雄果菜運銷公司高麗菜批發價格預測之研究—蒐集私有資料的價值》，清華大學。https://etd.lib.nycu.edu.tw/cgi-bin/gs32/hugsweb.cgi?o=dnthucdr&s=id%3D%22GH02102077503%22.&searchmode=basic 。沿用書目與摘要查核；實際評估指標仍UNKNOWN。\n[R06] 鹿中創客，農產分析Google Play頁 https://play.google.com/store/apps/details?id=com.bvc_dev_team.androidapp&hl=zh-TW 。沿用已讀文案：輸入購買價、換算及當日行情比對；未安裝實測。\n[H17] 同課程Team17，《蔬果價格預測：LightGBM的最佳採購指南》（2025），本機歷屆/AIoT_歷屆期末簡報/regular_ii/Team17_蔬果價格預測_LightGBM採購指南.pdf。2026-10-08本輪第一手逐頁影像閱讀11/15頁（第1–4、7–12、15頁）；第5、6、13、14頁主題依同批逐頁筆記補足。只依作者簡報，不是已獨立重現的研究結果。\n\n預估講解時間：25秒（非實測配音長度）"
+      "notes_text": "主講 第5頁｜文獻摘要表（精選）\n\n教授指定的八欄格式：問題、AI方法、領域知識、資料集、發現與限制。主講挑四件最關鍵的：兩篇學術、一個產品、一個課程前作。完整十件在ARTICLE_SUMMARY_TABLE.md。閱讀方式是把AI方法與領域知識兩欄並列——菜價預測的文獻裡，領域知識（單位、層級、季節、災後結構）與演算法同等重要。各分數屬於各自的任務與資料，不能互比。\n\n補充／證據邊界\nR05/R07/R10/W1與本案自列見ARTICLE_SUMMARY_TABLE.md；每件附來源與查核層級。\n\n來源\n[G1] docs/proposal_v5/DEEP_RESEARCH.md（五思維／三爭論／十問題，含證據與推理）；docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md（八欄表10件＋來源層級）。\n[R01] 陳泯宏（2024），《國產大宗蔬菜價格預測模型之比較》，臺灣大學統計碩士學位學程。DOI 10.6342/NTU202400875；https://tdr.lib.ntu.edu.tw/handle/123456789/92775 。沿用既有摘要全文查核，未讀全文。\n[R02] 李岱鑫（2015），《高雄果菜運銷公司高麗菜批發價格預測之研究—蒐集私有資料的價值》，清華大學。https://etd.lib.nycu.edu.tw/cgi-bin/gs32/hugsweb.cgi?o=dnthucdr&s=id%3D%22GH02102077503%22.&searchmode=basic 。沿用書目與摘要查核；實際評估指標仍UNKNOWN。\n[R06] 鹿中創客，農產分析Google Play頁 https://play.google.com/store/apps/details?id=com.bvc_dev_team.androidapp&hl=zh-TW 。沿用已讀文案：輸入購買價、換算及當日行情比對；未安裝實測。\n[H17] 同課程Team17，《蔬果價格預測：LightGBM的最佳採購指南》（2025），本機歷屆/AIoT_歷屆期末簡報/regular_ii/Team17_蔬果價格預測_LightGBM採購指南.pdf。2026-10-08本輪第一手逐頁影像閱讀11/15頁（第1–4、7–12、15頁）；第5、6、13、14頁主題依同批逐頁筆記補足。只依作者簡報，不是已獨立重現的研究結果。\n\n預估講解時間：25秒（非實測配音長度）"
     },
     {
       "page": 6,

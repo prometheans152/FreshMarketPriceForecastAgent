@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 from pptx import Presentation
 from pptx.oxml.ns import qn
@@ -69,6 +70,12 @@ def main():
         cols=[len(t.columns) for t in (x.table for x in sh)]
         hdr=[c.text for t in (x.table for x in sh) for c in t.rows[0].cells]
         check(f'summary_8cols_p{pgno}',cols and max(cols)==8 and all(h in hdr for h in ['Ref.','Year','Problem','AI Method','Domain Knowledge','Dataset','Findings','Limitation']))
+        # The "精選N件" in the title and the spoken count in the notes must equal the table's data rows.
+        rows=sum(len(t.rows)-1 for t in (x.table for x in sh))
+        said=re.search(r'精選(\d+)件',' '.join(texts(p.slides[pgno-1])))
+        check(f'summary_title_count_p{pgno}',said and int(said.group(1))==rows,{'title':said and said.group(1),'rows':rows})
+        spoken=re.search(r'挑(.)件',p.slides[pgno-1].notes_slide.notes_text_frame.text)
+        check(f'summary_notes_count_p{pgno}',spoken and 0<rows<10 and spoken.group(1)=='零一二三四五六七八九'[rows],{'notes':spoken and spoken.group(1),'rows':rows})
     refs_all=' '.join(texts(p.slides[4])+texts(p.slides[19]))
     check('summary_refs_present',all(k in refs_all for k in ['R01','R02','R03','R04','R05','R06','R07','R10','H17','W1']))
     # Table geometry readback (REVIEW_R2 V1-V4): re-read actual column widths from the PPTX,
