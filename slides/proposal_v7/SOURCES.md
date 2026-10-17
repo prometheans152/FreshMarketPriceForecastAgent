@@ -27,6 +27,9 @@ outputs/proposal_delivery/run3_20261004_01/stats_master.json: purge.segments。�
 ## [A1]
 src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。
 
+## [DEP1]
+deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；2026-10-17 新Worker real-remote-acceptance 6/6 PASS。
+
 ## [U1]
 outputs/e2e/ui_ab_mobile_390x844.png，2026-10-03本機原型截圖。只裁出上方7天A/B結果區並明示裁切，未改內部數字、未偽造新查詢。
 

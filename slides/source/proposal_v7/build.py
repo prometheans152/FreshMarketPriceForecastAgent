@@ -37,6 +37,7 @@ SOURCES={
  'M3':'outputs/training/training_results.json；models/releases/0.1.0/manifest.json；src/aiot_price/models/train.py。候選Ridge、RFRegressor、HGBRegressor、DummyMajority、HGBClassifier；12個數值特徵＋crop_id one-hot，無市場one-hot。',
  'S1':'outputs/proposal_delivery/run3_20261004_01/stats_master.json: purge.segments。成熟日=t+h+1；7天清除帶8日、14天15日。',
  'A1':'src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。',
+ 'DEP1':'deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；2026-10-17 新Worker real-remote-acceptance 6/6 PASS。',
  'U1':'outputs/e2e/ui_ab_mobile_390x844.png，2026-10-03本機原型截圖。只裁出上方7天A/B結果區並明示裁切，未改內部數字、未偽造新查詢。',
  'P1':'docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。',
  'R01':'陳泯宏（2024），《國產大宗蔬菜價格預測模型之比較》，臺灣大學統計碩士學位學程。DOI 10.6342/NTU202400875；https://tdr.lib.ntu.edu.tw/handle/123456789/92775 。沿用既有摘要全文查核，未讀全文。',
@@ -182,7 +183,7 @@ class Deck:
         self.text(s,1.07,2.02,11.35,1.6,'現場菜價7／14天\n預測與分析代理人',36,bold=True)
         self.text(s,1.10,4.05,10.9,1.0,'今天看見的單品價格，如何連到一、兩週後的變化？\nAgent 選工具、模型算價、程式驗證、證據說明。',22,tint=MUTED)
         self.text(s,1.10,5.45,10.9,.60,'AIoT 應用與資料分析\n組員／組長、正式發表日期：待填',14,tint=MUTED)
-        self.note(s,'封面',20,'我們的題目是現場菜價七天與十四天預測。這一版提案補上深度研究、文獻摘要表與代理人設計三種表示。分工原則一句話：代理人選工具、預測引擎算菜價、程式驗證、代理人依證據解釋。既有公開測試結果與負向發現全部保留，同店效果仍待驗證。',['P1','STYLE'],'本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；不修改產品程式、不接線LLM後端。')
+        self.note(s,'封面',20,'我們的題目是現場菜價七天與十四天預測。這一版提案補上深度研究、文獻摘要表與代理人設計三種表示。分工原則一句話：代理人選工具、預測引擎算菜價、程式驗證、代理人依證據解釋。既有公開測試結果與負向發現全部保留，同店效果仍待驗證。',['P1','STYLE'],'本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；r3 起第10–12、18–20頁改為目前實際運作的系統（雲端網頁＋MCP），不再列已封存或暫緩的語言模型後端。')
 
     def p_motivation(self):
         s=self.page('研究動機：今天的標價，還不足以回答未來','研究背景','[D1–D2] 臺中公開市場歷史資料；[W1] 農業部官方分析；[N1] 2025颱風新聞（背景）')
@@ -298,28 +299,26 @@ class Deck:
         self.note(s,'Agent設計原則',30,'教授要的是Domain Agent，不是聊天機器人或模型包裝。目標設計的分工是：預測引擎是唯一的計算者；Agent理解需求、選白名單工具、依結構化真值卡組裝回答。要誠實報告現況：目前已實作的是規則式原型——parse_query確定性解析、get_market_quote與post_forecast兩個有限工具、單查詢計數上限三次、模板回答（驗證器目前只掛在Qwen路徑，規則模板直接由工具事實逐字組文），tests兩百二十七項通過；工具呼叫是固定序列、不是自主選擇；保存走/records API、還沒封裝成Agent工具；LLM Planner屬未來暫緩。安全上，沒有工具成功結果就不能出數字，失敗就明說，不補值不編造。',['AD1','C1','A1'],'LLM後端（GLM/Qwen/Hermes）依使用者指示暫緩，本輪只做設計；不把規則原型寫成LLM Agent已完成；save_record工具化屬Proposed；逾時常數TOOL_TIMEOUT_SECONDS=10未接線於工具路徑，統一逾時屬Proposed。')
 
     def p_architecture(self):
-        s=self.page('系統架構：五群組①–⑤＋暫緩未來區','Agent設計 2/3','[A1][AD1] 實線＝目前實際存在之元件與資料流；虛線＝PROPOSED（未實作/未部署）；數字為索引非順序')
-        for x,y,w,h,head,body in [(.75,1.80,3.2,1.24,'① 使用者與手機','表單＋自然語言入口'),(5.05,1.80,3.2,1.24,'② Agent查詢處理','規則式（LLM屬虛線）'),(9.25,1.80,3.25,1.24,'③ 菜價計算','ForecastEngine＋A/B'),(9.25,4.00,3.25,0.98,'④ 公開歷史','市場均價・唯讀'),(5.05,4.00,3.2,0.98,'⑤ 預測紀錄','保存API・獨立儲存')]:
-            self.box(s,x,y,w,h);self.text(s,x+.15,y+.14,w-.30,.38,head,18,bold=True,align='center');self.text(s,x+.15,y+.58,w-.30,.46,body,13,tint=MUTED,align='center',linespace=1.08)
-        self.line(s,3.95,2.20,5.05,2.20,tint=ACCENT,width=1.6,arrow=True);self.text(s,3.98,1.82,.98,.3,'提交',12,align='center',tint=ACCENT)
-        self.line(s,5.05,2.82,3.95,2.82,tint=ACCENT,width=1.6,arrow=True);self.text(s,3.95,3.10,1.1,.32,'回傳結果',12,align='center',tint=ACCENT)
-        self.line(s,8.25,2.20,9.25,2.20,tint=ACCENT,width=1.6,arrow=True);self.text(s,8.25,1.82,.98,.3,'計算',12,align='center',tint=ACCENT)
-        self.line(s,9.25,2.82,8.25,2.82,tint=ACCENT,width=1.6,arrow=True);self.text(s,8.22,3.10,1.06,.32,'回傳預測',12,align='center',tint=ACCENT)
-        self.line(s,10.86,3.04,10.86,4.00,tint=ACCENT,width=1.6,arrow=True);self.text(s,11.03,3.40,1.2,.34,'唯讀載入',12,tint=ACCENT)
-        self.line(s,5.98,3.04,5.98,4.00,tint=ACCENT,width=1.6,arrow=True);self.text(s,4.58,3.38,1.28,.56,'自願保存',12,tint=ACCENT,align='right')
-        self.line(s,7.30,4.00,7.30,3.04,tint=ACCENT,width=1.6,arrow=True);self.text(s,7.45,3.40,.9,.34,'查閱',12,tint=ACCENT)
-        self.text(s,.75,3.30,3.2,.9,'現況工具：get_market_quote、\npost_forecast（②固定序列）；\n保存經Web另呼 /records。',12.5,tint=MUTED,linespace=1.15)
-        dz=self.box(s,.75,5.12,11.75,.78,WHITE,ACCENT,dash=True)
-        self.text(s,.95,5.24,11.35,.56,'PROPOSED（虛線，未實作未部署）：LLM Planner／自主選工具／save_record工具化；GLM API・Hermes＝②的語言層（非猜菜價；Qwen3.8-27B封存）；SERVER_3090',13.5,tint=ACCENT)
-        self.line(s,6.65,3.04,6.65,5.12,tint=ACCENT,width=1.4,arrow=True,dash=True)
-        self.text(s,.75,6.04,11.85,.34,'圖例：實線＝現況已存在（規則式②、兩工具、ForecastEngine、/records保存API）；虛線＝PROPOSED。④⑤之間無連線（公開與私人儲存分離）。',12,tint=MUTED)
-        self.text(s,.75,6.50,11.85,.34,'LLM只進②的語言層；菜價一律由③計算——此界線不因後端替換而改變。',16.5,bold=True,tint=ACCENT)
-        self.note(s,'系統架構（五群組）',40,'請按編號看。①使用者以表單或自然語言提交查詢；②Agent查詢處理檢查必要資訊與單位、驗證上週價可比性，通過後呼叫③；③預測引擎唯讀載入④的公開歷史，用封存模型算出相對變化並做A與B，結果回②；②組裝附期限、截止日、來源與狀態的回答回①。使用者自願保存時走／records保存API寫入⑤，與④完全分離——保存目前由網頁另行呼叫、還不是Agent工具。實線都是目前實際存在的元件與資料流：規則式②、get_market_quote與post_forecast兩個工具、預測引擎、保存API。虛線是Proposed：LLM Planner、自主選工具、save_record工具化、GLM、Hermes與SERVER，都還沒實作或還沒部署；Qwen目前封存，而且LLM只掛在②的語言層、不用來猜菜價。',['A1','AD1','M2'],'①→②提交、②→③計算、③→④唯讀、③→②回傳、②→①回答、②→⑤保存/查閱（保存現況經Web／records，非Agent工具）。LLM後端與工具抽象屬Proposed，不宣稱已驗收。')
+        # Drawn from the deployed system (2026-10-17), not the 10/8 local prototype.
+        s=self.page('系統架構：目前實際運作的系統','Agent設計 2/3','[DEP1][A1] 實線＝已上線並實測；虛線＝下一步（未上線）；數字為索引非順序')
+        for x,y,w,h,head,body in [(.75,1.78,2.60,1.12,'① 瀏覽器','雲端網頁（免登入）\n61品項・A／B・7／14天'),(.75,3.38,2.60,1.12,'① AI助理','ChatGPT／Gemini\n選工具＋解釋'),(4.30,3.38,3.05,1.12,'② MCP服務','Cloudflare Worker\nget_market_quote・post_forecast'),(8.00,1.78,1.95,2.72,'③ Oracle主機','Nginx（HTTPS・限流）\n＋Docker網頁'),(10.45,1.78,2.20,1.12,'④ ForecastEngine','原3品項RF／HGB\n＋57品項HGB'),(10.45,3.38,2.20,1.12,'⑤ 公開歷史','臺中市場均價\n唯讀・至2026-10-02')]:
+            self.box(s,x,y,w,h);self.text(s,x+.10,y+.10,w-.20,.36,head,15,bold=True,align='center');self.text(s,x+.10,y+.50,w-.20,.58,body,11.5,tint=MUTED,align='center',linespace=1.08)
+        self.line(s,3.35,2.34,8.00,2.34,tint=ACCENT,width=1.6,arrow=True);self.text(s,4.90,1.98,1.6,.3,'HTTPS',12,align='center',tint=ACCENT)
+        self.line(s,3.35,3.94,4.30,3.94,tint=ACCENT,width=1.6,arrow=True);self.text(s,3.30,3.58,1.05,.3,'MCP呼叫',11,align='center',tint=ACCENT)
+        self.line(s,7.35,3.94,8.00,3.94,tint=ACCENT,width=1.6,arrow=True);self.text(s,7.22,3.58,.9,.3,'私有通道',11,align='center',tint=ACCENT)
+        self.line(s,9.95,2.34,10.45,2.34,tint=ACCENT,width=1.6,arrow=True);self.text(s,9.90,1.98,.6,.3,'預測',11,align='center',tint=ACCENT)
+        self.line(s,11.55,2.90,11.55,3.38,tint=ACCENT,width=1.6,arrow=True);self.text(s,10.50,2.98,.98,.3,'唯讀載入',11,align='right',tint=ACCENT)
+        self.box(s,.75,4.72,11.90,.58,WHITE,ACCENT,dash=True)
+        self.text(s,.95,4.83,11.50,.36,'下一步（虛線，未上線）：每天更新行情・同店A／B到期驗證・唯讀分析工具（歷史走勢、跨市場比較）',13.5,tint=ACCENT)
+        self.text(s,.75,5.40,11.90,.58,'網頁：61品項、A／B，紀錄只存在使用者瀏覽器。MCP：只開放原3品項的匿名A模式，不支援B與保存；遠端實測6/6，AI助理介面內對話驗收待補。\n57品項HGB留出測試誤差未勝不變價（如實標示）。本機原型（規則式Agent＋/records）保留供開發，不在此圖。',11.5,tint=MUTED,linespace=1.12)
+        self.text(s,.75,6.02,11.90,.30,'圖例：實線＝已上線並實測，結果沿原路回傳；虛線＝下一步（未上線）。',11,tint=MUTED)
+        self.text(s,.75,6.42,11.90,.40,'LLM只選工具與解釋，不算菜價；菜價一律由④ ForecastEngine計算。',16.5,bold=True,tint=ACCENT)
+        self.note(s,'系統架構（目前實際運作）',40,'請看目前實際運作的系統，有兩個入口。第一，一般使用者用瀏覽器打開雲端網頁，不用登入，可以查六十一個品項的七天與十四天預測，也能做A和B比較，紀錄只存在自己的瀏覽器。第二，ChatGPT或Gemini這類AI助理，透過Cloudflare上的MCP服務呼叫兩個工具：查行情和做預測；這條路只開放原本三個品項的A模式，參數格式不對就拒絕，也有流量限制。兩條路最後都進到Oracle主機上的ForecastEngine，用封存模型和唯讀的公開歷史算出結果。重點是：AI助理只負責選工具和解釋，菜價一律由ForecastEngine計算。虛線是下一步：每天更新行情、同店到期驗證和分析工具，目前都還沒上線。',['DEP1','A1','M2'],'遠端協定實測6/6（2026-10-17，新Worker fresh-market-price-agent）；ChatGPT／Gemini介面內對話驗收待補；57品項HGB留出測試MAE未勝不變價；本機原型（規則式Agent＋/records）保留但不在圖中。')
 
     def p_flowchart(self):
-        s=self.page('查詢流程圖：十類決策分支（Proposed Agent）','Agent設計 3/3','[AD1] 流程圖描述目標系統；節點標CURRENT／PARTIAL；未標注＝CURRENT；完整對照見AGENT_DESIGN.md §8')
-        chain=[('使用者輸入（NL／表單）',0),('◇ D1 必要資訊齊全？（品項+價+單位+日期）',0),('◇ D2 單位可換算？（台斤原生／公斤×0.6）',0),('◇ D3 有上週同店價？',0),('◇ D4 同店價可比？（五重檢查）',0),('◇ D5 公開資料足夠且未過期？',0),('□ T1 呼叫 call_forecast＝post_forecast（CURRENT）',0),('◇ D6 工具成功？（422／503／逾時）',0),('◇ D7 證據與限制檢查（驗證器）',0),('□ R1 回答＋期限＋來源＋限制標示（模板）',0),('◇ D8 使用者自願保存？（PARTIAL）',0),('◇ D9 到期（t+7/t+14）可取得同店真價？（PARTIAL）',0),('□ T3 到期核對：A/B vs 同店實價（PARTIAL）',0)]
-        sides={0:('追問缺失欄位（不猜測、不代填）',1),2:('拒絕並說明：顆/把無重量，請改台斤或公斤',0),3:('無→僅A（仍可預測）',1),4:('不可比→降級僅A＋說明原因',0),5:('明確「資料不足/過期」＋資料截止日',0),7:('明確錯誤碼；不用LLM補值',0),8:('不通過→改寫為忠實版本',0),10:('是→保存：走/records API（未封裝為AgentTool）',0),11:('缺（缺貨/換規格/未訪價）→記「無法核對」（≠未漲）',0)}
+        s=self.page('查詢流程圖：十類決策分支（對應目前系統）','Agent設計 3/3','[AD1][DEP1] 節點標CURRENT／PARTIAL；未標注＝CURRENT；設計對照見AGENT_DESIGN.md §8')
+        chain=[('使用者輸入（NL／表單）',0),('◇ D1 必要資訊齊全？（品項+價+單位+日期）',0),('◇ D2 單位可換算？（台斤原生／公斤×0.6）',0),('◇ D3 有上週同店價？',0),('◇ D4 同店價可比？（五重檢查）',0),('◇ D5 公開資料足夠且未過期？',0),('□ T1 呼叫 call_forecast＝post_forecast（CURRENT）',0),('◇ D6 工具成功？（422／503／逾時）',0),('◇ D7 證據與限制檢查（驗證器）',0),('□ R1 回答＋期限＋來源＋限制（模板／LLM）',0),('◇ D8 使用者自願保存？（PARTIAL）',0),('◇ D9 到期（t+7/t+14）可取得同店真價？（PARTIAL）',0),('□ T3 到期核對：A/B vs 同店實價（PARTIAL）',0)]
+        sides={0:('追問缺失欄位（不猜測、不代填）',1),2:('拒絕並說明：顆/把無重量，請改台斤或公斤',0),3:('無→僅A（仍可預測）',1),4:('不可比→降級僅A＋說明原因',0),5:('明確「資料不足/過期」＋資料截止日',0),7:('明確錯誤碼；不用LLM補值',0),8:('不通過→改寫為忠實版本',0),10:('是→網頁存在瀏覽器；本機走/records；MCP不提供',0),11:('缺（缺貨/換規格/未訪價）→記「無法核對」（≠未漲）',0)}
         x0,w0,pitch,y0,h=0.72,4.8,0.415,1.58,0.34
         for i,(t,is_d) in enumerate(chain):
             y=y0+i*pitch
@@ -331,23 +330,23 @@ class Deck:
             y=y0+i*pitch
             self.line(s,x0+w0,y+h/2,x0+w0+.28,y+h/2,tint=MUTED,width=1.1,arrow=True)
             self.text(s,x0+w0+.58,y+.02,6.3,h-.04,t,11,tint=MUTED,linespace=1.0)
-        self.text(s,6.15,6.54,6.5,.42,'未標注＝CURRENT；D5＝PARTIAL（>3日僅警告，無特徵才拒）；D7驗證器僅LLM路徑\nD8/D9/T3＝PARTIAL（API與機制有，orchestration屬Proposed）；LLM＝PROPOSED',11,tint=MUTED,linespace=1.12)
-        self.note(s,'查詢流程圖',30,'這張流程圖描述目標系統，節點會標注現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以系統今天預填、只有明示但無法解析的日期才追問；單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A；公開資料目前是落後超過三天先警告、該品項該市場沒有可用特徵才明確拒絕；然後呼叫白名單工具——現在對應post_forecast，失敗就報錯不補值；回答層的模板由工具事實逐字組文，驗證器目前只用在LLM回答、規則模板不經過。最後三個節點是PARTIAL：保存走／records API、還沒封裝成Agent工具；到期核對的機制有、真店真值還沒收集。右側是每個分支的具體行為。',['AD1','A1'],'流程圖為Proposed Agent Flowchart；節點標注依實際程式核對（AGENT_DESIGN §7）；「除了LLM之外全部完成」的概括不成立；嚴格資料過期hard gate屬Proposed。')
+        self.text(s,6.15,6.54,6.5,.42,'未標注＝CURRENT；D1–D2格式強制；B僅網頁；D5＝PARTIAL（過期僅警告）\nD7＝Worker核對回傳；R1雲端由LLM回答；D8/D9/T3＝PARTIAL（同店真值未收）',11,tint=MUTED,linespace=1.12)
+        self.note(s,'查詢流程圖',30,'這張流程圖是代理人的決策流程，節點標注目前系統的現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以今天預填；在雲端的MCP路徑，這兩步由工具的格式檢查強制，格式不對直接拒絕。單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A——B模式目前只在網頁提供。公開資料過期目前只會警告，該品項該市場沒有可用特徵才明確拒絕；然後呼叫post_forecast，失敗就報錯不補值。Worker會核對預測服務的回傳是否與參數一致；雲端的回答由ChatGPT或Gemini依工具結果組成，這段解釋的忠實度還沒驗證。最後三個節點是PARTIAL：網頁的紀錄只存在瀏覽器，同店到期真值還沒收集。',['AD1','A1','DEP1'],'節點標注依實際程式與部署核對（AGENT_DESIGN §7；Worker contracts.js、Oracle /v1 API）；嚴格資料過期hard gate屬Proposed。')
 
     def p_pseudocode(self):
         s=self.page('Algorithm 1：Domain Price Agent（主講10步）','Agent設計（續）','[AD1] 完整41行版見AGENT_DESIGN.md §8；LLM不計算菜價')
-        self.text(s,.72,1.52,11.9,.30,'Input：訊息M／今日t／白名單W　Output：回答R、追問Q、受控錯誤E、凍結紀錄P。步驟標CURRENT／PARTIAL／PROPOSED。',13,tint=MUTED)
+        self.text(s,.72,1.52,11.9,.30,'Input：訊息M／今日t／白名單W　Output：回答R、追問Q、受控錯誤E、凍結紀錄P。步驟標CURRENT／PARTIAL（對應目前運作的系統）。',13,tint=MUTED)
         steps=[
-            ('01','理解請求（Understand request）','CURRENT'),
-            ('02','驗證必要資訊，缺則追問（Validate required information）','CURRENT'),
-            ('03','選擇白名單工具（Select allowed tool）','PARTIAL（現況固定序列）'),
+            ('01','理解請求（Understand request）','CURRENT（雲端：ChatGPT／Gemini）'),
+            ('02','驗證必要資訊，缺則追問（Validate required information）','CURRENT（工具格式檢查）'),
+            ('03','選擇白名單工具（Select allowed tool）','CURRENT（雲端：LLM經MCP選）'),
             ('04','取得公開資料（Retrieve public data）','CURRENT（get_market_quote）'),
             ('05','呼叫 ForecastEngine（Call ForecastEngine）','CURRENT（post_forecast）'),
-            ('06','套用領域規則：單位／可比性／A／B（Apply domain rules）','CURRENT'),
-            ('07','驗證結構化結果（Validate structured result）','CURRENT（驗證器）'),
-            ('08','產生忠實解釋（Generate faithful explanation）','PARTIAL（模板；LLM屬PROPOSED）'),
-            ('09','使用者同意則保存（Save prediction if approved）','PARTIAL（/records；未工具化）'),
-            ('10','到期以店價核對（Verify against future store price）','PARTIAL（機制有；T16真值未有）'),
+            ('06','套用領域規則：單位／可比性／A／B（Apply domain rules）','CURRENT（B只在網頁）'),
+            ('07','驗證結構化結果（Validate structured result）','CURRENT（Worker核對回傳）'),
+            ('08','產生忠實解釋（Generate faithful explanation）','PARTIAL（LLM解釋未驗證）'),
+            ('09','使用者同意則保存（Save prediction if approved）','PARTIAL（網頁存瀏覽器）'),
+            ('10','到期以店價核對（Verify against future store price）','PARTIAL（同店真值未有）'),
         ]
         y=1.98
         for ln,txt,status in steps:
@@ -356,9 +355,9 @@ class Deck:
             tint=WARN if 'PROPOSED' in status else (MUTED if status.startswith('PARTIAL') else ACCENT)
             self.text(s,9.5,y,3.1,.3,status,11.5,bold=True,tint=tint,linespace=1.0)
             y+=0.40
-        self.text(s,.72,6.08,11.9,.52,'CURRENT對應實際程式：parse_query／get_market_quote／post_forecast／RuleBackend模板（tests 227項；驗證器僅掛LLM路徑）。\nPARTIAL：保存走/records（未工具化）、到期機制有真值未有；PROPOSED：LLM Planner與LLM解釋、嚴格資料過期hard gate（暫緩）。',12.5,tint=MUTED)
+        self.text(s,.72,6.08,11.9,.52,'CURRENT：ChatGPT／Gemini → Cloudflare MCP（2工具・格式檢查・限流）→ Oracle ForecastEngine；網頁直連。\nPARTIAL：LLM解釋忠實度未驗、保存只在瀏覽器、同店真值未收；PROPOSED：資料過期強制拒絕、分析工具。',12.5,tint=MUTED)
         self.text(s,.72,6.62,11.9,.32,'LLM不算菜價：數字一律出自ForecastEngine與驗證後的工具輸出。',15.5,bold=True,tint=ACCENT)
-        self.note(s,'演算法一（主講10步）',20,'主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。每步標注現況：現況的固定序列對應get_market_quote與post_forecast兩個工具加模板回答——驗證器目前只用在LLM回答，規則模板直接由工具事實逐字組文；保存與到期核對是PARTIAL——保存API有但還不是Agent工具、真店真值還沒收集；LLM Planner、LLM解釋與嚴格的資料過期強制拒絕屬PROPOSED。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。',['AD1','A1'],'α=0.3為固定實驗規則（未訓練）；完整版41行含Input/Output與邊界聲明見AGENT_DESIGN.md；Pseudocode↔實作映射見AGENT_DESIGN §8。')
+        self.note(s,'演算法一（主講10步）',20,'主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。對應目前運作的系統：雲端由ChatGPT或Gemini理解請求，經MCP在兩個白名單工具中選擇；工具參數由格式檢查把關，Worker再核對預測服務的回傳。PARTIAL有三項：AI助理解釋的忠實度還沒驗證、保存只在網頁的瀏覽器裡、同店到期真值還沒收集。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。',['AD1','A1','DEP1'],'α=0.3為固定實驗規則（未訓練）；B只在網頁；完整版41行與實作映射見AGENT_DESIGN.md §8（以本機原型撰寫）。')
 
     def p_data(self):
         s=self.page('資料來源與整理','資料與方法','[D1] 臺中市政府公開資料快照；[D2] 既有資料品質與標籤統計')
@@ -437,11 +436,11 @@ class Deck:
         self.note(s,'初步結果',50,'同一批封存測試列比較三種方法。不變價永遠預測持平；動量延續過去變化；最後是本案模型。方向宏平均F1七天零點四二一八、十四天零點四一六九，都高於全持平，但都沒有超過動量；這裡沒有做顯著性檢定，不能把小數差異說成顯著勝出。相對變化的平均絕對誤差，模型七天零點零六六四、十四天零點零九八三，都高於不變價——點估計未勝簡單基線，只供參考。上漲事件七天實際一百五十八筆，模型只抓到十六筆，召回約一成。模型偏保守報持平，這限制「漲價提醒」的價值。',['E1'],'macro-F1是三類F1非加權平均，不是準確率；MAE為相對變化誤差（0.0664約6.64個百分點的變化量誤差）；h14上漲召回約8.6%；RF/HGB不是LLM猜價；表格直接讀封存JSON。')
 
     def p_ui(self):
-        s=self.page('介面示例：同一期限，對照A與B','原型展示','[U1] 2026-10-03本機原型，放大上方7天結果區；非本次即時查詢')
+        s=self.page('介面示例：同一期限，對照A與B','介面展示','[U1][DEP1] 2026-10-03本機原型截圖；同一套介面已擴充部署為雲端網頁 161.33.19.220/web（61品項）')
         cropped=self.evidence/'ui_7day_crop.png';im=Image.open(self.shot);im.crop((0,0,390,590)).save(cropped)
         s.shapes.add_picture(str(cropped),Inches(.95),Inches(1.72),height=Inches(4.9))
         self.points(s,[('先看期限','確認這組結果是7天，另一組才是14天。'),('再看A／B','對照不使用與使用上週資訊的結果。'),('最後讀範圍','市場均價、店價估計與實驗性提醒分開。')],x=5.35,y=2.0,w=7,size=21,gap=1.32)
-        self.note(s,'介面示例',25,'這是本機原型的歷史截圖，不是今天重新查詢。為了讓字看清楚，這頁放大上方七天的A與B。讀畫面先看期限，再看有無使用上週資訊的差異，最後看來源與實驗性提醒。畫面中的B與前面教學例數值不同，來自另一個歷史查詢，不能混成同一筆。完整保存重播、語言模型後端與外網服務仍未驗收。',['U1','A1','P1'],'圖片只裁切放大7天比較；原圖390×844保留原位，不改數值或日期。')
+        self.note(s,'介面示例',25,'這是十月三日本機原型的截圖，不是今天重新查詢；同一套介面現在已擴充部署成雲端網頁，支援六十一個品項。為了讓字看清楚，這頁放大上方七天的A與B。讀畫面先看期限，再看有無使用上週資訊的差異，最後看來源與實驗性提醒。畫面中的B與前面教學例數值不同，來自另一個歷史查詢，不能混成同一筆。',['U1','A1','P1','DEP1'],'圖片只裁切放大7天比較；原圖390×844保留原位，不改數值或日期；雲端網頁的紀錄只存在使用者瀏覽器。')
 
     def p_plan(self):
         s=self.page('下一步：用對應證據回答三個問題','驗證計畫','[P1] 設計藍圖與DESIGN_DELTA；實際日期待定；本輪不啟動暫緩整合')
@@ -451,9 +450,9 @@ class Deck:
 
     def p_conclusion(self):
         s=self.page('結論','結論','期中提案 v7｜主講結束；後附引用與實作索引；完整文獻表與計算見docs/proposal_v5/')
-        self.points(s,[('已完成','公開市場7／14天評估（含負向）、A／B原型與Domain Agent三種設計表示。'),('目前限制','方向未勝動量、誤差未勝不變價、上漲召回低；同店效果零證據；LLM後端暫緩。'),('下一步','取得同店到期真值回答B增益；人因與部署驗證依計畫推進。')],y=2.0,gap=1.4,size=23)
+        self.points(s,[('已完成','7／14天公開評估（含負向）；網頁與MCP已上線；Agent三種設計表示。'),('目前限制','方向未勝動量、誤差未勝不變價、上漲召回低；同店零證據；行情只到10月2日。'),('下一步','每天更新行情；取得同店到期真值回答B增益；補AI助理實際對話驗收。')],y=2.0,gap=1.4,size=23)
         self.text(s,.75,6.3,11.8,.5,'交付的是誠實、可驗證的預測與增益評估框架——不是「很準的預測」。',19,bold=True,tint=ACCENT)
-        self.note(s,'結論',20,'總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估、A/B原型，以及符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據。下一步是取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。',['P1','E1'],'內容同 Proposal v5 r3（已通過獨立複審）；本版只更新名稱與版本標示，不更換題目或模型。')
+        self.note(s,'結論',20,'總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估，把網頁與MCP服務部署上線，也完成符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據，行情資料也停在十月二日。下一步是每天更新行情、取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。',['P1','E1','DEP1'],'第10–12、18–20頁依目前實際運作的系統更新（2026-10-17）；其餘內容同 Proposal v5 r3；不更換題目或模型。')
 
     # ---------- appendix ----------
     def _summary_rows(self,ids):
@@ -590,7 +589,7 @@ class Deck:
 
     def p_refs_impl(self):
         s=self.page('附錄｜引用、實作與交付索引','附錄','完整URL與讀取層級見docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md與docs/REFERENCES.md')
-        entries=[('[R01] 陳泯宏 2024｜[R02] 李岱鑫 2015｜[R03] 林沂臻 2017','學位論文（摘要實讀）；批發/市場層級預測與私有資料價值。'),('[R04] 大數據平台 2018｜[R05] 白菜即時｜[R06] 農產分析｜[R07] NCHU 2025','官方零售估計（報導）與產品/課程頁面查核；未安裝實測。'),('[R10] 農糧署2026徵件｜[W1] 王鎬杰2010｜[N1] 公視2025-08-13','政策動向；官方災後統計分析；消費端歷史背景新聞。'),('[H17] 同課程Team 17，2025','蔬果價格預測LightGBM採購指南；15頁PDF第一手閱讀11/15頁；僅作者簡報。'),('[Proposal v5 文件包]','PROPOSAL／DEEP_RESEARCH／ARTICLE_SUMMARY_TABLE／AGENT_DESIGN／DESIGN_DELTA（docs/proposal_v5/）。'),('[實作狀態]','/forecast、/agent/query、/records＋ForecastEngine＋AgentTools（get_market_quote、post_forecast）＝本機原型；save_record工具化與LLM後端、SERVER、影片、發布＝Proposed／暫緩。')]
+        entries=[('[R01] 陳泯宏 2024｜[R02] 李岱鑫 2015｜[R03] 林沂臻 2017','學位論文（摘要實讀）；批發/市場層級預測與私有資料價值。'),('[R04] 大數據平台 2018｜[R05] 白菜即時｜[R06] 農產分析｜[R07] NCHU 2025','官方零售估計（報導）與產品/課程頁面查核；未安裝實測。'),('[R10] 農糧署2026徵件｜[W1] 王鎬杰2010｜[N1] 公視2025-08-13','政策動向；官方災後統計分析；消費端歷史背景新聞。'),('[H17] 同課程Team 17，2025','蔬果價格預測LightGBM採購指南；15頁PDF第一手閱讀11/15頁；僅作者簡報。'),('[Proposal v5 文件包]','PROPOSAL／DEEP_RESEARCH／ARTICLE_SUMMARY_TABLE／AGENT_DESIGN／DESIGN_DELTA（docs/proposal_v5/）。'),('[實作狀態]','雲端網頁（Oracle＋Docker，61品項）與MCP服務（Cloudflare Worker，2工具）＝已上線並實測；本機原型（/forecast、/records、規則式Agent）保留；每日行情更新、同店驗證、影片、公開發布＝待做。')]
         for i,(head,body) in enumerate(entries):
             y=1.75+i*.82;self.text(s,.82,y,11.68,.33,head,16,bold=True,tint=ACCENT);self.text(s,.82,y+.37,11.68,.52,body,14,tint=MUTED,linespace=1.1)
         self.note(s,'附錄 引用與實作索引',0,'引用以已讀證據為限；摘要未載明的功能不視為不存在。實作與暫緩分列，不把文件完成寫成產品驗收。影片未錄、GitHub/YouTube/課程提交未發布。',['G1','AD1','DD1','P1'],'本版不覆寫README/TASKS/AGENTS/OpenSpec正式狀態；ChatGPT獨立複審另行記錄。')

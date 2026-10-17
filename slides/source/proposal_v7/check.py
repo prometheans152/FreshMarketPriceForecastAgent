@@ -45,14 +45,15 @@ def main():
     data=' '.join(texts(p.slides[12]))
     check('data_eval_merged_page',all(k in data for k in ['data.gov.tw 84539','13市場','905格','2026-05-08','2026-07-21','2026-10-02','RF，300棵樹','HGB，200輪','1,386列']))
     check('purge_total_matches_stats',f"{sum(r['rows'] for b in st['purge']['segments'].values() for r in b.values()):,}" in data)
-    # Architecture page 11: five groups + dashed future + legend + arrows + CURRENT boundary.
+    # Architecture page 10: the deployed system (two entries, MCP, Oracle, engine, history) + dashed next steps.
     diagram=' '.join(texts(p.slides[9]))
-    check('numbered_function_groups',all(x in diagram for x in ['① 使用者與手機','② Agent查詢處理','③ 菜價計算','④ 公開歷史','⑤ 預測紀錄']))
-    check('arch_dashed_future','PROPOSED' in diagram and '非猜菜價' in diagram and '圖例' in diagram)
-    check('arch_current_tools','get_market_quote' in diagram and 'post_forecast' in diagram and '/records' in diagram)
-    check('arch_relations',len(p.slides[9].shapes._spTree.findall(qn('p:cxnSp')))>=7 and all(x in diagram for x in ['唯讀載入','查閱','自願保存','回傳']))
+    check('numbered_function_groups',all(x in diagram for x in ['① 瀏覽器','① AI助理','② MCP服務','③ Oracle主機','④ ForecastEngine','⑤ 公開歷史']))
+    check('arch_dashed_future','下一步' in diagram and '不算菜價' in diagram and '圖例' in diagram)
+    check('arch_current_tools','get_market_quote' in diagram and 'post_forecast' in diagram and '61品項' in diagram)
+    check('arch_honest_limits',all(x in diagram for x in ['不支援B與保存','6/6','驗收待補','未勝不變價']))
+    check('arch_relations',len(p.slides[9].shapes._spTree.findall(qn('p:cxnSp')))>=5 and all(x in diagram for x in ['HTTPS','MCP呼叫','私有通道','唯讀載入']))
     dashed_lines=[ln for ln in p.slides[9].shapes._spTree.iter(qn('a:ln')) if ln.find(qn('a:prstDash')) is not None]
-    check('arch_dashed_linestyle_present',len(dashed_lines)>=2)
+    check('arch_dashed_linestyle_present',len(dashed_lines)>=1)
     # Flowchart page 12: decision branches D1..D9, side behaviours, PARTIAL markers.
     flow=' '.join(texts(p.slides[10]))
     check('flowchart_branches',all(x in flow for x in ['D1','D2','D3','D4','D5','D6','D7','D8','D9']))
@@ -95,7 +96,7 @@ def main():
     check('questions_ten',sum(dr9.count(f'{i} ') for i in range(1,11))==10 or all(f'{i} ' in dr9 for i in range(1,11)))
     # Agent principles page 10.
     # The separate principles page was dropped; its safety core must survive on the algorithm page.
-    check('agent_safety_on_algorithm_page',all(k in code for k in ['ForecastEngine','白名單','227','PROPOSED','get_market_quote','LLM不算菜價']))
+    check('agent_safety_on_algorithm_page',all(k in code for k in ['ForecastEngine','白名單','Cloudflare MCP','PROPOSED','get_market_quote','LLM不算菜價']))
     # Team17 comparison page 3 states no direct ranking.
     rel=' '.join(texts(p.slides[2]))
     check('team17_stated',all(k in rel for k in ['Team 17','未來五天','0.81']))
@@ -131,6 +132,10 @@ def main():
     stale=[(i,x) for i,s in enumerate(p.slides,1) for x in texts(s)+[s.notes_slide.notes_text_frame.text]
            if any(k in x for k in ('TW01','候選版','待獨立複審','自驗候選'))]
     check('no_old_name_or_review_status',not stale,stale[:5])
+    qwen=[(i,x[:60]) for i,s in enumerate(p.slides,1) for x in texts(s)+[s.notes_slide.notes_text_frame.text] if 'Qwen' in x]
+    check('no_qwen_anywhere',not qwen,qwen[:5])
+    retired=[(i,x[:60]) for i,s in enumerate(p.slides,1) for x in texts(s) if any(k in x for k in ('GLM','Hermes','SERVER_3090'))]
+    check('no_retired_backends_on_slides',not retired,retired[:5])
     dangling=[(i,x[:60]) for i,s in enumerate(p.slides,1) for x in texts(s)+[s.notes_slide.notes_text_frame.text] if '附錄A' in x]
     check('no_dangling_appendix_refs',not dangling,dangling[:5])
     check('pdf_has_extractable_text',all(len(pg.extract_text().strip())>10 for pg in q.pages))
