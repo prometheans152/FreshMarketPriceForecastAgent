@@ -1,0 +1,288 @@
+{
+  "version": "v7",
+  "title": "現場菜價7／14天預測與分析代理人（Fresh Market Price Forecast Agent）",
+  "main_slides": 19,
+  "appendix_slides": 1,
+  "estimated_main_seconds": 555,
+  "time_note": "講解設計估時，不是實際配音或錄影長度。",
+  "slides": [
+    {
+      "page": 1,
+      "kind": "主講",
+      "title": "封面",
+      "seconds": 20,
+      "script": "我們的題目是現場菜價七天與十四天預測。這一版提案補上深度研究、文獻摘要表與代理人設計三種表示。分工原則一句話：代理人選工具、預測引擎算菜價、程式驗證、代理人依證據解釋。既有公開測試結果與負向發現全部保留，同店效果仍待驗證。",
+      "extra": "本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；不修改產品程式、不接線LLM後端。",
+      "source_ids": [
+        "P1",
+        "STYLE"
+      ],
+      "notes_text": "主講 第1頁｜封面\n\n我們的題目是現場菜價七天與十四天預測。這一版提案補上深度研究、文獻摘要表與代理人設計三種表示。分工原則一句話：代理人選工具、預測引擎算菜價、程式驗證、代理人依證據解釋。既有公開測試結果與負向發現全部保留，同店效果仍待驗證。\n\n補充／證據邊界\n本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；不修改產品程式、不接線LLM後端。\n\n來源\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n[STYLE] 沿用v4簡潔白底風格（simple_v4），參考Team17第7–10頁資料與結果安排、GUARD總覽與局部說明、LSTM簡潔視覺、蜜蜂健康Related Work論述。不複製他組數據、圖片、成果或新功能。\n\n預估講解時間：20秒（非實測配音長度）"
+    },
+    {
+      "page": 2,
+      "kind": "主講",
+      "title": "研究動機",
+      "seconds": 30,
+      "script": "想像你站在蔬果行，看見甘藍一台斤三十二元。這個價格沒有回答一兩週後的變化。右圖用本案資料說明問題存在：七天有百分之十點五、十四天有百分之十六點六的歷史配對超過正負百分之五。官方對二〇〇四到二〇〇九年颱風的分析顯示災後第一週批發均價平均上漲一成到四成；二〇二五年八月楊柳颱風後也有一把蔥三百八十元的零售情境。但注意，七天完全同價的配對也接近九成——多數不變、少數大變，這決定了我們要用宏平均指標並與簡單基線比較。",
+      "extra": "母體為市場×品項×起算日×期限之歷史配對（7天n=10,952、14天n=10,680），非獨立天數、非未來機率。[W1]為2004–2009全台批發週均價統計；[N1]早於本案資料期間，僅歷史背景。",
+      "source_ids": [
+        "D1",
+        "D2",
+        "W1",
+        "N1"
+      ],
+      "notes_text": "主講 第2頁｜研究動機\n\n想像你站在蔬果行，看見甘藍一台斤三十二元。這個價格沒有回答一兩週後的變化。右圖用本案資料說明問題存在：七天有百分之十點五、十四天有百分之十六點六的歷史配對超過正負百分之五。官方對二〇〇四到二〇〇九年颱風的分析顯示災後第一週批發均價平均上漲一成到四成；二〇二五年八月楊柳颱風後也有一把蔥三百八十元的零售情境。但注意，七天完全同價的配對也接近九成——多數不變、少數大變，這決定了我們要用宏平均指標並與簡單基線比較。\n\n補充／證據邊界\n母體為市場×品項×起算日×期限之歷史配對（7天n=10,952、14天n=10,680），非獨立天數、非未來機率。[W1]為2004–2009全台批發週均價統計；[N1]早於本案資料期間，僅歷史背景。\n\n來源\n[D1] 臺中市政府公有零售市場每日蔬果價格表，data.gov.tw資料集84539；https://data.gov.tw/dataset/84539 。使用既有2026-10-03快照，不重新下載。\n[D2] outputs/proposal_delivery/run3_20261004_01/stats_master.json: descriptive/splits/purge；2026-10-08本輪唯讀重核一致。\n[W1] 王鎬杰（2010），《近年颱風、豪雨後批發市場蔬菜交易價量變動分析》，農糧署《農政與農情》第219期；https://www.moa.gov.tw/ws.php?id=22086 。官網全文實讀（2026-10-04）；2004–2009全台批發週均價之歷史統計，非本案期間地區。\n[N1] 公視新聞2025-08-13「豪雨、颱風導致菜價上漲 台北傳統市場1把蔥380元」https://news.pts.org.tw/article/765375 。官網原文實讀；早於本案資料期間（2025-10-04起），僅消費端歷史背景。\n\n預估講解時間：30秒（非實測配音長度）"
+    },
+    {
+      "page": 3,
+      "kind": "主講",
+      "title": "相關研究：學術與課程前作",
+      "seconds": 30,
+      "script": "學術上，陳泯宏比較多種批發價格預測模型；李岱鑫研究加入中盤商私有紀錄的價值；官方的大數據平台用二十九億筆電子發票估零售價。最接近的同課程前作是Team17：LightGBM加上氣象特徵，為六種冬季蔬菜各建一個模型，預測未來五天的市場價格，二〇二四測試集最好品項R平方零點八一。他們的輸入是市場與氣象歷史，不是使用者當下的店價；簡報也未見基線對照與氣象消融。本案把問題縮到消費者單店報價與固定七、十四天。",
+      "extra": "R01/R02依摘要；R04依報導（模型細節未公開）。H17本輪第一手閱讀11/15頁，其餘4頁依同批逐頁筆記；不跨資料比分數；未載明的功能不當「不存在」。",
+      "source_ids": [
+        "R01",
+        "R02",
+        "R04",
+        "H17",
+        "P1"
+      ],
+      "notes_text": "主講 第3頁｜相關研究：學術與課程前作\n\n學術上，陳泯宏比較多種批發價格預測模型；李岱鑫研究加入中盤商私有紀錄的價值；官方的大數據平台用二十九億筆電子發票估零售價。最接近的同課程前作是Team17：LightGBM加上氣象特徵，為六種冬季蔬菜各建一個模型，預測未來五天的市場價格，二〇二四測試集最好品項R平方零點八一。他們的輸入是市場與氣象歷史，不是使用者當下的店價；簡報也未見基線對照與氣象消融。本案把問題縮到消費者單店報價與固定七、十四天。\n\n補充／證據邊界\nR01/R02依摘要；R04依報導（模型細節未公開）。H17本輪第一手閱讀11/15頁，其餘4頁依同批逐頁筆記；不跨資料比分數；未載明的功能不當「不存在」。\n\n來源\n[R01] 陳泯宏（2024），《國產大宗蔬菜價格預測模型之比較》，臺灣大學統計碩士學位學程。DOI 10.6342/NTU202400875；https://tdr.lib.ntu.edu.tw/handle/123456789/92775 。沿用既有摘要全文查核，未讀全文。\n[R02] 李岱鑫（2015），《高雄果菜運銷公司高麗菜批發價格預測之研究—蒐集私有資料的價值》，清華大學。https://etd.lib.nycu.edu.tw/cgi-bin/gs32/hugsweb.cgi?o=dnthucdr&s=id%3D%22GH02102077503%22.&searchmode=basic 。沿用書目與摘要查核；實際評估指標仍UNKNOWN。\n[R04] 農委會×財政資訊中心（2018）農業大數據平台：電子發票農產品零售價格估計。農傳媒報導《從29億張電子發票撈蛛絲馬跡…》https://www.agriharvest.tw/archives/12897 ；報導全文實讀，平台未登入。\n[H17] 同課程Team17，《蔬果價格預測：LightGBM的最佳採購指南》（2025），本機歷屆/AIoT_歷屆期末簡報/regular_ii/Team17_蔬果價格預測_LightGBM採購指南.pdf。2026-10-08本輪第一手逐頁影像閱讀11/15頁（第1–4、7–12、15頁）；第5、6、13、14頁主題依同批逐頁筆記補足。只依作者簡報，不是已獨立重現的研究結果。\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n\n預估講解時間：30秒（非實測配音長度）"
+    },
+    {
+      "page": 4,
+      "kind": "主講",
+      "title": "相關服務與研究缺口",
+      "seconds": 25,
+      "script": "產品端不能概括成「都只看今天」：白菜即時有趨勢預測與換算文案、農產分析能輸入自己買的價格比對當日行情。下方把缺口講清楚：既有工作做到哪裡、證據不足在哪裡、本案另測什麼、如何公平驗證。本案的差異主張是任務定義與驗證協議，不是宣稱別人沒有的功能一定不存在。",
+      "extra": "產品未公開之欄位標UNKNOWN；「查核範圍內未見」限於REFERENCES所述檢索範圍，不是原創性宣稱。",
+      "source_ids": [
+        "R05",
+        "R06",
+        "P1"
+      ],
+      "notes_text": "主講 第4頁｜相關服務與研究缺口\n\n產品端不能概括成「都只看今天」：白菜即時有趨勢預測與換算文案、農產分析能輸入自己買的價格比對當日行情。下方把缺口講清楚：既有工作做到哪裡、證據不足在哪裡、本案另測什麼、如何公平驗證。本案的差異主張是任務定義與驗證協議，不是宣稱別人沒有的功能一定不存在。\n\n補充／證據邊界\n產品未公開之欄位標UNKNOWN；「查核範圍內未見」限於REFERENCES所述檢索範圍，不是原創性宣稱。\n\n來源\n[R05] flux6lab，白菜即時官方頁 https://cabbagelive.com/ 。沿用已讀產品文案：中長期趨勢預測／零售換算。未安裝實測，不把文案當成效果證據，未載明功能保持未知。\n[R06] 鹿中創客，農產分析Google Play頁 https://play.google.com/store/apps/details?id=com.bvc_dev_team.androidapp&hl=zh-TW 。沿用已讀文案：輸入購買價、換算及當日行情比對；未安裝實測。\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n\n預估講解時間：25秒（非實測配音長度）"
+    },
+    {
+      "page": 5,
+      "kind": "主講",
+      "title": "文獻摘要表（精選）",
+      "seconds": 25,
+      "script": "教授指定的八欄格式：問題、AI方法、領域知識、資料集、發現與限制。主講挑五件最關鍵的：兩篇學術、一個產品、一個課程前作。完整十件在ARTICLE_SUMMARY_TABLE.md。閱讀方式是把AI方法與領域知識兩欄並列——菜價預測的文獻裡，領域知識（單位、層級、季節、災後結構）與演算法同等重要。各分數屬於各自的任務與資料，不能互比。",
+      "extra": "R05/R07/R10/W1與本案自列見ARTICLE_SUMMARY_TABLE.md；每件附來源與查核層級。",
+      "source_ids": [
+        "G1",
+        "R01",
+        "R02",
+        "R06",
+        "H17"
+      ],
+      "notes_text": "主講 第5頁｜文獻摘要表（精選）\n\n教授指定的八欄格式：問題、AI方法、領域知識、資料集、發現與限制。主講挑五件最關鍵的：兩篇學術、一個產品、一個課程前作。完整十件在ARTICLE_SUMMARY_TABLE.md。閱讀方式是把AI方法與領域知識兩欄並列——菜價預測的文獻裡，領域知識（單位、層級、季節、災後結構）與演算法同等重要。各分數屬於各自的任務與資料，不能互比。\n\n補充／證據邊界\nR05/R07/R10/W1與本案自列見ARTICLE_SUMMARY_TABLE.md；每件附來源與查核層級。\n\n來源\n[G1] docs/proposal_v5/DEEP_RESEARCH.md（五思維／三爭論／十問題，含證據與推理）；docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md（八欄表10件＋來源層級）。\n[R01] 陳泯宏（2024），《國產大宗蔬菜價格預測模型之比較》，臺灣大學統計碩士學位學程。DOI 10.6342/NTU202400875；https://tdr.lib.ntu.edu.tw/handle/123456789/92775 。沿用既有摘要全文查核，未讀全文。\n[R02] 李岱鑫（2015），《高雄果菜運銷公司高麗菜批發價格預測之研究—蒐集私有資料的價值》，清華大學。https://etd.lib.nycu.edu.tw/cgi-bin/gs32/hugsweb.cgi?o=dnthucdr&s=id%3D%22GH02102077503%22.&searchmode=basic 。沿用書目與摘要查核；實際評估指標仍UNKNOWN。\n[R06] 鹿中創客，農產分析Google Play頁 https://play.google.com/store/apps/details?id=com.bvc_dev_team.androidapp&hl=zh-TW 。沿用已讀文案：輸入購買價、換算及當日行情比對；未安裝實測。\n[H17] 同課程Team17，《蔬果價格預測：LightGBM的最佳採購指南》（2025），本機歷屆/AIoT_歷屆期末簡報/regular_ii/Team17_蔬果價格預測_LightGBM採購指南.pdf。2026-10-08本輪第一手逐頁影像閱讀11/15頁（第1–4、7–12、15頁）；第5、6、13、14頁主題依同批逐頁筆記補足。只依作者簡報，不是已獨立重現的研究結果。\n\n預估講解時間：25秒（非實測配音長度）"
+    },
+    {
+      "page": 6,
+      "kind": "主講",
+      "title": "研究問題與三項貢獻",
+      "seconds": 25,
+      "script": "三個問題對應三項貢獻。第一問已有答案：模型勝全持平但未勝動量，這是誠實的發現。第二問是本提案明列的未來實驗：多一筆上週同店價是否有增益，目前零證據。第三問有原型但使用者研究未做。狀態標籤貫穿文件與介面。",
+      "extra": "不把C1結果當原創性或泛化證實；C2之α=0.3未訓練；C3不含LLM後端（暫緩）。",
+      "source_ids": [
+        "P1",
+        "E1"
+      ],
+      "notes_text": "主講 第6頁｜研究問題與三項貢獻\n\n三個問題對應三項貢獻。第一問已有答案：模型勝全持平但未勝動量，這是誠實的發現。第二問是本提案明列的未來實驗：多一筆上週同店價是否有增益，目前零證據。第三問有原型但使用者研究未做。狀態標籤貫穿文件與介面。\n\n補充／證據邊界\n不把C1結果當原創性或泛化證實；C2之α=0.3未訓練；C3不含LLM後端（暫緩）。\n\n來源\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n[E1] outputs/evaluation/public/public_test_results.json: horizons.h=7 / h=14；SHA256 2d28acd2f2c3e5ce566b9095c6a85477db8faf858d9ce29e974caaedc25674b8。固定測試列，未重算模型輸出、未重訓。\n\n預估講解時間：25秒（非實測配音長度）"
+    },
+    {
+      "page": 7,
+      "kind": "主講",
+      "title": "深研究：五個核心思維",
+      "seconds": 30,
+      "script": "整理菜價預測與零售分析的五個核心思維。可比性：不同店不同規格的價格不能直接比，零是無價不是零元。時間完整性：標籤沒成熟就是未來資訊，所以我們清了一千三百八十六列。簡單基線：不變價和動量很強，模型要先勝過它們才有複雜度的正當性。公開不等於私人：市場均價沒有店別資訊，把公開資料重包裝不會產生新資訊。誤差不等於效益：分數好不代表決策變好，上漲召回低就限制漲價提醒的用途。每個思維在講稿備註附了證據來源。",
+      "extra": "思維是本案依查核證據整理的工作觀點，不宣稱所有專家都同意；證據細節見DEEP_RESEARCH.md Q1。",
+      "source_ids": [
+        "G1",
+        "D2",
+        "E1",
+        "R02"
+      ],
+      "notes_text": "主講 第7頁｜深研究：五個核心思維\n\n整理菜價預測與零售分析的五個核心思維。可比性：不同店不同規格的價格不能直接比，零是無價不是零元。時間完整性：標籤沒成熟就是未來資訊，所以我們清了一千三百八十六列。簡單基線：不變價和動量很強，模型要先勝過它們才有複雜度的正當性。公開不等於私人：市場均價沒有店別資訊，把公開資料重包裝不會產生新資訊。誤差不等於效益：分數好不代表決策變好，上漲召回低就限制漲價提醒的用途。每個思維在講稿備註附了證據來源。\n\n補充／證據邊界\n思維是本案依查核證據整理的工作觀點，不宣稱所有專家都同意；證據細節見DEEP_RESEARCH.md Q1。\n\n來源\n[G1] docs/proposal_v5/DEEP_RESEARCH.md（五思維／三爭論／十問題，含證據與推理）；docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md（八欄表10件＋來源層級）。\n[D2] outputs/proposal_delivery/run3_20261004_01/stats_master.json: descriptive/splits/purge；2026-10-08本輪唯讀重核一致。\n[E1] outputs/evaluation/public/public_test_results.json: horizons.h=7 / h=14；SHA256 2d28acd2f2c3e5ce566b9095c6a85477db8faf858d9ce29e974caaedc25674b8。固定測試列，未重算模型輸出、未重訓。\n[R02] 李岱鑫（2015），《高雄果菜運銷公司高麗菜批發價格預測之研究—蒐集私有資料的價值》，清華大學。https://etd.lib.nycu.edu.tw/cgi-bin/gs32/hugsweb.cgi?o=dnthucdr&s=id%3D%22GH02102077503%22.&searchmode=basic 。沿用書目與摘要查核；實際評估指標仍UNKNOWN。\n\n預估講解時間：30秒（非實測配音長度）"
+    },
+    {
+      "page": 8,
+      "kind": "主講",
+      "title": "深研究：三個專業爭論",
+      "seconds": 35,
+      "script": "第一，公開均價夠不夠估店價：傳導存在——官方對二〇〇四到二〇〇九年颱風的分析顯示災後第一週批發均價平均上漲一成到四成、大數據平台用二十九億筆電子發票估零售；但均價沒有店別資訊——李岱鑫顯示含中盤商私有紀錄者誤差較低、本案資料無店ID。我們用A錨定加B差動量並列，讓真店到期資料裁決。第二，複雜模型是否勝過簡單基線：Team17的R平方最好品項零點八一、陳泯宏摘要有方向約六成；但本案凍結測試動量零點四二二六對模型零點四二一八、不變價MAE零點零四三六勝模型的零點零六六四——Team17未見基線對照。我們的立場是先勝基線再談價值。第三，加資料是否一定改善：氣象有理由但Team17未做消融、本案十二特徵也沒勝動量，李岱鑫的私有增益屬批發脈絡不能外推。我們把新增輸入的增益本身當成研究問題。",
+      "extra": "雙方證據之查核層級見DEEP_RESEARCH.md Q2；「未見消融」指該簡報實讀頁未見，不斷言不存在。",
+      "source_ids": [
+        "G1",
+        "E1",
+        "W1",
+        "R02",
+        "R04",
+        "H17"
+      ],
+      "notes_text": "主講 第8頁｜深研究：三個專業爭論\n\n第一，公開均價夠不夠估店價：傳導存在——官方對二〇〇四到二〇〇九年颱風的分析顯示災後第一週批發均價平均上漲一成到四成、大數據平台用二十九億筆電子發票估零售；但均價沒有店別資訊——李岱鑫顯示含中盤商私有紀錄者誤差較低、本案資料無店ID。我們用A錨定加B差動量並列，讓真店到期資料裁決。第二，複雜模型是否勝過簡單基線：Team17的R平方最好品項零點八一、陳泯宏摘要有方向約六成；但本案凍結測試動量零點四二二六對模型零點四二一八、不變價MAE零點零四三六勝模型的零點零六六四——Team17未見基線對照。我們的立場是先勝基線再談價值。第三，加資料是否一定改善：氣象有理由但Team17未做消融、本案十二特徵也沒勝動量，李岱鑫的私有增益屬批發脈絡不能外推。我們把新增輸入的增益本身當成研究問題。\n\n補充／證據邊界\n雙方證據之查核層級見DEEP_RESEARCH.md Q2；「未見消融」指該簡報實讀頁未見，不斷言不存在。\n\n來源\n[G1] docs/proposal_v5/DEEP_RESEARCH.md（五思維／三爭論／十問題，含證據與推理）；docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md（八欄表10件＋來源層級）。\n[E1] outputs/evaluation/public/public_test_results.json: horizons.h=7 / h=14；SHA256 2d28acd2f2c3e5ce566b9095c6a85477db8faf858d9ce29e974caaedc25674b8。固定測試列，未重算模型輸出、未重訓。\n[W1] 王鎬杰（2010），《近年颱風、豪雨後批發市場蔬菜交易價量變動分析》，農糧署《農政與農情》第219期；https://www.moa.gov.tw/ws.php?id=22086 。官網全文實讀（2026-10-04）；2004–2009全台批發週均價之歷史統計，非本案期間地區。\n[R02] 李岱鑫（2015），《高雄果菜運銷公司高麗菜批發價格預測之研究—蒐集私有資料的價值》，清華大學。https://etd.lib.nycu.edu.tw/cgi-bin/gs32/hugsweb.cgi?o=dnthucdr&s=id%3D%22GH02102077503%22.&searchmode=basic 。沿用書目與摘要查核；實際評估指標仍UNKNOWN。\n[R04] 農委會×財政資訊中心（2018）農業大數據平台：電子發票農產品零售價格估計。農傳媒報導《從29億張電子發票撈蛛絲馬跡…》https://www.agriharvest.tw/archives/12897 ；報導全文實讀，平台未登入。\n[H17] 同課程Team17，《蔬果價格預測：LightGBM的最佳採購指南》（2025），本機歷屆/AIoT_歷屆期末簡報/regular_ii/Team17_蔬果價格預測_LightGBM採購指南.pdf。2026-10-08本輪第一手逐頁影像閱讀11/15頁（第1–4、7–12、15頁）；第5、6、13、14頁主題依同批逐頁筆記補足。只依作者簡報，不是已獨立重現的研究結果。\n\n預估講解時間：35秒（非實測配音長度）"
+    },
+    {
+      "page": 9,
+      "kind": "主講",
+      "title": "深研究：十個深問題",
+      "seconds": 15,
+      "script": "我們設計了十個深問題檢驗是否真正理解，涵蓋為什麼、如果、取捨、失敗案例、證據、比較與設計決策。例如：為什麼用宏平均F1而不是準確率、一把蔣一斤的單位問題、上漲召回只有一成時系統還能用嗎、怎麼證明B有增益、以及為什麼禁止語言模型自己算菜價。完整題目與參考解答在DEEP_RESEARCH.md。",
+      "extra": "十題與八類覆蓋見DEEP_RESEARCH.md Q3；答題重點在推理過程而非標準答案背誦。",
+      "source_ids": [
+        "G1"
+      ],
+      "notes_text": "主講 第9頁｜深研究：十個深問題\n\n我們設計了十個深問題檢驗是否真正理解，涵蓋為什麼、如果、取捨、失敗案例、證據、比較與設計決策。例如：為什麼用宏平均F1而不是準確率、一把蔣一斤的單位問題、上漲召回只有一成時系統還能用嗎、怎麼證明B有增益、以及為什麼禁止語言模型自己算菜價。完整題目與參考解答在DEEP_RESEARCH.md。\n\n補充／證據邊界\n十題與八類覆蓋見DEEP_RESEARCH.md Q3；答題重點在推理過程而非標準答案背誦。\n\n來源\n[G1] docs/proposal_v5/DEEP_RESEARCH.md（五思維／三爭論／十問題，含證據與推理）；docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md（八欄表10件＋來源層級）。\n\n預估講解時間：15秒（非實測配音長度）"
+    },
+    {
+      "page": 10,
+      "kind": "主講",
+      "title": "系統架構（五群組）",
+      "seconds": 40,
+      "script": "請按編號看。①使用者以表單或自然語言提交查詢；②Agent查詢處理檢查必要資訊與單位、驗證上週價可比性，通過後呼叫③；③預測引擎唯讀載入④的公開歷史，用封存模型算出相對變化並做A與B，結果回②；②組裝附期限、截止日、來源與狀態的回答回①。使用者自願保存時走／records保存API寫入⑤，與④完全分離——保存目前由網頁另行呼叫、還不是Agent工具。實線都是目前實際存在的元件與資料流：規則式②、get_market_quote與post_forecast兩個工具、預測引擎、保存API。虛線是Proposed：LLM Planner、自主選工具、save_record工具化、GLM、Qwen、Hermes與SERVER，都還沒實作或還沒部署，而且LLM只掛在②的語言層、不用來猜菜價。",
+      "extra": "①→②提交、②→③計算、③→④唯讀、③→②回傳、②→①回答、②→⑤保存/查閱（保存現況經Web／records，非Agent工具）。LLM後端與工具抽象屬Proposed，不宣稱已驗收。",
+      "source_ids": [
+        "A1",
+        "AD1",
+        "M2"
+      ],
+      "notes_text": "主講 第10頁｜系統架構（五群組）\n\n請按編號看。①使用者以表單或自然語言提交查詢；②Agent查詢處理檢查必要資訊與單位、驗證上週價可比性，通過後呼叫③；③預測引擎唯讀載入④的公開歷史，用封存模型算出相對變化並做A與B，結果回②；②組裝附期限、截止日、來源與狀態的回答回①。使用者自願保存時走／records保存API寫入⑤，與④完全分離——保存目前由網頁另行呼叫、還不是Agent工具。實線都是目前實際存在的元件與資料流：規則式②、get_market_quote與post_forecast兩個工具、預測引擎、保存API。虛線是Proposed：LLM Planner、自主選工具、save_record工具化、GLM、Qwen、Hermes與SERVER，都還沒實作或還沒部署，而且LLM只掛在②的語言層、不用來猜菜價。\n\n補充／證據邊界\n①→②提交、②→③計算、③→④唯讀、③→②回傳、②→①回答、②→⑤保存/查閱（保存現況經Web／records，非Agent工具）。LLM後端與工具抽象屬Proposed，不宣稱已驗收。\n\n來源\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[M2] src/aiot_price/models/store_adapter.py: ALPHA_EXPERIMENTAL=0.3；docs/STORE_DATA_PROTOCOL.md。A為乘法錨定；B為固定規則，不是學得的增益。\n\n預估講解時間：40秒（非實測配音長度）"
+    },
+    {
+      "page": 11,
+      "kind": "主講",
+      "title": "查詢流程圖",
+      "seconds": 30,
+      "script": "這張流程圖描述目標系統，節點會標注現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以系統今天預填、只有明示但無法解析的日期才追問；單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A；公開資料目前是落後超過三天先警告、該品項該市場沒有可用特徵才明確拒絕；然後呼叫白名單工具——現在對應post_forecast，失敗就報錯不補值；回答層的模板由工具事實逐字組文，驗證器目前只掛在Qwen路徑。最後三個節點是PARTIAL：保存走／records API、還沒封裝成Agent工具；到期核對的機制有、真店真值還沒收集。右側是每個分支的具體行為。",
+      "extra": "流程圖為Proposed Agent Flowchart；節點標注依實際程式核對（AGENT_DESIGN §7）；「除了LLM之外全部完成」的概括不成立；嚴格資料過期hard gate屬Proposed。",
+      "source_ids": [
+        "AD1",
+        "A1"
+      ],
+      "notes_text": "主講 第11頁｜查詢流程圖\n\n這張流程圖描述目標系統，節點會標注現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以系統今天預填、只有明示但無法解析的日期才追問；單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A；公開資料目前是落後超過三天先警告、該品項該市場沒有可用特徵才明確拒絕；然後呼叫白名單工具——現在對應post_forecast，失敗就報錯不補值；回答層的模板由工具事實逐字組文，驗證器目前只掛在Qwen路徑。最後三個節點是PARTIAL：保存走／records API、還沒封裝成Agent工具；到期核對的機制有、真店真值還沒收集。右側是每個分支的具體行為。\n\n補充／證據邊界\n流程圖為Proposed Agent Flowchart；節點標注依實際程式核對（AGENT_DESIGN §7）；「除了LLM之外全部完成」的概括不成立；嚴格資料過期hard gate屬Proposed。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n\n預估講解時間：30秒（非實測配音長度）"
+    },
+    {
+      "page": 12,
+      "kind": "主講",
+      "title": "演算法一（主講10步）",
+      "seconds": 20,
+      "script": "主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。每步標注現況：現況的固定序列對應get_market_quote與post_forecast兩個工具加模板回答——驗證器目前只掛在Qwen路徑，規則模板直接由工具事實逐字組文；保存與到期核對是PARTIAL——保存API有但還不是Agent工具、真店真值還沒收集；LLM Planner、LLM解釋與嚴格的資料過期強制拒絕屬PROPOSED。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。",
+      "extra": "α=0.3為固定實驗規則（未訓練）；完整版41行含Input/Output與邊界聲明見AGENT_DESIGN.md；Pseudocode↔實作映射見AGENT_DESIGN §8。",
+      "source_ids": [
+        "AD1",
+        "A1"
+      ],
+      "notes_text": "主講 第12頁｜演算法一（主講10步）\n\n主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。每步標注現況：現況的固定序列對應get_market_quote與post_forecast兩個工具加模板回答——驗證器目前只掛在Qwen路徑，規則模板直接由工具事實逐字組文；保存與到期核對是PARTIAL——保存API有但還不是Agent工具、真店真值還沒收集；LLM Planner、LLM解釋與嚴格的資料過期強制拒絕屬PROPOSED。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。\n\n補充／證據邊界\nα=0.3為固定實驗規則（未訓練）；完整版41行含Input/Output與邊界聲明見AGENT_DESIGN.md；Pseudocode↔實作映射見AGENT_DESIGN §8。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n\n預估講解時間：20秒（非實測配音長度）"
+    },
+    {
+      "page": 13,
+      "kind": "主講",
+      "title": "資料與評估設計",
+      "seconds": 40,
+      "script": "資料是臺中市十三個公有零售市場的每日訪價均價，期間約一年。單位是元每台斤，零代表無報價、不是零元，所以九百零五格零值轉為缺測；整理後依同市場、同品項建立七天與十四天的到期配對。評估順序：先訓練，再以驗證集的宏平均F1選型，最後才看保留測試——七天選隨機森林、十四天選梯度提升。標籤成熟日跨入下一段的樣本要清除，兩個邊界共一千三百八十六列。沒有單店識別，公開測試與單店效果必須分開解釋——這是A/B設計的出發點。",
+      "extra": "原始4,450列×63欄；原三品項長表13,350列；同日起算觀測不跨區隨機切分；依h分別清除；測試n(h7)=2,085、n(h14)=1,859。",
+      "source_ids": [
+        "D1",
+        "D2",
+        "M3",
+        "S1"
+      ],
+      "notes_text": "主講 第13頁｜資料與評估設計\n\n資料是臺中市十三個公有零售市場的每日訪價均價，期間約一年。單位是元每台斤，零代表無報價、不是零元，所以九百零五格零值轉為缺測；整理後依同市場、同品項建立七天與十四天的到期配對。評估順序：先訓練，再以驗證集的宏平均F1選型，最後才看保留測試——七天選隨機森林、十四天選梯度提升。標籤成熟日跨入下一段的樣本要清除，兩個邊界共一千三百八十六列。沒有單店識別，公開測試與單店效果必須分開解釋——這是A/B設計的出發點。\n\n補充／證據邊界\n原始4,450列×63欄；原三品項長表13,350列；同日起算觀測不跨區隨機切分；依h分別清除；測試n(h7)=2,085、n(h14)=1,859。\n\n來源\n[D1] 臺中市政府公有零售市場每日蔬果價格表，data.gov.tw資料集84539；https://data.gov.tw/dataset/84539 。使用既有2026-10-03快照，不重新下載。\n[D2] outputs/proposal_delivery/run3_20261004_01/stats_master.json: descriptive/splits/purge；2026-10-08本輪唯讀重核一致。\n[M3] outputs/training/training_results.json；models/releases/0.1.0/manifest.json；src/aiot_price/models/train.py。候選Ridge、RFRegressor、HGBRegressor、DummyMajority、HGBClassifier；12個數值特徵＋crop_id one-hot，無市場one-hot。\n[S1] outputs/proposal_delivery/run3_20261004_01/stats_master.json: purge.segments。成熟日=t+h+1；7天清除帶8日、14天15日。\n\n預估講解時間：40秒（非實測配音長度）"
+    },
+    {
+      "page": 14,
+      "kind": "主講",
+      "title": "預測目標與漲跌定義",
+      "seconds": 30,
+      "script": "我們不預測模糊的下週平均，而是從本次可信報價日起算，精確七天與十四個日曆日。相對變化就是到期價減當日價除以當日價。超過正負百分之五才算漲或跌，剛好百分之五仍屬持平。四十變四十三是百分之七點五上漲；變四十二剛好百分之五，持平。公開資料用市場均價建標籤，同店驗證要用同店到期價。",
+      "extra": "正式分類含eps=1e-9浮點容差；t不是公開行情最後日期；同店真值另收，不以市場值代填。",
+      "source_ids": [
+        "M1"
+      ],
+      "notes_text": "主講 第14頁｜預測目標與漲跌定義\n\n我們不預測模糊的下週平均，而是從本次可信報價日起算，精確七天與十四個日曆日。相對變化就是到期價減當日價除以當日價。超過正負百分之五才算漲或跌，剛好百分之五仍屬持平。四十變四十三是百分之七點五上漲；變四十二剛好百分之五，持平。公開資料用市場均價建標籤，同店驗證要用同店到期價。\n\n補充／證據邊界\n正式分類含eps=1e-9浮點容差；t不是公開行情最後日期；同店真值另收，不以市場值代填。\n\n來源\n[M1] docs/LABEL_CONTRACT.md；src/aiot_price/data/labels.py；docs/proposal_v5/PROPOSAL.md。h=7/14個日曆日；t為本次可信報價基準日；缺到期正價格者無標籤。\n\n預估講解時間：30秒（非實測配音長度）"
+    },
+    {
+      "page": 15,
+      "kind": "主講",
+      "title": "A模式",
+      "seconds": 30,
+      "script": "A模式不需要上週紀錄。假設今天三十二元，模型估計七天相對變化負百分之四點一，三十二乘以零點九五九得到三十點六八八，顯示約三十點七元；仍在正負百分之五內，分類持平。十四天同理。這些是教學假設。現價錨定只改顯示金額：p大於零時，錨定後的相對變化恆等於模型的相對變化，方向分類不變——這是代數性質，不是準確率實驗。",
+      "extra": "A公式p̂=p(1+r̂)；[p(1+r̂)−p]/p=r̂；sign(r̂)<0不等於down（−4.1%仍flat）。",
+      "source_ids": [
+        "M2",
+        "M1"
+      ],
+      "notes_text": "主講 第15頁｜A模式\n\nA模式不需要上週紀錄。假設今天三十二元，模型估計七天相對變化負百分之四點一，三十二乘以零點九五九得到三十點六八八，顯示約三十點七元；仍在正負百分之五內，分類持平。十四天同理。這些是教學假設。現價錨定只改顯示金額：p大於零時，錨定後的相對變化恆等於模型的相對變化，方向分類不變——這是代數性質，不是準確率實驗。\n\n補充／證據邊界\nA公式p̂=p(1+r̂)；[p(1+r̂)−p]/p=r̂；sign(r̂)<0不等於down（−4.1%仍flat）。\n\n來源\n[M2] src/aiot_price/models/store_adapter.py: ALPHA_EXPERIMENTAL=0.3；docs/STORE_DATA_PROTOCOL.md。A為乘法錨定；B為固定規則，不是學得的增益。\n[M1] docs/LABEL_CONTRACT.md；src/aiot_price/data/labels.py；docs/proposal_v5/PROPOSAL.md。h=7/14個日曆日；t為本次可信報價基準日；缺到期正價格者無標籤。\n\n預估講解時間：30秒（非實測配音長度）"
+    },
+    {
+      "page": 16,
+      "kind": "主講",
+      "title": "B模式",
+      "seconds": 35,
+      "script": "有可比較的上週同店價才使用B。今天三十二、上週二十八，店價週變化約百分之十四點二九；公開同期假設百分之一。B把差乘以零點三加回A的負百分之四點一，得到約負百分之零點一一，仍屬持平——注意負零點一是接近零，不是接近門檻。零點三只是固定實驗規則，不是從同店資料學來的。B能不能更好，要同批案例同時保留A和B，等到期真值比較。",
+      "extra": "r_B=r_A+0.3×(Δ店−Δ公)；上週可比日期7±2天；缺少或不可比則僅A，不用0或公開t−7冒充私人資料。",
+      "source_ids": [
+        "M2",
+        "P1"
+      ],
+      "notes_text": "主講 第16頁｜B模式\n\n有可比較的上週同店價才使用B。今天三十二、上週二十八，店價週變化約百分之十四點二九；公開同期假設百分之一。B把差乘以零點三加回A的負百分之四點一，得到約負百分之零點一一，仍屬持平——注意負零點一是接近零，不是接近門檻。零點三只是固定實驗規則，不是從同店資料學來的。B能不能更好，要同批案例同時保留A和B，等到期真值比較。\n\n補充／證據邊界\nr_B=r_A+0.3×(Δ店−Δ公)；上週可比日期7±2天；缺少或不可比則僅A，不用0或公開t−7冒充私人資料。\n\n來源\n[M2] src/aiot_price/models/store_adapter.py: ALPHA_EXPERIMENTAL=0.3；docs/STORE_DATA_PROTOCOL.md。A為乘法錨定；B為固定規則，不是學得的增益。\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n\n預估講解時間：35秒（非實測配音長度）"
+    },
+    {
+      "page": 17,
+      "kind": "主講",
+      "title": "初步結果",
+      "seconds": 50,
+      "script": "同一批封存測試列比較三種方法。不變價永遠預測持平；動量延續過去變化；最後是本案模型。方向宏平均F1七天零點四二一八、十四天零點四一六九，都高於全持平，但都沒有超過動量；這裡沒有做顯著性檢定，不能把小數差異說成顯著勝出。相對變化的平均絕對誤差，模型七天零點零六六四、十四天零點零九八三，都高於不變價——點估計未勝簡單基線，只供參考。上漲事件七天實際一百五十八筆，模型只抓到十六筆，召回約一成。模型偏保守報持平，這限制「漲價提醒」的價值。",
+      "extra": "macro-F1是三類F1非加權平均，不是準確率；MAE為相對變化誤差（0.0664約6.64個百分點的變化量誤差）；h14上漲召回約8.6%；RF/HGB不是LLM猜價；表格直接讀封存JSON。",
+      "source_ids": [
+        "E1"
+      ],
+      "notes_text": "主講 第17頁｜初步結果\n\n同一批封存測試列比較三種方法。不變價永遠預測持平；動量延續過去變化；最後是本案模型。方向宏平均F1七天零點四二一八、十四天零點四一六九，都高於全持平，但都沒有超過動量；這裡沒有做顯著性檢定，不能把小數差異說成顯著勝出。相對變化的平均絕對誤差，模型七天零點零六六四、十四天零點零九八三，都高於不變價——點估計未勝簡單基線，只供參考。上漲事件七天實際一百五十八筆，模型只抓到十六筆，召回約一成。模型偏保守報持平，這限制「漲價提醒」的價值。\n\n補充／證據邊界\nmacro-F1是三類F1非加權平均，不是準確率；MAE為相對變化誤差（0.0664約6.64個百分點的變化量誤差）；h14上漲召回約8.6%；RF/HGB不是LLM猜價；表格直接讀封存JSON。\n\n來源\n[E1] outputs/evaluation/public/public_test_results.json: horizons.h=7 / h=14；SHA256 2d28acd2f2c3e5ce566b9095c6a85477db8faf858d9ce29e974caaedc25674b8。固定測試列，未重算模型輸出、未重訓。\n\n預估講解時間：50秒（非實測配音長度）"
+    },
+    {
+      "page": 18,
+      "kind": "主講",
+      "title": "介面示例",
+      "seconds": 25,
+      "script": "這是本機原型的歷史截圖，不是今天重新查詢。為了讓字看清楚，這頁放大上方七天的A與B。讀畫面先看期限，再看有無使用上週資訊的差異，最後看來源與實驗性提醒。畫面中的B與前面教學例數值不同，來自另一個歷史查詢，不能混成同一筆。完整保存重播、語言模型後端與外網服務仍未驗收。",
+      "extra": "圖片只裁切放大7天比較；原圖390×844保留原位，不改數值或日期。",
+      "source_ids": [
+        "U1",
+        "A1",
+        "P1"
+      ],
+      "notes_text": "主講 第18頁｜介面示例\n\n這是本機原型的歷史截圖，不是今天重新查詢。為了讓字看清楚，這頁放大上方七天的A與B。讀畫面先看期限，再看有無使用上週資訊的差異，最後看來源與實驗性提醒。畫面中的B與前面教學例數值不同，來自另一個歷史查詢，不能混成同一筆。完整保存重播、語言模型後端與外網服務仍未驗收。\n\n補充／證據邊界\n圖片只裁切放大7天比較；原圖390×844保留原位，不改數值或日期。\n\n來源\n[U1] outputs/e2e/ui_ab_mobile_390x844.png，2026-10-03本機原型截圖。只裁出上方7天A/B結果區並明示裁切，未改內部數字、未偽造新查詢。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n\n預估講解時間：25秒（非實測配音長度）"
+    },
+    {
+      "page": 19,
+      "kind": "主講",
+      "title": "結論",
+      "seconds": 20,
+      "script": "總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估、A/B原型，以及符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據。下一步是取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。",
+      "extra": "內容同 Proposal v5 r3（已通過獨立複審）；本版只更新名稱與版本標示，不更換題目或模型。",
+      "source_ids": [
+        "P1",
+        "E1"
+      ],
+      "notes_text": "主講 第19頁｜結論\n\n總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估、A/B原型，以及符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據。下一步是取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。\n\n補充／證據邊界\n內容同 Proposal v5 r3（已通過獨立複審）；本版只更新名稱與版本標示，不更換題目或模型。\n\n來源\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n[E1] outputs/evaluation/public/public_test_results.json: horizons.h=7 / h=14；SHA256 2d28acd2f2c3e5ce566b9095c6a85477db8faf858d9ce29e974caaedc25674b8。固定測試列，未重算模型輸出、未重訓。\n\n預估講解時間：20秒（非實測配音長度）"
+    },
+    {
+      "page": 20,
+      "kind": "附錄",
+      "title": "附錄 引用與實作索引",
+      "seconds": 0,
+      "script": "引用以已讀證據為限；摘要未載明的功能不視為不存在。實作與暫緩分列，不把文件完成寫成產品驗收。影片未錄、GitHub/YouTube/課程提交未發布。",
+      "extra": "本版不覆寫README/TASKS/AGENTS/OpenSpec正式狀態；ChatGPT獨立複審另行記錄。",
+      "source_ids": [
+        "G1",
+        "AD1",
+        "DD1",
+        "P1"
+      ],
+      "notes_text": "附錄 第20頁｜附錄 引用與實作索引\n\n引用以已讀證據為限；摘要未載明的功能不視為不存在。實作與暫緩分列，不把文件完成寫成產品驗收。影片未錄、GitHub/YouTube/課程提交未發布。\n\n補充／證據邊界\n本版不覆寫README/TASKS/AGENTS/OpenSpec正式狀態；ChatGPT獨立複審另行記錄。\n\n來源\n[G1] docs/proposal_v5/DEEP_RESEARCH.md（五思維／三爭論／十問題，含證據與推理）；docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md（八欄表10件＋來源層級）。\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[DD1] docs/proposal_v5/DESIGN_DELTA.md：v5與根目錄design.md之沿用／新增／待同步／未來分界；本輪不覆寫正式design.md。\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。"
+    }
+  ]
+}
