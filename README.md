@@ -1,7 +1,7 @@
 # 現場菜價 7／14 天預測與分析代理人（Fresh Market Price Forecast Agent）
 
-**AIoT 應用與資料分析期末專題・Proposal v5 r3（2026-10-09；本機正式主版，提案獨立驗收通過）**
-組員：待填（≤4 人，組長待填）｜正式發表日期：待填｜[本機重現入口](#本機使用與重現)見文末
+**AIoT 應用與資料分析期末專題・期中提案 v7（2026-10-18：20 頁簡報＋9 分 35 秒配音影片；內容以通過獨立複審的 Proposal v5 r3 為基礎）**
+組員：待填（≤4 人，組長待填）｜正式發表日期：待填｜[期中交付](#期中交付v7)｜[目前實際運作的系統](#目前實際運作的系統2026-10-17)｜[本機重現入口](#本機使用與重現)見文末
 
 ## 一句話情境
 
@@ -36,9 +36,34 @@
 - 上漲召回僅約 10%：模型偏保守報持平。無檢定不寫「顯著」。
 - 誠實結論：我們交付的不是「很準的預測」，而是一個**誠實、可驗證**的預測與增益評估框架。
 
-## 現行正式 Proposal 主版本：v5 r3（2026-10-09）
+## 期中交付（v7）
 
-**狀態：第三輪 ChatGPT/COS 獨立複審 EXTERNAL_PASS，僅提案文件和簡報。** 這表示 v5 r3 是目前**本機工作區的正式 Proposal 主入口**，不代表已經 Git commit、公開發布或完成整個期末產品。參閱 [獨立審查報告](outputs/audits/proposal_v5_r3_independent_20261009_01/REVIEW_R3.md) 與 [版本狀態](docs/proposal_v5/STATUS.md)。已驗收的 PPTX/PDF 原始快照保持不變。
+教授要求（逐字稿第 4、5 週）：投影片不超過 20 頁、影片不超過 10 分鐘並放上 YouTube、放在 GitHub 且 README 就是報告、Design MD（計畫藍圖書）；期中只做 Introduction、Related Work、Proposal 三部分。
+
+| 交付物 | 位置 | 狀態 |
+| --- | --- | --- |
+| 簡報（可編輯，20 頁＝19 主講＋1 引用索引） | [slides/proposal_v7/FMPA_Proposal_v7.pptx](slides/proposal_v7/FMPA_Proposal_v7.pptx) | 完成；封面組員與日期待填 |
+| 簡報 PDF（同源） | [slides/proposal_v7/FMPA_Proposal_v7.pdf](slides/proposal_v7/FMPA_Proposal_v7.pdf) | 完成 |
+| 逐頁講稿、來源、重建說明 | [講稿](slides/proposal_v7/SLIDE_NOTES_v7.md)・[來源](slides/proposal_v7/SOURCES.md)・[README](slides/proposal_v7/README.md) | 完成 |
+| 配音影片（9 分 35 秒，第三人稱 AI 語音＋繁中字幕） | 本機 `recordings/`（不入 Git） | 完成；YouTube 尚未上傳 |
+| 報告 | 本 README＋[研究提案全文](docs/PROPOSAL_REPORT.md)＋[Proposal v5 r3 主稿](docs/proposal_v5/PROPOSAL.md) | 完成 |
+| Design MD（計畫藍圖書） | [design.md](design.md) | 完成（§0A 為目前運作的系統） |
+
+v7 由 33 頁的 v5 r3 濃縮而成，數字、圖表與結論不變；第 10–12、18–20 頁改成目前實際運作的系統。v7 本身沒有另做外部審查。
+
+## 目前實際運作的系統（2026-10-17）
+
+| 入口 | 實際運作 | 限制 |
+| --- | --- | --- |
+| 瀏覽器 → 雲端網頁 | https://161.33.19.220/web/ ，免登入；61 個品項的 7／14 天預測、A／B 比較；紀錄只存在使用者自己的瀏覽器 | 原 3 品項用封存的 RF（7 天）／HGB（14 天）v0.1.0；其餘品項用 57 品項共同訓練的 HGB v1.0.0，[測試誤差未勝不變價](docs/deployment/POOLED_ML_MODEL_CARD_V1.md) |
+| ChatGPT／Gemini 等 AI 助理 → MCP | Cloudflare Worker `https://fresh-market-price-agent.prometheans152.workers.dev/mcp` 提供兩個工具 `get_market_quote`、`post_forecast`；嚴格參數格式、四組流量限制、核對預測服務的回傳 | 只開放原 3 品項、13 個市場的 A 模式；不提供 B 與保存；遠端協定實測 6/6（2026-10-17），但 ChatGPT／Gemini 介面內的實際對話驗收尚未做 |
+| 兩條路的共同後端 | Oracle 主機上的 ForecastEngine（Docker），唯讀載入封存模型與公開歷史 | 行情資料只到 2026-10-02，尚無每日更新 |
+
+分工不變：AI 助理只選工具和解釋，菜價一律由 ForecastEngine 計算；AI 助理的解釋內容尚未驗證。本機原型（規則式 Agent＋`/records` 保存 API）保留，但不在雲端系統中。本機語言模型 Qwen3.8-27B 自 2026-10-17 **封存**（未刪除，見 [D46](docs/DECISIONS.md)）；GLM API、Hermes、SERVER_3090 仍暫緩。部署細節見 [Oracle 操作](deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md) 與 [MCP 工具契約](deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md)。
+
+## 內容基礎：Proposal v5 r3（2026-10-09）
+
+**狀態：第三輪 ChatGPT/COS 獨立複審 EXTERNAL_PASS，僅提案文件和 33 頁簡報。** 期中交付的 v7 簡報由它濃縮而成；外審結論不自動延伸到 v7 或整個期末產品。參閱 [獨立審查報告](outputs/audits/proposal_v5_r3_independent_20261009_01/REVIEW_R3.md) 與 [版本狀態](docs/proposal_v5/STATUS.md)。已驗收的 PPTX/PDF 原始快照保持不變。
 
 | 內容 | 正式主入口 |
 | --- | --- |
@@ -50,7 +75,7 @@
 | 講稿、來源與重建說明 | [逐頁講稿](slides/proposal_v5/SLIDE_NOTES_v5.md)・[來源](slides/proposal_v5/SOURCES.md)・[重建 README](slides/proposal_v5/README.md) |
 | 工程設計與正式驗收 | [design.md §6](design.md)・[驗收狀態](docs/PROPOSAL_ACCEPTANCE.md) |
 
-**尚未完成**：真正的 LLM Planner／自主選工具與 GLM/Qwen/Hermes 後端、同店到期價 A/B 增益、SERVER／外網手機、正式影片、GitHub／YouTube／課程交件及組員日期。前述功能不能因 Proposal 通過而宣稱 PASS。
+**尚未完成**：ChatGPT／Gemini 介面內的實際對話驗收與解釋正確性、同店到期價 A/B 增益、每日行情更新、YouTube 上傳、GitHub 對教授開放、課程交件及組員日期。Qwen3.8-27B 封存；GLM/Hermes/SERVER_3090 暫緩。前述功能不能因 Proposal 通過而宣稱 PASS。
 
 ## 歷史 v3 交付入口（v1／v2／v4 保留）
 
@@ -72,25 +97,25 @@
 
 ## 已完成／待驗證／暫緩（如實分列）
 
-**已完成（本機、可重現）**：公開資料、封存模型與評估、模型包、HTTP API、手機 Web／規則 Agent 原型，以及 Proposal v5 r3 文件與33頁簡報的獨立複審 PASS；真正 LLM Planner 尚未接線。
+**已完成**：公開資料、封存模型與評估、模型包、HTTP API、手機 Web／規則 Agent 本機原型；Proposal v5 r3 文件與 33 頁簡報的獨立複審 PASS；期中 v7 簡報與配音影片；雲端網頁（Oracle，61 品項）與 MCP 服務（Cloudflare，2 工具）上線，遠端協定實測 6/6。
 
-**待驗證（有協議、未執行）**：真店 A/B 到期增益（T16，缺真店到期價）；B 之 α=0.3 未訓練；使用者人因評估；參數敏感度與近期方法同資料比較。
+**待驗證（有協議、未執行）**：真店 A/B 到期增益（T16，缺真店到期價）；B 之 α=0.3 未訓練；ChatGPT／Gemini 介面內對話與解釋正確性；使用者人因評估；參數敏感度與近期方法同資料比較。
 
-**暫緩（D44 決議不修不驗）**：GLM API／Qwen3.8-27B／SERVER_3090 部署與外網展示（T23–T32）；代理人語言模型後端整合（保留已知缺口，見 [代理人方向](docs/AGENT_RUNTIME_DIRECTION.md)）。
+**封存／暫緩**：Qwen3.8-27B **封存**（D46，不刪程式與文件、不自動恢復）；GLM API、Hermes、SERVER_3090 部署暫緩（D44；見 [代理人方向](docs/AGENT_RUNTIME_DIRECTION.md)）。外網展示改由上方的雲端網頁與 MCP 服務提供。
 
-**未完成交付**：**完整影片未錄製（既有兩頁1分56秒試片）**；**GitHub／YouTube／課程提交未發布**（待授權）；組員／組長／正式日期待填。
+**未完成交付**：影片已完成（9 分 35 秒，本機），**YouTube 尚未上傳**；GitHub 目前是私人 repo，尚未對教授開放；課程提交未進行；組員／組長／正式日期待填。
 
 ## 本機使用與重現
 
 - 環境：Windows＋`.venv`（pandas 2.3.3、pyarrow 25.0.1、scikit-learn、python-pptx 1.0.2、matplotlib 3.11.2、pywin32 312、pypdf 6.19.0；PowerPoint（COM 匯出用）與微軟正黑體）。本清單為現有環境盤點，未做乾淨環境重建驗證。
 - 啟動 API（規則模式展示）：`.venv\Scripts\python.exe -m uvicorn aiot_price.api.app:app`（詳 [design.md](design.md)）。
-- **正式 v5 重建**：請依 [slides/proposal_v5/README.md](slides/proposal_v5/README.md) 在全新輸出目錄依序跑 build.py、export_safe.py、check.py；勿覆寫已驗收的 v5 r3 PPTX/PDF。下列四項為歷史 v2 重建命令，僅供回溯：
+- **期中 v7 重建**：請依 [slides/proposal_v7/README.md](slides/proposal_v7/README.md) 在全新輸出目錄依序跑 build.py、export_safe.py、check.py。v5 重建見 [slides/proposal_v5/README.md](slides/proposal_v5/README.md)；勿覆寫已驗收的 v5 r3 PPTX/PDF。下列四項為歷史 v2 重建命令，僅供回溯：
   1. `.venv/Scripts/python.exe slides/source/build_stats_master.py --out <新run>/stats_master.json`
   2. `.venv/Scripts/python.exe slides/source/make_assets.py --out <新素材目錄> --stats <新run>/stats_master.json`
   3. `.venv/Scripts/python.exe slides/source/make_pptx.py --pptx <新pptx> --assets <素材> --notes slides/source/notes_v2.json --stats <新run>/stats_master.json`
   4. `.venv/Scripts/python.exe slides/source/export_and_render.py --pptx <新pptx> --render <新run>/render`
 - 製作工具測試：`.venv/Scripts/python.exe -m pytest slides/source/test_make_tools.py -q`（15 項）。
-- 版本管理：本地 Git（未推送）；`data/`、`private/`、`models/`、`outputs/` 不入庫。
+- 版本管理：Git，已推送到私人 GitHub repo `prometheans152/FreshMarketPriceForecastAgent`（只推 `main`）；`data/`、`private/`、`models/`、`outputs/`、`recordings/` 不入庫。
 
 ---
 

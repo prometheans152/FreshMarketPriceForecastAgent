@@ -1,14 +1,45 @@
 # 設計藍圖：現場菜價 7／14 天預測與分析代理人
 
-**2026-10-09 現行提案設計入口：** [Proposal v5 r3](docs/proposal_v5/PROPOSAL.md)、[Agent 設計](docs/proposal_v5/AGENT_DESIGN.md)、[Deep Research](docs/proposal_v5/DEEP_RESEARCH.md)、[文獻表](docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md)；[第三輪獨立複審](outputs/audits/proposal_v5_r3_independent_20261009_01/REVIEW_R3.md) 已對**提案文件及簡報**判定 EXTERNAL_PASS。既有 §0–§5 與舊草案保留，最新 CURRENT/PARTIAL/PROPOSED 映射見下方 §6；產品 LLM、同店驗證及 SERVER 仍未完成。
+**2026-10-18 現行設計入口：** 目前實際運作的系統見 **§0A**（對應[期中簡報 v7](slides/proposal_v7/README.md) 第 10–12 頁）。研究內容以 [Proposal v5 r3](docs/proposal_v5/PROPOSAL.md)、[Agent 設計](docs/proposal_v5/AGENT_DESIGN.md)、[Deep Research](docs/proposal_v5/DEEP_RESEARCH.md)、[文獻表](docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md) 為準；[第三輪獨立複審](outputs/audits/proposal_v5_r3_independent_20261009_01/REVIEW_R3.md) 已對**提案文件及 33 頁簡報**判定 EXTERNAL_PASS（不延伸到 v7）。§0–§5 為本機原型與工程歷史，§6 為 CURRENT/PARTIAL/PROPOSED 映射；Qwen3.8-27B 自 2026-10-17 封存（D46）；AI 助理介面內對話驗收、同店驗證、每日行情更新仍未完成。
 
-重整日期：2026-10-04（P4，D44 工作包；同日 D44-R05 修訂＋D44-收尾輪：架構五群組編號與對照解說、清除帶分組精確化（t+h+1 期限別）、教學例全標教學假設、暫緩現況措辭）。本檔是正式設計藍圖（現況→本輪→未來分層）；原 2026-10-03 草案全文保留於文末「歷史附錄」不刪除。本輪（D44）六工作包＝研究動機/相關研究/三貢獻/本藍圖/OpenSpec/正式投影片；**非目標**：代理人修復、GLM/Qwen 接線、SERVER 部署、重訓模型（均暫緩，現有介面僅作展示載體）。
+重整日期：2026-10-04（P4，D44 工作包；同日 D44-R05 修訂＋D44-收尾輪：架構五群組編號與對照解說、清除帶分組精確化（t+h+1 期限別）、教學例全標教學假設、暫緩現況措辭）。本檔是正式設計藍圖（現況→本輪→未來分層）；原 2026-10-03 草案全文保留於文末「歷史附錄」不刪除。本輪（D44）六工作包＝研究動機/相關研究/三貢獻/本藍圖/OpenSpec/正式投影片；**非目標**：代理人修復、GLM/Qwen 接線、SERVER 部署、重訓模型（均暫緩，現有介面僅作展示載體；Qwen3.8-27B 其後於 2026-10-17 封存，D46）。
+
+## 0A. 目前實際運作的系統（2026-10-17；對應期中簡報 v7 第 10 頁）
+
+編號與 v7 第 10 頁相同，是功能群組索引，不是執行順序；虛線是下一步，尚未上線。
+
+```text
+①瀏覽器 ──HTTPS──▶ ③Oracle 主機：雲端網頁（61 品項、7／14 天、A／B；紀錄只存在使用者瀏覽器）
+                         │
+①AI 助理（ChatGPT／Gemini；只選工具和解釋）
+   └──MCP 呼叫──▶ ②Cloudflare Worker MCP 服務
+                    兩個工具：get_market_quote、post_forecast
+                    嚴格參數格式、四組流量限制、核對預測服務回傳
+                    只開放原 3 品項、13 個市場的 A 模式；不提供 B 與保存
+                         │私有通道（Workers VPC → Cloudflare Tunnel）
+                         ▼
+                   ③Oracle 主機 ──▶ ④ForecastEngine（Docker；封存模型；菜價一律在這裡算）
+                                          │唯讀載入
+                                          ▼
+                                    ⑤公開歷史（臺中 13 市場，資料至 2026-10-02）
+┄┄ 下一步（虛線，未上線）：每日更新行情、同店到期驗證、分析工具 ┄┄
+```
+
+| 項目 | 目前狀態 | 限制 |
+| --- | --- | --- |
+| 雲端網頁 | https://161.33.19.220/web/ ，免登入；原 3 品項用封存 RF（7 天）／HGB（14 天）v0.1.0，其餘品項用 57 品項共同訓練的 HGB v1.0.0 | 57 品項 HGB 的留出測試 MAE 未勝不變價（[模型卡](docs/deployment/POOLED_ML_MODEL_CARD_V1.md)） |
+| MCP 服務 | `https://fresh-market-price-agent.prometheans152.workers.dev/mcp`；遠端協定實測 6/6（2026-10-17） | ChatGPT／Gemini 介面內的實際對話驗收尚未做；ChatGPT 連接器仍連舊 Worker，待使用者切換 |
+| AI 助理的角色 | 理解請求、從兩個白名單工具中選擇、依工具結果解釋 | 解釋內容的正確性尚未驗證；語言模型不算菜價 |
+| 本機原型（§1） | 規則式 Agent、`/forecast`、`/agent/query`、`/records` 保留 | 不在雲端系統中 |
+| 語言模型後端 | Qwen3.8-27B 自 2026-10-17 **封存**（D46，不刪程式與文件、不自動恢復） | GLM API、Hermes、SERVER_3090 暫緩 |
+
+研究數字與結論不因部署而改變：正式模型方向 macro-F1 未勝動量、相對變化 MAE 未勝不變價、上漲召回偏低；B 的 α=0.3 是固定規則；同店效果尚無證據。部署細節見 [Oracle 操作](deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md)、[MCP 工具契約](deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md)、[改名搬遷紀錄](deploy/RENAME_MIGRATION.md)。
 
 ## 0. 使用情境與輸入輸出（PA–PE）
 
 使用者在蔬果行，以手機輸入：**品項**（甘藍/青江白菜/絲瓜）、**今天價格**（元/台斤或元/公斤）、選填**上週同店同規格同單位價格＋實際日期**。系統輸出：從使用者今天 t 起算的 **7／14 天**方向（up/flat/down/資料不足）、相對變化估計、店價估計（A 錨定）、B 對照（若有可比上週價）、資料截止日與驗證範圍標示。缺資料→要求補充；上週不可比（7±2 天外/換店/換規格/跨品項）→回 A 並說明。
 
-## 1. 現況架構（已實作；對應 PD/PG 圖一）
+## 1. 本機原型架構（已實作；對應 PD/PG 圖一；雲端現況見 §0A）
 
 依實際程式呼叫關係（唯讀核對 `api/app.py`、`api/prediction_records.py`、`models/predict.py`）分**五個功能群組**；群組內含子元件。**數字為群組索引（供正文／講稿對照指認），不是執行順序**；實線＝現況資料流、虛線＝暫緩未來。
 
@@ -38,14 +69,14 @@
 │④ 公開行情資料（public_history 凍結快照；唯讀，不存放使用者私人紀錄）│
 └──────────────────────────────────┘
 ┄┄┄ 暫緩未來區（虛線，未部署未驗收）┄┄┄
-┆ GLM API 後端／Qwen3.8-27B 端點／Hermes 0.19.0：未來負責「理解與解釋」的 LLM，
+┆ GLM API 後端／Hermes 0.19.0（暫緩）、Qwen3.8-27B（2026-10-17 封存，D46）：原規劃負責「理解與解釋」的 LLM，
 ┆ 不是用 LLM 猜菜價（菜價一律由③的模型計算）；SERVER_3090 部署與外網展示（T32）。
 ```
 
 **對照解說（與投影片 v3 第 8 頁同一套編號）**：①接收使用者報價與選填上週價後，把查詢交給②；②檢查條件與單位（不可比的上週價自動回 A 並說明），通過後呼叫③；③讀取④提供的唯讀公開歷史，以載入的封存模型計算 r̂ 並做 A/B，結果經②回傳①並附期限、截止日與限制。只有使用者選擇保存時，②才把當次預測凍結寫入⑤（獨立私人紀錄，非④）；之後的查閱與匯出也經②回到①，作為到期核對依據。虛線區為暫緩未來，不畫成已運行。
 
 - **已運行（本機）**：①–⑤的底層模組／API／資料流已具備，②仍為規則式固定工具序列，⑤保存透過 Web 獨立呼叫 /records；**不代表產品具備自主選工具的 LLM Planner**（最新 CURRENT/PARTIAL/PROPOSED 見 §6）。
-- **暫緩（虛線，未部署）**：LLM 後端（GLM/Qwen/Hermes，理解與解釋用）與 SERVER_3090／外網（T32）；D44 決議本批不修復、不驗收、不接線，僅如實標示。
+- **暫緩／封存（虛線，未部署）**：LLM 後端（GLM/Hermes 暫緩；Qwen3.8-27B 封存，D46）與 SERVER_3090（暫緩）；D44 決議本批不修復、不驗收、不接線，僅如實標示。外網展示已改由 §0A 的雲端網頁與 MCP 服務提供。
 - 圖一來源：本節文字圖（可編輯）；投影片（v3）第 8 頁同構重繪（群組框＋語意箭頭＋端點小字＋圖例）。
 
 ## 2. 一次 A/B 查詢的資料流（PG 圖二；PJ 數字例）
@@ -92,21 +123,21 @@
 
 - 風險：up 召回低（≈10%）限制「會漲」警示；僅一年資料；均價≠店價；持平多數。緩解：明示限制、保留負向、B 到期驗證設計。
 - 版本/回退：模型包 v0.1.0（manifest 含 hash）；更新流程（R07：config/download/schema/write/reload 五階段退出碼 0–5）。
-- 未來（未實作，不畫成已運行）：GLM/Qwen 後端接線、SERVER_3090 部署、外網手機（T32）、真店收集（T16）、使用者研究。
+- 未來（未實作，不畫成已運行）：每日行情更新、真店收集（T16）、ChatGPT／Gemini 介面內對話驗收、使用者研究；GLM 後端與 SERVER_3090 暫緩，Qwen3.8-27B 封存（D46）。外網手機已由 §0A 的雲端網頁提供。
 - 已知工程缺陷：第五輪 GLM 自報 S01–S09 已修（見 ROUND5_REPAIR_REPORT），**屬執行者自驗、未經新一輪獨立審查**；D44 起代理人相關整合暫緩——保留已知缺口，本批不修復、不驗收、不接線，藍圖僅如實標示（詳 docs/AGENT_RUNTIME_DIRECTION.md 與各輪獨立審查）。
 
 ---
 
 ## 6. Proposal v5 r3：真實程式、Domain Agent 設計與待辦分界
 
-教授要求的最新 **①–⑤ 系統架構、D1–D9 流程圖、Algorithm 1 完整41行 Pseudocode** 在 [AGENT_DESIGN.md](docs/proposal_v5/AGENT_DESIGN.md) §3／§7／§8；[簡報](slides/proposal_v5/README.md) 主講第11–13頁、附錄第28頁。上方 D44 架構圖保存工程歷史；如狀態不一致，以本節與 AGENT_DESIGN 的實機核對優先。
+教授要求的 **①–⑤ 系統架構、D1–D9 流程圖、Algorithm 1 完整41行 Pseudocode** 在 [AGENT_DESIGN.md](docs/proposal_v5/AGENT_DESIGN.md) §3／§7／§8；[v5 簡報](slides/proposal_v5/README.md) 主講第11–13頁、附錄第28頁；期中 [v7 簡報](slides/proposal_v7/README.md) 第10–12頁改以 §0A 目前運作的系統標注現況。上方 D44 架構圖保存工程歷史；如狀態不一致，以本節與 AGENT_DESIGN 的實機核對優先。
 
 | 狀態 | 可主張的功能 | 必須保留的限制 |
 | --- | --- | --- |
 | **CURRENT** | 規則式 parse_query；AgentTools 兩個工具 get_market_quote／post_forecast；ForecastEngine 封存 RF/HGB；ToolCallLimiter 限制呼叫**次數**；RuleBackend 模板由工具結果組文；獨立 Web/records 保存 API | 固定序列非自主 Planner；RuleBackend 模板不經 validate_qwen_answer；save_record 尚非 AgentTool |
 | **CURRENT＋PARTIAL** | 公開資料落後3日以上會警告；無可用特徵才回 stale_data_unusable；validate_qwen_answer 只掛於 QwenBackend 路徑 | 不可宣稱所有超期資料都硬性拒絕，或所有文字都經過同一驗證器；10秒工具逾時只有常數，未證實所有工具路徑有 timeout |
 | **PARTIAL／HOLD** | 可保存/查閱/匯出預測；有事先配對驗證設計 | 同店 t+7/t+14 真價缺失（T16），不具備已驗證的 B 增益與 Agent 保存工具化 |
-| **PROPOSED** | LLM Planner 能按使用者問題選白名單工具、經伺服器端 schema 驗證後呼叫；LLM 只理解/解釋、不產生菜價；抽象工具 get_public_quote、call_forecast、save_record | GLM API、Qwen3.8-27B、Hermes、SERVER、真實自主工具選擇及外網展示皆未部署驗收 |
+| **PROPOSED** | LLM Planner 能按使用者問題選白名單工具、經伺服器端 schema 驗證後呼叫；LLM 只理解/解釋、不產生菜價；抽象工具 get_public_quote、call_forecast、save_record 雲端已由 ChatGPT／Gemini 經 MCP 從兩個白名單工具中選擇（§0A），但介面內對話與解釋正確性未驗收；抽象工具 save_record 未工具化；GLM API、Hermes、SERVER 暫緩，Qwen3.8-27B 封存（D46） |
 
 研究與實作邊界不變：公開市場均價≠私人店價；A使用今天現價錨定，B加入選填、可比較的上週同店價；B的0.3是固定規則，尚無同店到期驗證；正式模型方向macro-F1未勝動量，價格相對變化MAE未勝不變價，上漲召回仍偏低。全部數字以凍結評估為準，不重訓不漂白負向結果。
 
@@ -115,6 +146,8 @@
 ---
 
 # 歷史附錄：2026-10-03 設計草案（原文保留）
+
+> 本附錄原文保留，不是現行設計。其中 Qwen3.8-27B 與 SERVER_3090 的規劃已更動：Qwen3.8-27B 自 2026-10-17 封存（D46），SERVER_3090 暫緩；目前運作的系統見 §0A。
 
 # 設計草案：現場菜價7／14天預測與分析代理人
 
