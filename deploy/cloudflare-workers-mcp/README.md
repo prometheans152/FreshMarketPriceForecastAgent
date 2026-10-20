@@ -1,7 +1,7 @@
 # Fresh Market Price Forecast Agent Remote MCP — Cloudflare VPC → Oracle server E2E PASS
 
 > **Rename (2026-10-16/17):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
-> The Oracle host was migrated on 2026-10-17 except the certbot timer (`tw01-certbot-renew.*`);
+> The Oracle host is fully migrated (2026-10-17; the certbot timer, renamed last, on 2026-10-20);
 > the new Worker `fresh-market-price-agent` is live (6/6 E2E), while ChatGPT still uses the old
 > `tw01-forecast-mcp`, which stays up until the connector is switched. Progress: [RENAME_MIGRATION.md](../RENAME_MIGRATION.md).
 

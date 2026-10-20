@@ -1,6 +1,6 @@
 # ForecastEngine API v1 — Workers 對接契約
 
-> **改名（2026-10-16／17）：** 本文已改用新名稱 `fresh-market-price-agent-*`／`FMPA_*`。Oracle 主機已於 2026-10-17 遷移完成，只有 certbot 續期排程 `tw01-certbot-renew.*` 仍是舊名；新 Worker `fresh-market-price-agent` 已部署並通過 6/6，但 ChatGPT 仍連舊的 `tw01-forecast-mcp`（保留到切換為止）。進度見 [RENAME_MIGRATION.md](../../deploy/RENAME_MIGRATION.md)。
+> **改名（2026-10-16／17）：** 本文已改用新名稱 `fresh-market-price-agent-*`／`FMPA_*`。Oracle 主機已於 2026-10-17 遷移完成，最後一項 certbot 續期排程也已於 2026-10-20 改成 `fresh-market-price-agent-certbot-renew.*`；新 Worker `fresh-market-price-agent` 已部署並通過 6/6，但 ChatGPT 仍連舊的 `tw01-forecast-mcp`（保留到切換為止）。進度見 [RENAME_MIGRATION.md](../../deploy/RENAME_MIGRATION.md)。
 
 > 2026-10-15 最新：免帳號密碼的 HTTPS 網頁 https://161.33.19.220/web/ 顯示官方 61 品項價資料。原 v0.1.0 RF/HGB 模型**仍只用於原三種菜**；其他 57 個有行情品項已**另外訓練並獨立測試兩個新的 HGB ML 模型 multi-crop-ml/1.0.0**，網頁依品項選用。HGB 在留出測試的 7/14 天 MAE **都未優於不變價基準**，且均未有同店真價驗證。牛心柿全 0 缺測，不能預測。**這不是 Workers API v1 的變更**：以下兩條 Bearer Token 保護的 /v1 POST 仍只接舊三種菜、只提供匿名 A／行情；Token 和舊模型不變。雲端網頁保存紀錄只在使用者瀏覽器，Windows 本機 A/B 與私人紀錄維持原樣。另見 docs/deployment/POOLED_ML_MODEL_CARD_V1.md。
 

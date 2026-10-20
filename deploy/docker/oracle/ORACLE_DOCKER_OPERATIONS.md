@@ -1,6 +1,6 @@
 # Oracle Docker — 正式維運與回滾
 
-> **改名（2026-10-16／17）：** 本文已改用新名稱 `fresh-market-price-agent-*`／`FMPA_*`。Oracle 主機已於 2026-10-17 遷移完成，只有 certbot 續期排程 `tw01-certbot-renew.*` 仍是舊名；新 Worker `fresh-market-price-agent` 已部署並通過 6/6，但 ChatGPT 仍連舊的 `tw01-forecast-mcp`（保留到切換為止）。進度見 [RENAME_MIGRATION.md](../../RENAME_MIGRATION.md)。
+> **改名（2026-10-16／17）：** 本文已改用新名稱 `fresh-market-price-agent-*`／`FMPA_*`。Oracle 主機已於 2026-10-17 遷移完成，最後一項 certbot 續期排程也已於 2026-10-20 改成 `fresh-market-price-agent-certbot-renew.*`；新 Worker `fresh-market-price-agent` 已部署並通過 6/6，但 ChatGPT 仍連舊的 `tw01-forecast-mcp`（保留到切換為止）。進度見 [RENAME_MIGRATION.md](../../RENAME_MIGRATION.md)。
 
 日期：2026-10-15。**原 Oracle VPS 已正式切到 Docker Compose。** IP、HTTPS Nginx、Cloudflare Tunnel、Let's Encrypt IP SAN 憑證均保留。
 
@@ -75,7 +75,7 @@ Oracle 最後資源：實測停舊行程後 MemAvailable 約 454 MB，Swap 4095 
 
 ## 憑證與資料限制
 
-原短效 Let's Encrypt IP SAN 憑證目前到期日為 **2026-10-20 22:25:53 UTC**。fresh-market-price-agent-certbot-renew.timer 維持 active，並未因切 Docker 而更改；務必監控實際續期成功，Docker 本身不會替現有 Nginx 自動更新憑證。
+短效 Let's Encrypt IP SAN 憑證約 6 天半到期一次，由 fresh-market-price-agent-certbot-renew.timer 每日兩次檢查並自動續期（2026-10-20 確認：10-18 00:26 UTC 已自動續期，新到期日 **2026-10-24 15:28:07 UTC**）。切 Docker 沒有更改這個 timer；務必持續監控實際續期成功，Docker 本身不會替現有 Nginx 自動更新憑證。
 
 行情資料仍截止 2026-10-02，不是即時單店價格。原三品項 RF/HGB 與新 57 品項 HGB 皆未經同店到期驗證；新 HGB 7/14 天測試 MAE 未勝不變價基準。B 是固定 α=0.3 的實驗性規則。
 

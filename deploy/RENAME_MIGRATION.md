@@ -1,7 +1,8 @@
 # 改名上線遷移手冊（第 3 步：PR 合併後執行）
 
-> **執行進度（2026-10-17 01:45 台灣時間）：Oracle 主機與新 Worker 完成；TLS timer、ChatGPT 切換未做。**
+> **執行進度（2026-10-20 20:00 台灣時間）：Oracle 主機（含 certbot timer）與新 Worker 完成；ChatGPT 切換未做。**
 > - **已完成：**
+>   - 第 4 節（2026-10-20）：憑證已於 10-18 00:26 UTC 自動續期，新到期日 2026-10-24 15:28:07 UTC。`fresh-market-price-agent-certbot-renew.timer` 先啟用、手動跑一次服務成功，`renew --dry-run` 成功，之後才停用舊 timer。舊 unit 檔移到 `/root/fmpa-rename-backup-20261017/systemd/`。`systemctl list-unit-files 'tw01-*'` 已為空。
 >   - 3.3：7 個目錄搬到新名，舊路徑留 symlink；Compose 專案改為 `fresh-market-price-agent-oracle`。
 >   - 3.4：Nginx 檔名全部改名；新版回滾腳本 `--check-only` 為 READY。
 >   - 3.5：forecastengine（disabled）、origin-firewall（只剩 `fmpa_` 規則）、cloudflared（4 條連線）都已改用新名稱。
@@ -10,11 +11,10 @@
 >   - 第 2 節：wrangler 改登入 Prometheans152 帳號後，部署新 Worker `fresh-market-price-agent`，VPC binding 與 4 個限流照舊；設定 secret `FORECASTENGINE_API_TOKEN`（由主機經管線送入，未顯示）；`real-remote-acceptance.mjs` 6/6 PASS。舊 Worker `tw01-forecast-mcp` 保留未動。
 > - **未做：**
 >   - 第 2 節第 6、7 步：ChatGPT（與 Gemini）connector 改連新網址需使用者在 ChatGPT 介面操作；改完並確認舊 Worker 無流量後，才刪除舊 Worker（需使用者同意）。
->   - 第 4 節 certbot timer：等憑證續期後再改，`tw01-certbot-renew.*` 仍是舊名，經 symlink 正常運作。
 >   - 第 5 節 ChatGPT 插件。
 > - 3.5 第 3 點的實際做法：cloudflared 切換的就緒檢查請用 `journalctl --since "@<epoch>"`；ISO 時間加 `Z` 會被 journalctl 拒絕。
 >
-> 以下第 4、5 節與第 2 節第 6、7 步仍是計畫。
+> 以下第 5 節與第 2 節第 6、7 步仍是計畫；第 3、4 節已執行，保留為紀錄。
 > 執行者需在 Windows 本機（有 `~\.ssh\oracle_amd_ed25519` 與 wrangler 登入）逐步操作、逐步驗證並記錄。
 > Oracle 已遷移：日常維運照 `deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md`；回滾用新版 `/opt/fresh-market-price-agent-docker/ops/rollback_oracle.py`（舊路徑經 symlink 同一檔）。
 
@@ -184,7 +184,7 @@ sudo python3 /opt/fresh-market-price-agent-docker/ops/rollback_oracle.py --tag 2
 
 線上 Nginx／systemd 檔案內容仍含 `/var/www/tw01-website/`、`tw01_public_web_per_ip` 等舊字串，經 symlink 仍正常。要改寫時一次一檔：先 `cp -a` 備份、改寫、`nginx -t`（或 `systemd-analyze verify`）通過才 reload；zone 名稱必須在 `conf.d` 定義與 `limit_req` 使用處同時改。
 
-## 4. TLS（最後；2026-10-20 22:25 UTC 到期）
+## 4. TLS（最後；已於 2026-10-20 完成，當時憑證已續期至 2026-10-24 15:28 UTC）
 
 1. 先確認已續期：`sudo /opt/fresh-market-price-agent-forecastengine/acme-venv/bin/certbot certificates`，到期日必須晚於 2026-10-20 22:25 UTC；`systemctl list-timers 'tw01-certbot-renew.timer'` 的上次執行成功。
 2. 續期 webroot：`/etc/letsencrypt/renewal/` 若寫 `/var/www/tw01-acme`，經 symlink 仍有效，**不要刪該 symlink**。
@@ -209,6 +209,6 @@ sudo python3 /opt/fresh-market-price-agent-docker/ops/rollback_oracle.py --tag 2
 ## 6. 完成後的清理（需使用者另外同意）
 
 - 舊 Worker `tw01-forecast-mcp` 確認無流量後刪除。
-- `/etc/systemd/system/tw01-*` 舊 unit 檔移除（先 `disable`，再刪檔、`daemon-reload`）。
+- `/etc/systemd/system/tw01-*` 舊 unit 檔：已全部移到 `/root/fmpa-rename-backup-20261017/systemd/`（2026-10-20），主機上已無 `tw01-*` unit。備份目錄要刪除需使用者另外同意。
 - 舊路徑 symlink：`/opt/tw01-forecastengine` 必須等 venv 重建後才可移除；其餘可在確認沒有任何設定引用舊路徑（`sudo grep -rn tw01 /etc /opt`）後移除。
 - repo 端：所有主機完成遷移後，再開 PR 移除 `TW01_*` 環境變數與 localStorage 舊鍵的過渡相容碼。

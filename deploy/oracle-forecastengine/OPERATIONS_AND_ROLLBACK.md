@@ -1,6 +1,6 @@
 # ForecastEngine Origin — 維運與回滾（內部文件）
 
-> **改名（2026-10-16／17）：** 本文已改用新名稱 `fresh-market-price-agent-*`／`FMPA_*`。Oracle 主機已於 2026-10-17 遷移完成，只有 certbot 續期排程 `tw01-certbot-renew.*` 仍是舊名；新 Worker `fresh-market-price-agent` 已部署並通過 6/6，但 ChatGPT 仍連舊的 `tw01-forecast-mcp`（保留到切換為止）。進度見 [RENAME_MIGRATION.md](../RENAME_MIGRATION.md)。
+> **改名（2026-10-16／17）：** 本文已改用新名稱 `fresh-market-price-agent-*`／`FMPA_*`。Oracle 主機已於 2026-10-17 遷移完成，最後一項 certbot 續期排程也已於 2026-10-20 改成 `fresh-market-price-agent-certbot-renew.*`；新 Worker `fresh-market-price-agent` 已部署並通過 6/6，但 ChatGPT 仍連舊的 `tw01-forecast-mcp`（保留到切換為止）。進度見 [RENAME_MIGRATION.md](../RENAME_MIGRATION.md)。
 
 驗收日：2026-10-14。以下為內部維運資訊，不應出現在對外 PPT；禁止把 API Token、私鑰、完整授權 Header 寫入程式、Git、聊天或日誌。
 
