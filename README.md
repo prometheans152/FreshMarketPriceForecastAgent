@@ -49,14 +49,14 @@
 | 報告 | 本 README＋[研究提案全文](docs/PROPOSAL_REPORT.md)＋[Proposal v5 r3 主稿](docs/proposal_v5/PROPOSAL.md) | 完成 |
 | Design MD（計畫藍圖書） | [design.md](design.md) | 完成（§0A 為目前運作的系統） |
 
-v7 由 33 頁的 v5 r3 濃縮而成，數字、圖表與結論不變；第 10–12、18–20 頁改成目前實際運作的系統。v7 本身沒有另做外部審查。
+v7 由 33 頁的 v5 r3 濃縮而成，數字、圖表與結論不變；第 10–12、18–20 頁改成目前實際運作的系統。v7 本身沒有另做外部審查。簡報和影片描述的是 2026-10-17 的系統；2026-10-28 起 MCP 已從 3 項擴充為 60 項（[D47](docs/DECISIONS.md)），第 10 頁「只開放原 3 品項」已過時。
 
 ## 目前實際運作的系統（2026-10-17）
 
 | 入口 | 實際運作 | 限制 |
 | --- | --- | --- |
 | 瀏覽器 → 雲端網頁 | https://161.33.19.220/web/ ，免登入；61 個品項的 7／14 天預測、A／B 比較；紀錄只存在使用者自己的瀏覽器 | 原 3 品項用封存的 RF（7 天）／HGB（14 天）v0.1.0；其餘品項用 57 品項共同訓練的 HGB v1.0.0，[測試誤差未勝不變價](docs/deployment/POOLED_ML_MODEL_CARD_V1.md) |
-| ChatGPT／Gemini 等 AI 助理 → MCP | Cloudflare Worker `https://fresh-market-price-agent.prometheans152.workers.dev/mcp` 提供兩個工具 `get_market_quote`、`post_forecast`；嚴格參數格式、四組流量限制、核對預測服務的回傳 | 只開放原 3 品項、13 個市場的 A 模式；不提供 B 與保存；遠端協定實測 6/6（2026-10-17），但 ChatGPT／Gemini 介面內的實際對話驗收尚未做 |
+| ChatGPT／Gemini 等 AI 助理 → MCP | Cloudflare Worker `https://fresh-market-price-agent.prometheans152.workers.dev/mcp` 提供兩個工具 `get_market_quote`、`post_forecast`；嚴格參數格式、四組流量限制、核對預測服務的回傳 | 2026-10-28 起開放與網頁相同算法的 60 個品項（牛心柿從無行情，不提供）、13 個市場，只有 A 模式；不提供 B 與保存；遠端實測原 6/6＋新品項 5/5（2026-10-28），但 ChatGPT／Gemini 介面內的實際對話驗收尚未做 |
 | 兩條路的共同後端 | Oracle 主機上的 ForecastEngine（Docker），唯讀載入封存模型與公開歷史 | 行情資料只到 2026-10-02，尚無每日更新 |
 
 分工不變：AI 助理只選工具和解釋，菜價一律由 ForecastEngine 計算；AI 助理的解釋內容尚未驗證。本機原型（規則式 Agent＋`/records` 保存 API）保留，但不在雲端系統中。本機語言模型 Qwen3.8-27B 自 2026-10-17 **封存**（未刪除，見 [D46](docs/DECISIONS.md)）；GLM API、Hermes、SERVER_3090 仍暫緩。部署細節見 [Oracle 操作](deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md) 與 [MCP 工具契約](deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md)。

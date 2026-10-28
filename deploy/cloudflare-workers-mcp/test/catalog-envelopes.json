@@ -1,0 +1,149 @@
+{
+ "note": "Recorded 2026-10-28 from the Oracle /v1 full-catalog extension (v1_full_catalog.py) running on the v1.0.0 image sources with the real catalog and pooled HGB.",
+ "quote_args": {
+  "crop_id": "taichung_40",
+  "market_id": "第三市場"
+ },
+ "quote": {
+  "tool": "get_market_quote",
+  "input_echo": {
+   "crop_id": "taichung_40",
+   "market_id": "第三市場"
+  },
+  "normalized_request": null,
+  "query_date": "2026-10-28",
+  "engine_result": {
+   "ok": true,
+   "crop_id": "taichung_40",
+   "crop_display_name": "花椰菜",
+   "market_id": "第三市場",
+   "price": 53.0,
+   "unit": "NTD_per_taiwan_jin",
+   "observed_date": "2026-10-01",
+   "public_data_cutoff": "2026-10-02",
+   "price_age_days_at_cutoff": 1,
+   "data_version": "172dffc76e82"
+  },
+  "price_age_days_at_query": 27,
+  "limits": [
+   "公開市場均價不等於個別店家真值，也不是即時報價。",
+   "第一版不支援 B、保存、讀取私人紀錄、任意程式或 URL。"
+  ],
+  "fact_text": "公開市場行情：第三市場／花椰菜（taichung_40），53.0 元／台斤；實際觀測日 2026-10-01，快照截止 2026-10-02。截至臺北查詢日 2026-10-28 已過 27 天。公開市場均價不等於個別店家真值，也不是即時報價。 第一版不支援 B、保存、讀取私人紀錄、任意程式或 URL。"
+ },
+ "forecast_args": {
+  "crop_id": "taichung_40",
+  "market_id": "第三市場",
+  "current_price": 50,
+  "price_unit": "NTD_per_taiwan_jin",
+  "observed_on": "2026-10-27"
+ },
+ "forecast": {
+  "tool": "post_forecast",
+  "input_echo": {
+   "crop_id": "taichung_40",
+   "market_id": "第三市場",
+   "current_price": 50,
+   "price_unit": "NTD_per_taiwan_jin",
+   "observed_on": "2026-10-27"
+  },
+  "normalized_request": {
+   "crop_id": "taichung_40",
+   "market_id": "第三市場",
+   "current_price": 50,
+   "price_unit": "NTD_per_taiwan_jin",
+   "observed_at": "2026-10-27T12:00:00+08:00",
+   "mode": "without_last_week",
+   "store_id": null
+  },
+  "query_date": "2026-10-28",
+  "engine_result": {
+   "request_id": "req-20261028185940186814",
+   "client_ref": null,
+   "simulated": false,
+   "mode_executed": "without_last_week",
+   "model_version": "multi-crop-ml/1.0.0",
+   "data_version": "172dffc76e82",
+   "forecast_method": "supervised_hgb_pooled",
+   "input_observed_at": "2026-10-27T12:00:00+08:00",
+   "public_data_cutoff": "2026-10-02",
+   "public_data_age_days": 25,
+   "public_last_visible_quote_date": "2026-10-01",
+   "crop_id": "taichung_40",
+   "crop_display_name": "花椰菜",
+   "market_id": "第三市場",
+   "store_id": null,
+   "results": [
+    {
+     "horizon_days": 7,
+     "target_date": "2026-11-03",
+     "direction": "flat",
+     "relative_change_estimate": -0.0056,
+     "price_estimate": 49.7,
+     "price_estimate_unit": "NTD_per_taiwan_jin",
+     "target_scope": "store_price_estimate",
+     "validation_scope": "unvalidated",
+     "probability": null,
+     "interval_low": null,
+     "interval_high": null,
+     "warnings": [
+      "此品項已採用以 57 種公開市場品項歷史資料訓練的 HGB 監督式 ML 模型，分別推估 7／14 天相對變化；尚無同店到期真價驗證。",
+      "時間序列留出測試中，新增品項 HGB 7／14 天平均相對變化 MAE 均未勝過不變價基準。模型已訓練≠預測比簡單基準更準，僅供實驗參考。",
+      "價格為現場輸入價乘以公開市場歷史變化比例的情境推估，公開均價不是個別店家的真值。"
+     ],
+     "evidence_summary": "以 花椰菜／第三市場 在 2026-10-01 前可見的官方市場日價建立回溯特徵，由跨 57 品項訓練的 HGB(h=7) 真正推論；模型時間留出測試相對變化 MAE=0.0212、不變價基準 MAE=0.0116。店價是輸入店價錨定推估，非同店真實驗證。"
+    },
+    {
+     "horizon_days": 14,
+     "target_date": "2026-11-10",
+     "direction": "flat",
+     "relative_change_estimate": -0.0145,
+     "price_estimate": 49.3,
+     "price_estimate_unit": "NTD_per_taiwan_jin",
+     "target_scope": "store_price_estimate",
+     "validation_scope": "unvalidated",
+     "probability": null,
+     "interval_low": null,
+     "interval_high": null,
+     "warnings": [
+      "此品項已採用以 57 種公開市場品項歷史資料訓練的 HGB 監督式 ML 模型，分別推估 7／14 天相對變化；尚無同店到期真價驗證。",
+      "時間序列留出測試中，新增品項 HGB 7／14 天平均相對變化 MAE 均未勝過不變價基準。模型已訓練≠預測比簡單基準更準，僅供實驗參考。",
+      "價格為現場輸入價乘以公開市場歷史變化比例的情境推估，公開均價不是個別店家的真值。"
+     ],
+     "evidence_summary": "以 花椰菜／第三市場 在 2026-10-01 前可見的官方市場日價建立回溯特徵，由跨 57 品項訓練的 HGB(h=14) 真正推論；模型時間留出測試相對變化 MAE=0.0313、不變價基準 MAE=0.0209。店價是輸入店價錨定推估，非同店真實驗證。"
+    }
+   ],
+   "results_without_last_week": [],
+   "results_with_last_week": [],
+   "b_unavailable_reason": null,
+   "warnings": [
+    "此品項已採用以 57 種公開市場品項歷史資料訓練的 HGB 監督式 ML 模型，分別推估 7／14 天相對變化；尚無同店到期真價驗證。",
+    "時間序列留出測試中，新增品項 HGB 7／14 天平均相對變化 MAE 均未勝過不變價基準。模型已訓練≠預測比簡單基準更準，僅供實驗參考。",
+    "價格為現場輸入價乘以公開市場歷史變化比例的情境推估，公開均價不是個別店家的真值。",
+    "公開資料截止 2026-10-02，查詢基準日 2026-10-27，相差 25 天；推估日仍從觀察日 t 起算 7／14 個日曆日。"
+   ],
+   "error": null,
+   "ml_training_scope": "57_new_public_market_crops",
+   "ml_holdout_evaluation": {
+    "7": {
+     "ml_mae_relative_change": 0.021237160629907718,
+     "flat_mae_relative_change": 0.011628274580561985,
+     "direction_macro_f1": 0.3777417011396147
+    },
+    "14": {
+     "ml_mae_relative_change": 0.03129711306143753,
+     "flat_mae_relative_change": 0.020850628406077355,
+     "direction_macro_f1": 0.4147374912226422
+    }
+   }
+  },
+  "price_age_days_at_query": 26,
+  "limits": [
+   "公開市場均價不等於個別店家真值，也不是即時報價。",
+   "店價 A 為現價錨定推估，尚未完成同店到期配對驗證。",
+   "此品項使用 57 品項共同訓練的 HGB 模型；時間留出測試的相對變化 MAE 未勝不變價基準。",
+   "第一版不支援 B、保存、讀取私人紀錄、任意程式或 URL。"
+  ],
+  "fact_text": "A 模式：花椰菜（taichung_40）／第三市場，店價 50 NTD_per_taiwan_jin，觀測日 2026-10-27（台北中午）／查詢日 2026-10-28。 7 天（2026-11-03）方向 flat，相對變化 -0.0056，店價點估計 49.7 NTD_per_taiwan_jin，驗證範圍 unvalidated。 14 天（2026-11-10）方向 flat，相對變化 -0.0145，店價點估計 49.3 NTD_per_taiwan_jin，驗證範圍 unvalidated。 模型版本 multi-crop-ml/1.0.0，資料版本 172dffc76e82，公開資料截止 2026-10-02；引擎警告：此品項已採用以 57 種公開市場品項歷史資料訓練的 HGB 監督式 ML 模型，分別推估 7／14 天相對變化；尚無同店到期真價驗證。；時間序列留出測試中，新增品項 HGB 7／14 天平均相對變化 MAE 均未勝過不變價基準。模型已訓練≠預測比簡單基準更準，僅供實驗參考。；價格為現場輸入價乘以公開市場歷史變化比例的情境推估，公開均價不是個別店家的真值。；公開資料截止 2026-10-02，查詢基準日 2026-10-27，相差 25 天；推估日仍從觀察日 t 起算 7／14 個日曆日。。 公開市場均價不等於個別店家真值，也不是即時報價。 店價 A 為現價錨定推估，尚未完成同店到期配對驗證。 此品項使用 57 品項共同訓練的 HGB 模型；時間留出測試的相對變化 MAE 未勝不變價基準。 第一版不支援 B、保存、讀取私人紀錄、任意程式或 URL。"
+ }
+}

@@ -1,0 +1,11 @@
+# /v1 full-catalog extension (D47). Layer on top of the running stack:
+#   docker compose -p fresh-market-price-agent-oracle \
+#     -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml up -d --no-build --pull never forecast
+# Roll back by running the same command without "-f compose.v1ext.yaml".
+# The image is not rebuilt; only these two read-only files are mounted.
+services:
+  forecast:
+    entrypoint: ["python", "/app/ext/engine_entrypoint_v1ext.py"]
+    volumes:
+      - ./v1ext/v1_full_catalog.py:/app/ext/v1_full_catalog.py:ro
+      - ./v1ext/engine_entrypoint_v1ext.py:/app/ext/engine_entrypoint_v1ext.py:ro

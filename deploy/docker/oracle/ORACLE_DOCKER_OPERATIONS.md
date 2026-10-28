@@ -10,7 +10,7 @@
 
 原 Cloudflare Workers MCP：https://fresh-market-price-agent.prometheans152.workers.dev/mcp （真實 6/6 E2E PASS）。
 
-ForecastEngine 原 API 路徑 /v1/forecast、/v1/market-quote 仍需原 Bearer Token，只有原三品項、匿名 A；網頁可用新 57 品項 HGB，但 MCP 契約不擴充。Oracle 直連 /mcp 不公開，仍 404；Docker 自架的 MCP 是另外一個容器內服務。
+ForecastEngine 原 API 路徑 /v1/forecast、/v1/market-quote 仍需原 Bearer Token，匿名 A；2026-10-28 起（D47）也接受網頁同一份目錄的其他品項，見下方「/v1 全目錄擴充」。Oracle 直連 /mcp 不公開，仍 404；Docker 自架的 MCP 是另外一個容器內服務。
 
 主機 Nginx 負責 80 HTTP 轉址/ACME 驗證及 443 TLS，轉發全部本專案網頁/預測/API 到主機 localhost:8080 的 Docker web Nginx。其下在同一個 Docker private network 有：
 
@@ -31,12 +31,25 @@ ForecastEngine 原 API 路徑 /v1/forecast、/v1/market-quote 仍需原 Bearer T
     cd /opt/fresh-market-price-agent-docker/stacks/20261015_120629
     sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml ps
     sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml logs --tail=50
-    sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml up -d --no-build --pull never
+    sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml up -d --no-build --pull never
     sudo systemctl status docker.service nginx.service fresh-market-price-agent-cloudflared.service fresh-market-price-agent-certbot-renew.timer
 
 Docker daemon 開機自動啟動；三個專案容器設定 restart:unless-stopped。**舊** fresh-market-price-agent-forecastengine.service 現在 inactive、disabled，但原 service unit、模型及私人資料沒有刪除。
 
 不使用 Compose 的 https/Caddy profile：Oracle 現有 Nginx 已合法占用 80/443 和自動續期，啟用 Caddy 會撞 port。
+
+## /v1 全目錄擴充（D47，2026-10-28）
+
+forecast 容器改用 `compose.v1ext.yaml` 啟動。映像不變（`tw01-portable-forecast:1.0.0`），只以唯讀方式掛入 `v1ext/v1_full_catalog.py` 與 `v1ext/engine_entrypoint_v1ext.py`（來源：repo `deploy/oracle-forecastengine/v1_full_catalog/`）。`/v1` 遇到原 3 品項時完全照舊；其他品項沿用網頁的公開目錄與 57 品項 HGB。
+
+之後的 `up` 指令都要加 `-f compose.v1ext.yaml`，否則 forecast 會退回只支援 3 品項。重建 forecast 後一定要重啟 web，因為網頁的 nginx 只在啟動時解析 forecast 的位址：
+
+    sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml up -d --no-build --pull never forecast
+    sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml restart web
+
+回滾到 3 品項：同一個 `up` 指令拿掉 `-f compose.v1ext.yaml`，再重啟 web。檔案 SHA256：`v1_full_catalog.py` b612022d…、`engine_entrypoint_v1ext.py` af26b478…、`compose.v1ext.yaml` b5434a17…。
+
+部署紀錄：2026-10-28 11:02 UTC 重建 forecast，30 秒後健康；主機內 `/v1` 實測、外網網頁、Worker 遠端原 6/6＋新品項 5/5 皆通過。行情停在 2026-10-02，其他品項的最近行情超過 45 天（約 11/16 後）會拒絕預測，網頁也一樣。
 
 ## 安全回滾（已通過 check-only 預檢）
 

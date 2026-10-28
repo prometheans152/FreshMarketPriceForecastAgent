@@ -100,6 +100,13 @@ test("real SDK Streamable HTTP initialize, tools/list, tools/call success via co
   assert.equal(listed.result.tools[1].inputSchema.additionalProperties, false);
   assert.deepEqual(listed.result.tools[0].inputSchema.required.sort(), ["crop_id", "market_id"]);
   assert.deepEqual(listed.result.tools[1].inputSchema.required.sort(), ["crop_id", "current_price", "market_id", "price_unit"].sort());
+  // D47: ChatGPT sees the item names, the markets and the ask-for-price rule.
+  for (const tool of listed.result.tools) {
+    assert.equal(tool.inputSchema.properties.crop_id.enum.length, 60);
+    assert.match(tool.inputSchema.properties.crop_id.description, /taichung_40=花椰菜/);
+    assert.match(tool.inputSchema.properties.market_id.description, /13 個/);
+  }
+  assert.match(listed.result.tools[1].description, /先向使用者問到/);
   const quote = await parseMcp(await transport(req(envelope("tools/call", {
     name: "get_market_quote", arguments: quoteArgs,
   }, 3))));

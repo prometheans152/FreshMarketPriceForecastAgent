@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
-  CROPS, MARKETS, TOOL_INPUTS, TOOL_NAMES, UNITS, ContractError,
+  CROP_NAMES, CROPS, MARKETS, TOOL_INPUTS, TOOL_NAMES, UNITS, ContractError,
   offsetDay, taipeiDay, validateArguments, verifyEngineResult, verifyOracleEnvelope,
 } from "../src/contracts.js";
 import { forecastArgs, forecastFixture, forecastEnvelopeFixture, quoteArgs, quoteFixture, quoteEnvelopeFixture } from "./fixtures.js";
@@ -9,10 +10,13 @@ import { forecastArgs, forecastFixture, forecastEnvelopeFixture, quoteArgs, quot
 const now = new Date("2026-10-14T08:00:00Z");
 const rejects = (name, args) => assert.throws(() => validateArguments(name, args, now), ContractError);
 
-test("exactly two tools and frozen Windows enums", () => {
+test("exactly two tools; 60 catalog items with Chinese names (D47)", () => {
   assert.deepEqual(TOOL_NAMES, ["get_market_quote", "post_forecast"]);
   assert.equal(Object.keys(TOOL_INPUTS).length, 2);
-  assert.deepEqual(CROPS, ["cabbage", "bok_choy", "sponge_gourd"]);
+  assert.equal(CROPS.length, 60);
+  assert.deepEqual(CROPS.slice(0, 3), ["cabbage", "bok_choy", "sponge_gourd"]);
+  assert.ok(!CROPS.includes("taichung_25"), "no public price ever: must not be offered");
+  assert.ok(CROPS.every(id => typeof CROP_NAMES[id] === "string" && CROP_NAMES[id].length > 0));
   assert.equal(MARKETS.length, 13);
   assert.deepEqual(UNITS, ["NTD_per_taiwan_jin", "NTD_per_kg"]);
 });
@@ -21,6 +25,23 @@ test("valid quote and explicit local observed day", () => {
   assert.deepEqual(validateArguments("post_forecast", forecastArgs, now), forecastArgs);
   assert.deepEqual(validateArguments("post_forecast", { ...forecastArgs, observed_on: undefined }, now),
     { ...forecastArgs, observed_on: "2026-10-14" });
+});
+test("catalog items accepted; unlisted items and names rejected (D47)", () => {
+  assert.equal(validateArguments("get_market_quote", { crop_id: "taichung_40", market_id: "第三市場" }, now).crop_id, "taichung_40");
+  for (const crop_id of ["taichung_25", "enoki_mushroom", "金針菇", "花椰菜"])
+    rejects("get_market_quote", { crop_id, market_id: "第三市場" });
+  rejects("get_market_quote", { crop_id: "taichung_40", market_id: "建國市場" });
+});
+test("real Oracle full-catalog envelopes pass the unchanged Worker checks (D47)", () => {
+  const rec = JSON.parse(readFileSync(new URL("./catalog-envelopes.json", import.meta.url), "utf8"));
+  assert.deepEqual(verifyOracleEnvelope("get_market_quote", rec.quote_args, rec.quote), rec.quote);
+  assert.deepEqual(verifyOracleEnvelope("post_forecast", rec.forecast_args, rec.forecast), rec.forecast);
+  const shifted = structuredClone(rec.forecast);
+  shifted.engine_result.results[0].target_date = "2026-11-04";
+  assert.throws(() => verifyOracleEnvelope("post_forecast", rec.forecast_args, shifted), ContractError);
+  const withB = structuredClone(rec.forecast);
+  withB.engine_result.results_with_last_week = [withB.engine_result.results[0]];
+  assert.throws(() => verifyOracleEnvelope("post_forecast", rec.forecast_args, withB), ContractError);
 });
 test("Taipei day roll-over, no arbitrary date substitution", () => {
   assert.equal(taipeiDay(new Date("2026-10-13T15:59:59Z")), "2026-10-13");

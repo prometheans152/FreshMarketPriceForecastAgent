@@ -2,8 +2,8 @@
 
 The original 0.1.0 RF/HGB model is NEVER used on unseen crops. Expanded crops
 use a disclosed, untrained momentum *baseline*, not a claimed trained model.
-This module is only reachable via the standalone browser website; existing
-MCP /v1/forecast and its 3-crop contract are deliberately untouched.
+Reachable from the browser website and, since D47 (2026-10-28), from the
+/v1 routes through v1_full_catalog/v1_full_catalog.py.
 """
 from __future__ import annotations
 

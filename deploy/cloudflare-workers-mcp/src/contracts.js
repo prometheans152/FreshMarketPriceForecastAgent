@@ -1,8 +1,25 @@
 import { z } from "zod";
 
-// This list mirrors the EXISTING Windows FMPA chatgpt_contracts.py; it is not
-// permission to change the existing Python contract, market data, or model.
-export const CROPS = Object.freeze(["cabbage", "bok_choy", "sponge_gourd"]);
+// D47 (2026-10-28): items mirror the Oracle public catalog the website forecasts
+// (catalog.json; taichung_25 has never had a public price and is left out). The
+// three original crops keep the frozen RF/HGB v0.1.0 model; the others use the
+// 57-item pooled HGB through the Oracle /v1 full-catalog extension.
+export const CROP_NAMES = Object.freeze({
+  cabbage: "甘藍（平地高麗菜）", bok_choy: "青江白菜", sponge_gourd: "絲瓜", taichung_02: "花胡瓜", taichung_03: "結球白菜(山東白)",
+  taichung_04: "蘿蔔", taichung_05: "胡蘿蔔", taichung_06: "青蔥", taichung_07: "胡瓜", taichung_09: "蕹菜(空心菜)",
+  taichung_11: "香蕉(內銷)", taichung_12: "番石榴(珍珠)", taichung_13: "鳳梨(開英)", taichung_14: "荔枝(黑葉)",
+  taichung_15: "火龍果(紅肉)", taichung_16: "芒果(愛文)", taichung_17: "木瓜", taichung_18: "文旦", taichung_19: "新世紀梨",
+  taichung_20: "檸檬", taichung_21: "鳳梨(四號)", taichung_22: "火龍果(白肉)", taichung_23: "新興梨", taichung_24: "橫山梨",
+  taichung_26: "甜柿", taichung_27: "紅柿(軟柿)", taichung_28: "桶柑", taichung_29: "椪柑", taichung_30: "海梨柑",
+  taichung_31: "鳳梨(金鑽17號)", taichung_32: "柳橙", taichung_33: "蓮霧", taichung_34: "棗子", taichung_35: "茂谷柑",
+  taichung_36: "芒果", taichung_37: "西瓜(大粒)", taichung_38: "小番茄_玉女", taichung_39: "小番茄_聖女", taichung_40: "花椰菜",
+  taichung_41: "洋蔥(內銷)", taichung_42: "蒜頭", taichung_43: "吳郭魚", taichung_44: "虱目魚", taichung_45: "金目鱸",
+  taichung_46: "龍虎斑", taichung_47: "午仔魚", taichung_48: "白蝦", taichung_49: "文蛤", taichung_50: "里肌肉",
+  taichung_51: "後腿肉", taichung_52: "五花肉", taichung_53: "牛腱(冷凍牛肉)", taichung_54: "腿肉(冷凍牛肉)",
+  taichung_55: "腩肉(冷凍牛肉)", taichung_56: "雞蛋", taichung_57: "鴨蛋", taichung_58: "肉雞", taichung_59: "土雞",
+  taichung_60: "仿雞", taichung_61: "鴨子(土番鴨)",
+});
+export const CROPS = Object.freeze(Object.keys(CROP_NAMES));
 export const MARKETS = Object.freeze([
   "中義市場", "南屯市場", "合作市場", "大甲第二市場", "東光市場", "梧棲第一市場",
   "沙鹿市場", "清水第一市場", "第三市場", "第二市場", "第五市場", "豐原第一市場", "霧峰市場",
@@ -10,18 +27,19 @@ export const MARKETS = Object.freeze([
 export const UNITS = Object.freeze(["NTD_per_taiwan_jin", "NTD_per_kg"]);
 export const TOOL_NAMES = Object.freeze(["get_market_quote", "post_forecast"]);
 export const TOOL_DESCRIPTIONS = Object.freeze({
-  get_market_quote: "查詢指定臺中市場、指定品項的公開市場均價及原始觀測日。非即時單店報價；每次均以 ForecastEngine 最新可用結果為準。",
-  post_forecast: "匿名 A 模式：以使用者指定的現場店價與實際觀測日向 ForecastEngine 查詢 t+7、t+14 日曆日預測。僅接受元／台斤或元／公斤，不支援 B、保存或私人紀錄；模型未完成真店驗證。",
+  get_market_quote: "查詢臺中市 13 個公有零售市場、指定品項的公開市場均價與原始觀測日。這是政府公布的市場均價，不是今天的店價；資料截至 2026-10-02。品項只能用 crop_id 清單裡的代號，請對照中文名稱選擇；清單沒有的品項（例如金針菇、小白菜）要直接告訴使用者不支援，不可猜測或替換。",
+  post_forecast: "用使用者今天在現場看到的店價，預測 7 天與 14 天後（精確日曆日）的漲跌方向與店價估計。呼叫前必須先向使用者問到：品項、市場、今天的價格與單位（元／台斤或元／公斤）；使用者沒給價格時要先詢問，不可用公開均價代替。只有 A 模式：不支援上週價（B）、保存或私人紀錄。結果未經同店到期驗證，模型測試誤差未勝不變價基準，回答時要一併說明。",
 });
 export const ANNOTATIONS = Object.freeze({
   readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false,
 });
 
-const crop = z.enum(CROPS);
-const market = z.enum(MARKETS);
-const price = z.number().finite().positive().max(1_000_000);
-const unit = z.enum(UNITS);
-const observation = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const crop = z.enum(CROPS).describe(
+  "品項代號（代號=中文名稱）：" + Object.entries(CROP_NAMES).map(([id, name]) => `${id}=${name}`).join("、"));
+const market = z.enum(MARKETS).describe("臺中市公有零售市場，只能是這 13 個之一；已停用或不在清單的市場（例如建國市場）不支援。");
+const price = z.number().finite().positive().max(1_000_000).describe("使用者今天在現場看到的價格（正數）。");
+const unit = z.enum(UNITS).describe("價格單位：NTD_per_taiwan_jin＝元／台斤，NTD_per_kg＝元／公斤；一把、一顆、一盒等沒有重量的單位不可用。");
+const observation = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe("看到價格的日期（臺北時間，YYYY-MM-DD）；省略時為今天。");
 export const TOOL_INPUTS = Object.freeze({
   get_market_quote: z.strictObject({ crop_id: crop, market_id: market }),
   post_forecast: z.strictObject({

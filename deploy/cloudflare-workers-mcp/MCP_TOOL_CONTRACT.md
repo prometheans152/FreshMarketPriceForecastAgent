@@ -1,5 +1,11 @@
 # Cloudflare MCP tool contract
 
+> **D47 (2026-10-28):** the tools accept the 60 catalog items the website forecasts
+> (`CROP_NAMES` in `src/contracts.js`, with Chinese names in the schema description),
+> still A mode only. Oracle serves the extra items through the `/v1` full-catalog
+> extension (`../oracle-forecastengine/v1_full_catalog/`). Worker version `e84d636c`;
+> rollback version `fe4614d6`. Remote acceptance: original 6/6 plus catalog 5/5.
+
 > **Rename (2026-10-16/17):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
 > The Oracle host is fully migrated (2026-10-17; the certbot timer, renamed last, on 2026-10-20);
 > the new Worker `fresh-market-price-agent` is live (6/6 E2E), while ChatGPT still uses the old
@@ -45,8 +51,8 @@ by this Worker. Internal Docker ports 8767/9000 are not
 publicly exposed.
 
 The three original crop IDs remain on frozen model `0.1.0`
-(7-day RF, 14-day HGB); 57 new HGB models in the Docker
-browser catalog are **not** MCP v1 tools. The same six
+(7-day RF, 14-day HGB); since D47 the other catalog items use
+the same 57-item pooled HGB as the browser. The same six
 MCP cases were independently re-run from Windows after cutover:
 **6/6 PASS**; original Docker RF/HGB hashes **2/2 match**.
 See `VPC_LIVE_ACCEPTANCE.md` and fresh evidence at
@@ -55,7 +61,7 @@ See `VPC_LIVE_ACCEPTANCE.md` and fresh evidence at
 ## get_market_quote
 
 Input schema: required exact strings `crop_id`, `market_id`. Allowed
-crop IDs: `cabbage`, `bok_choy`, `sponge_gourd`. Exact market names
+crop IDs: the 60 IDs in `CROP_NAMES` (`src/contracts.js`; `taichung_25` has no public price and is excluded). Exact market names
 in `src/contracts.js` (13 Taichung public markets).
 No extra properties. Fixed HTTPS upstream POST `/v1/market-quote`.
 

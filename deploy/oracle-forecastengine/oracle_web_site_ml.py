@@ -4,7 +4,8 @@ The original Oracle origin API is imported, not forked. For the old three
 crops the frozen RF/HGB logic is identical. For 57 new public crop IDs,
 the same protected website request validation/concurrency limits now invokes
 genuinely trained models from the independently signed pooled ML release.
-No change to the /v1/* MCP Bearer routes or browser private records.
+The /v1/* MCP Bearer routes are extended separately by v1_full_catalog (D47);
+no browser private records.
 """
 from __future__ import annotations
 

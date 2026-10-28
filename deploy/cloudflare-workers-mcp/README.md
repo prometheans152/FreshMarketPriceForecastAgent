@@ -148,7 +148,9 @@ custom-app availability is account- and region-dependent.
 
 ## Rollback
 
-Current successful VPC version is
+Current version (D47, 60 items, 2026-10-28) is
+`e84d636c-f13a-49ab-ba11-af45d1abfe11`; the previous 3-item version is
+`fe4614d6-5aaa-49e7-a2c3-6a427b99653a`. The older known-good VPC version is
 `ba488561-76c3-4a3d-9479-e1b71340e401`. If an unsafe future
 change occurs, roll back **only** `fresh-market-price-agent`
 to this known-good version. A prior inert OAuth version

@@ -15,7 +15,7 @@
    └──MCP 呼叫──▶ ②Cloudflare Worker MCP 服務
                     兩個工具：get_market_quote、post_forecast
                     嚴格參數格式、四組流量限制、核對預測服務回傳
-                    只開放原 3 品項、13 個市場的 A 模式；不提供 B 與保存
+                    60 個品項（D47，2026-10-28 起）、13 個市場，只有 A 模式；不提供 B 與保存
                          │私有通道（Workers VPC → Cloudflare Tunnel）
                          ▼
                    ③Oracle 主機 ──▶ ④ForecastEngine（Docker；封存模型；菜價一律在這裡算）
@@ -28,7 +28,7 @@
 | 項目 | 目前狀態 | 限制 |
 | --- | --- | --- |
 | 雲端網頁 | https://161.33.19.220/web/ ，免登入；原 3 品項用封存 RF（7 天）／HGB（14 天）v0.1.0，其餘品項用 57 品項共同訓練的 HGB v1.0.0 | 57 品項 HGB 的留出測試 MAE 未勝不變價（[模型卡](docs/deployment/POOLED_ML_MODEL_CARD_V1.md)） |
-| MCP 服務 | `https://fresh-market-price-agent.prometheans152.workers.dev/mcp`；遠端協定實測 6/6（2026-10-17） | ChatGPT／Gemini 介面內的實際對話驗收尚未做；ChatGPT 連接器仍連舊 Worker，待使用者切換 |
+| MCP 服務 | `https://fresh-market-price-agent.prometheans152.workers.dev/mcp`；遠端實測原 6/6＋新品項 5/5（2026-10-28）；品項與網頁相同（原 3 項用 RF/HGB v0.1.0，其他用 57 品項 HGB） | ChatGPT／Gemini 介面內的實際對話驗收尚未做；ChatGPT 連接器仍連舊 Worker，待使用者切換 |
 | AI 助理的角色 | 理解請求、從兩個白名單工具中選擇、依工具結果解釋 | 解釋內容的正確性尚未驗證；語言模型不算菜價 |
 | 本機原型（§1） | 規則式 Agent、`/forecast`、`/agent/query`、`/records` 保留 | 不在雲端系統中 |
 | 語言模型後端 | Qwen3.8-27B 自 2026-10-17 **封存**（D46，不刪程式與文件、不自動恢復） | GLM API、Hermes、SERVER_3090 暫緩 |

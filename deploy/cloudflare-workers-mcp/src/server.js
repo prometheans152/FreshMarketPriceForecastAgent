@@ -17,7 +17,7 @@ export function createServer(env, engineClient = callForecastEngine, requestSign
     name: "fresh-market-price-agent-forecastengine-remote",
     version: "0.1.0",
   }, {
-    instructions: "僅供臺中指定市場的公開行情及匿名 A 模式 7/14 天推估。公開均價不等於即時店價。必須有有效 ForecastEngine 工具結果才可提供數值；禁止 B、保存、機率或因果推斷。",
+    instructions: "提供臺中市 13 個公有零售市場、60 種品項（蔬菜、水果、魚、肉、蛋）的公開行情，以及用使用者今天的現場價做 7／14 天推估（匿名 A 模式）。預測前先問使用者今天看到的價格與單位。公開均價不等於即時店價，行情資料截至 2026-10-02。必須有有效 ForecastEngine 工具結果才可提供數值；禁止 B、保存、機率或因果推斷。",
   });
   // Exactly two tools. Do not register dynamic tools or untrusted names.
   for (const name of TOOL_NAMES) {
