@@ -1,0 +1,52 @@
+# Rolling public history (D48). Layer on top of the /v1 extension (D47):
+#   docker compose -p fresh-market-price-agent-oracle \
+#     -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml -f compose.rolling.yaml \
+#     up -d --no-build --pull never forecast
+# Roll back by running the same command without "-f compose.rolling.yaml".
+# The image is not rebuilt. forecast only READS the rolling folder; the
+# one-shot rolling-updater, started by the host timer with
+#   ... -f compose.rolling.yaml run --rm --no-deps -T rolling-updater
+# is its only writer.
+services:
+  forecast:
+    entrypoint: ["python", "/app/ext/engine_entrypoint_rolling.py"]
+    environment:
+      FMPA_ROLLING_DIR: /app/rolling
+    volumes:
+      - ./rolling/rolling_store.py:/app/ext/rolling_store.py:ro
+      - ./rolling/rolling_runtime.py:/app/ext/rolling_runtime.py:ro
+      - ./rolling/engine_entrypoint_rolling.py:/app/ext/engine_entrypoint_rolling.py:ro
+      - ${FMPA_ROLLING_HOST_DIR:-/opt/fresh-market-price-agent-docker/rolling-history}:/app/rolling:ro
+
+  rolling-updater:
+    profiles: [rolling]
+    image: tw01-portable-forecast:1.0.0
+    user: "10001:10001"
+    entrypoint: ["python", "/app/ext/rolling_update.py"]
+    environment:
+      TW01_RELEASE_DIR: /app/models/releases/0.1.0
+      TW01_EXTENDED_CATALOG_DIR: /app/catalog
+      FMPA_ROLLING_DIR: /app/rolling
+      TZ: Asia/Taipei
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./rolling/rolling_store.py:/app/ext/rolling_store.py:ro
+      - ./rolling/rolling_update.py:/app/ext/rolling_update.py:ro
+      - ${FMPA_ROLLING_HOST_DIR:-/opt/fresh-market-price-agent-docker/rolling-history}:/app/rolling
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    pids_limit: 40
+    mem_limit: 320m
+    cpus: 0.5
+    networks: [rolling_egress]
+
+networks:
+  # Only the updater needs the Internet; it shares no network with forecast/mcp/web.
+  rolling_egress: {}

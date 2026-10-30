@@ -1,0 +1,13 @@
+[Unit]
+Description=Twice-daily refresh of the rolling public market history (D48)
+
+[Timer]
+# Taichung publishes some markets a day late, so look twice a day. A switch
+# needs no restart: forecast picks the new version up within about a minute.
+OnCalendar=*-*-* 07:20:00 Asia/Taipei
+OnCalendar=*-*-* 19:20:00 Asia/Taipei
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,43 @@
+"""Read root-only Docker secret then run the rolling-history app as UID 10001.
+
+Same as v1_full_catalog/engine_entrypoint_v1ext.py except that it serves
+rolling_runtime:app, which is the /v1 full-catalog app (D47) reading its
+public price history from the rolling folder (D48).
+"""
+import os
+import sys
+from pathlib import Path
+
+
+def main():
+    file = Path(os.environ.get(
+        "FMPA_ORIGIN_TOKEN_FILE",
+        os.environ.get("TW01_ORIGIN_TOKEN_FILE", "/run/secrets/origin_api_token"),
+    ))
+    if not file.is_file() or file.is_symlink() or file.stat().st_size > 4096:
+        raise SystemExit("Origin Docker secret missing or malformed")
+    token = file.read_text(encoding="utf-8").strip()
+    if len(token) < 32 or "\n" in token or "\r" in token:
+        raise SystemExit("Origin Docker secret is invalid")
+    if os.geteuid() != 0:
+        raise SystemExit("Docker secret bootstrap must start as root")
+    env = dict(os.environ)
+    env.pop("FMPA_ORIGIN_TOKEN_FILE", None)
+    env.pop("TW01_ORIGIN_TOKEN_FILE", None)
+    env["FMPA_ORIGIN_API_TOKEN"] = token
+    env["TW01_ORIGIN_API_TOKEN"] = token
+    os.setgroups([])
+    os.setgid(10001)
+    os.setuid(10001)
+    args = [
+        sys.executable, "-m", "uvicorn", "rolling_runtime:app",
+        "--app-dir", "/app/ext",
+        "--host", "0.0.0.0", "--port", "8767", "--workers", "1",
+        "--no-access-log", "--log-level", "warning",
+        "--timeout-keep-alive", "4",
+    ]
+    os.execve(sys.executable, args, env)
+
+
+if __name__ == "__main__":
+    main()

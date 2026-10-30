@@ -1,0 +1,13 @@
+[Unit]
+Description=Fresh Market Price Forecast Agent: refresh the rolling public market history (D48)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/fresh-market-price-agent-docker/stacks/20261015_120629
+# Exit 2 = download rejected by validation, 3 = download failed. Either way the
+# forecast keeps serving the last good version; see rolling-history/status.json.
+ExecStart=/usr/bin/docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml -f compose.rolling.yaml run --rm --no-deps -T rolling-updater
+TimeoutStartSec=15min

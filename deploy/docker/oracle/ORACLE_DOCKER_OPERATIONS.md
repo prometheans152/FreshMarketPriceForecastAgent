@@ -31,8 +31,8 @@ ForecastEngine 原 API 路徑 /v1/forecast、/v1/market-quote 仍需原 Bearer T
     cd /opt/fresh-market-price-agent-docker/stacks/20261015_120629
     sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml ps
     sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml logs --tail=50
-    sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml up -d --no-build --pull never
-    sudo systemctl status docker.service nginx.service fresh-market-price-agent-cloudflared.service fresh-market-price-agent-certbot-renew.timer
+    sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml -f compose.rolling.yaml up -d --no-build --pull never
+    sudo systemctl status docker.service nginx.service fresh-market-price-agent-cloudflared.service fresh-market-price-agent-certbot-renew.timer fresh-market-price-agent-rolling-history.timer
 
 Docker daemon 開機自動啟動；三個專案容器設定 restart:unless-stopped。**舊** fresh-market-price-agent-forecastengine.service 現在 inactive、disabled，但原 service unit、模型及私人資料沒有刪除。
 
@@ -42,14 +42,64 @@ Docker daemon 開機自動啟動；三個專案容器設定 restart:unless-stopp
 
 forecast 容器改用 `compose.v1ext.yaml` 啟動。映像不變（`tw01-portable-forecast:1.0.0`），只以唯讀方式掛入 `v1ext/v1_full_catalog.py` 與 `v1ext/engine_entrypoint_v1ext.py`（來源：repo `deploy/oracle-forecastengine/v1_full_catalog/`）。`/v1` 遇到原 3 品項時完全照舊；其他品項沿用網頁的公開目錄與 57 品項 HGB。
 
-之後的 `up` 指令都要加 `-f compose.v1ext.yaml`，否則 forecast 會退回只支援 3 品項。重建 forecast 後一定要重啟 web，因為網頁的 nginx 只在啟動時解析 forecast 的位址：
+之後的 `up` 指令都要加 `-f compose.v1ext.yaml`，否則 forecast 會退回只支援 3 品項（D48 起還要再加 `-f compose.rolling.yaml`，見下一節）。重建 forecast 後一定要重啟 web，因為網頁的 nginx 只在啟動時解析 forecast 的位址：
 
     sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml up -d --no-build --pull never forecast
     sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml restart web
 
 回滾到 3 品項：同一個 `up` 指令拿掉 `-f compose.v1ext.yaml`，再重啟 web。檔案 SHA256：`v1_full_catalog.py` b612022d…、`engine_entrypoint_v1ext.py` af26b478…、`compose.v1ext.yaml` b5434a17…。
 
-部署紀錄：2026-10-28 11:02 UTC 重建 forecast，30 秒後健康；主機內 `/v1` 實測、外網網頁、Worker 遠端原 6/6＋新品項 5/5 皆通過。行情停在 2026-10-02，其他品項的最近行情超過 45 天（約 11/16 後）會拒絕預測，網頁也一樣。
+部署紀錄：2026-10-28 11:02 UTC 重建 forecast，30 秒後健康；主機內 `/v1` 實測、外網網頁、Worker 遠端原 6/6＋新品項 5/5 皆通過。當時行情停在 2026-10-02；2026-10-30 起改由下一節的滾動公開行情每日更新。
+
+## 滾動公開行情（D48，2026-10-30）
+
+模型與三道凍結檢查照舊綁 2026-10-02 訓練快照；模型輸入改讀每日更新的滾動版本。設計、驗證與限制見 repo `docs/ROLLING_PUBLIC_HISTORY.md`。
+
+- **forecast**：用 `compose.rolling.yaml` 啟動（疊在 `compose.v1ext.yaml` 上）。映像不變。
+  - 唯讀掛入 `rolling/rolling_store.py`、`rolling/rolling_runtime.py`、`rolling/engine_entrypoint_rolling.py`。
+  - 唯讀掛入主機資料夾 `/opt/fresh-market-price-agent-docker/rolling-history`（UID 10001 擁有）。
+- **更新器**：`fresh-market-price-agent-rolling-history.timer` 每天 07:20、19:20（台北）啟動一次性容器 `rolling-updater`。它是唯一能寫入滾動資料夾的程序，使用自己的網路 `rolling_egress`，上限 320 MB。
+- **不用重啟**：新版本驗證通過後，forecast 在下一次 `/healthz`（約 30 秒內）、沒有推論進行時換上。
+- **查狀態**：
+  - `curl -s http://127.0.0.1:8080/healthz` 的 `public_history`：`source` 應為 `rolling`，並列出 `version`、`cutoff` 與 `errors`。
+  - 更新器每次結果：`sudo cat /opt/fresh-market-price-agent-docker/rolling-history/status.json`，`outcome` 是 `switched`、`unchanged`、`rejected` 或 `download_failed`。
+  - 歷次結果：`runs.jsonl`。
+- **服務 exit code**：2 表示下載被驗證拒絕，3 表示下載失敗。兩種情況都會繼續服務最後一個好版本，需要人工查看 `status.json` 的 `code`／`message`。
+  - 來源真的縮短資料視窗時，確認後手動加 `--accept-shorter-download` 跑一次：
+
+        sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml -f compose.rolling.yaml run --rm --no-deps -T rolling-updater --accept-shorter-download
+
+之後的 `up` 指令都要加 `-f compose.v1ext.yaml -f compose.rolling.yaml`，否則 forecast 會退回凍結的 2026-10-02 行情。重建 forecast 後同樣要重啟 web：
+
+    sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml -f compose.rolling.yaml up -d --no-build --pull never forecast
+    sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml restart web
+
+**回滾到凍結行情（D47 狀態）：**
+
+1. 同一個 `up` 指令拿掉 `-f compose.rolling.yaml`，再重啟 web。
+2. 停用排程：`sudo systemctl disable --now fresh-market-price-agent-rolling-history.timer`。
+3. 滾動資料夾保留不刪。
+
+**檔案 SHA256：**
+- `rolling_store.py` c7fbfb73…、`rolling_update.py` 586dc146…、`rolling_runtime.py` 28d87ea4…、`engine_entrypoint_rolling.py` 01a33757…
+- `compose.rolling.yaml` 43e262cc…、`.service` 100bfd9d…、`.timer` 0529d96f…
+
+**部署紀錄（2026-10-30，UTC）：**
+
+- 17:12 更新器建立第一版 `20261029-d5f765439920`：
+  - 截止 2026-10-29，新增 314 個市場日。
+  - 與快照重疊 231,495 值 0 不符，跳動異常 0。
+  - 與本機建出的版本 ID 相同。
+- 17:13 重建 forecast，37 秒後 healthy，之後重啟 web。
+- 驗證：
+  - 主機內 `/healthz` 為 rolling。
+  - `/v1` 報價觀測日 10-29；以 t=2026-10-03 查詢與凍結版數字相同；四種拒絕的回應碼不變。
+  - 外網網頁與 `/v1` 數字一致。
+  - Worker 遠端原 6/6＋新品項 5/5。
+- forecast 記憶體 221 MiB／650 MiB；主機可用約 373 MB。
+- 17:18 啟用 timer，並經 systemd 手動跑一次：success、`unchanged`。
+
+證據在 Windows repo 的 `outputs/quality_runs/rolling_history_d48_deploy_20261031/`。
 
 ## 安全回滾（已通過 check-only 預檢）
 
@@ -90,7 +140,7 @@ Oracle 最後資源：實測停舊行程後 MemAvailable 約 454 MB，Swap 4095 
 
 短效 Let's Encrypt IP SAN 憑證約 6 天半到期一次，由 fresh-market-price-agent-certbot-renew.timer 每日兩次檢查並自動續期（2026-10-20 確認：10-18 00:26 UTC 已自動續期，新到期日 **2026-10-24 15:28:07 UTC**）。切 Docker 沒有更改這個 timer；務必持續監控實際續期成功，Docker 本身不會替現有 Nginx 自動更新憑證。
 
-行情資料仍截止 2026-10-02，不是即時單店價格。原三品項 RF/HGB 與新 57 品項 HGB 皆未經同店到期驗證；新 HGB 7/14 天測試 MAE 未勝不變價基準。B 是固定 α=0.3 的實驗性規則。
+模型用 2026-10-02 前的資料訓練。公開行情自 2026-10-30 起每日更新（D48），但仍是前一天以前的市場均價，不是即時單店價格。原三品項 RF/HGB 與新 57 品項 HGB 皆未經同店到期驗證；新 HGB 7/14 天測試 MAE 未勝不變價基準。B 是固定 α=0.3 的實驗性規則。
 
 ## 證據
 
