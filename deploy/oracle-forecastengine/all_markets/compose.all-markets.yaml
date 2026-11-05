@@ -1,0 +1,8 @@
+# D49 candidate. Layer after D47 and D48; deploy only after review.
+# In the actual Oracle stack directory, copy these files to ./all-markets/.
+services:
+  forecast:
+    entrypoint: ["python", "/app/ext/engine_entrypoint_all_markets.py"]
+    volumes:
+      - ./all-markets/all_markets_runtime.py:/app/ext/all_markets_runtime.py:ro
+      - ./all-markets/engine_entrypoint_all_markets.py:/app/ext/engine_entrypoint_all_markets.py:ro

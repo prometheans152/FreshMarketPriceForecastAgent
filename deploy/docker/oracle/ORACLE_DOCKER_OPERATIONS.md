@@ -103,6 +103,33 @@ forecast 容器改用 `compose.v1ext.yaml` 啟動。映像不變（`tw01-portabl
 
 ## 安全回滾（已通過 check-only 預檢）
 
+### D49：不選市場的全臺中參考（2026-11-05 已部署）
+
+已部署 2026-11-05：Oracle forecast 04:39:50 UTC 套用 `compose.all-markets.yaml`（40 秒健康），Worker 版本 `db4c59d8`（回滾版本 `e84d636c`）。主機實測全臺中參考 12/13 有效市場；原 3 品項一次 3.9–7.8 秒、其他品項 0.3–1.2 秒，都在 15 秒上限內；遠端原 6/6＋D49 5/5。之後的 `up` 指令都要再加 `-f compose.all-markets.yaml`，否則會退回 D48。
+
+D49 僅在 `/v1/forecast` 新增 `market_id=all_markets`，以既有 13 市場個別預測的 7／14 天相對變化取中位數；至少三個有效市場，店價以使用者輸入現價錨定。中位數的應用**未經評估**，不是任何市場／店家的真值。單一市場預測及 `/v1/market-quote` 契約維持 D48。它不重新訓練，也不改模型、資料、評估 JSON 或每日更新 timer。
+
+部署時先由審查者把 repo `deploy/oracle-forecastengine/all_markets/` 的
+`all_markets_runtime.py`、`engine_entrypoint_all_markets.py` 唯讀原檔放到既有正式 stack 下的 `all-markets/`，把 `compose.all-markets.yaml` 放到 stack 根目錄。使用既有唯讀的 D47/D48 檔、權限及映像，保留原有 root-only secret bootstrap。**只有獨立審查通過後才在 Oracle 上執行以下指令**（本工作包未執行）：
+
+```sh
+cd /opt/fresh-market-price-agent-docker/stacks/20261015_120629
+sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml -f compose.rolling.yaml -f compose.all-markets.yaml up -d --no-build --pull never forecast
+sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml restart web
+```
+
+驗收計畫：`/healthz` 仍顯示 D48 滾動截止日與相同模型版本；原三品項 RF/HGB 與新增 57 品項 HGB 各以 `all_markets` 實測 13 市場全程耗時小於既有 15 秒 timeout；逐市場清單、有效數、min/max、中位數、空值機率／區間要讓 Worker 嚴格核對。以單一市場的原 API 案例檢查不受影響，`/v1/market-quote` 必須拒絕 `all_markets`，無 3 個有效市場必須拒絕並不回數字。Oracle 完成後才升級 Worker；上線期間保留上一版 Worker 發行版本以便先退 Worker。
+
+**D49 Oracle 回滾：** 先讓 Worker 回到未提供 `all_markets` 的已記錄版本，再於同一目錄執行下列**完整** D48 指令並重啟 web：
+
+```sh
+cd /opt/fresh-market-price-agent-docker/stacks/20261015_120629
+sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml -f compose.v1ext.yaml -f compose.rolling.yaml up -d --no-build --pull never forecast
+sudo docker compose -p fresh-market-price-agent-oracle -f compose.yaml -f compose.oracle.yaml restart web
+```
+
+退回後仍保留 D47 全目錄、D48 滾動行情、每日 updater 與原模型，唯獨不支援 D49 `all_markets`。移除候選 override 可直接回滾，不刪除私有資料；不要把候選版本寫成已上線。
+
 原 Nginx 443 服務設定備份在：
 
     /etc/nginx/sites-available/fresh-market-price-agent-tls.conf.pre-docker-20261015_120629

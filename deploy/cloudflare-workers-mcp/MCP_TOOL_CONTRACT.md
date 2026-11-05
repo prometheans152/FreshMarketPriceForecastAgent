@@ -6,6 +6,14 @@
 > extension (`../oracle-forecastengine/v1_full_catalog/`). Worker version `e84d636c`;
 > rollback version `fe4614d6`. Remote acceptance: original 6/6 plus catalog 5/5.
 
+> **D49 (deployed 2026-11-05, Worker `db4c59d8`, rollback `e84d636c`):** `post_forecast` accepts
+> `market_id="all_markets"` when the user sees a price at an ordinary roadside
+> shop or does not identify a public market. It is a median of independently
+> predicted *relative changes* from up to 13 Taichung public markets, with at
+> least three valid contributors. No evaluation exists for this aggregation:
+> it is **not** an actual quote for any shop or public market. Keep the existing
+> Oracle /v1 auth, timeout, version and model integrity checks unchanged.
+
 > **Rename (2026-10-16/17):** names below are the new `fresh-market-price-agent-*` / `FMPA_*` ones.
 > The Oracle host is fully migrated (2026-10-17; the certbot timer, renamed last, on 2026-10-20);
 > the new Worker `fresh-market-price-agent` is live (6/6 E2E), while ChatGPT still uses the old
@@ -63,6 +71,7 @@ See `VPC_LIVE_ACCEPTANCE.md` and fresh evidence at
 Input schema: required exact strings `crop_id`, `market_id`. Allowed
 crop IDs: the 60 IDs in `CROP_NAMES` (`src/contracts.js`; `taichung_25` has no public price and is excluded). Exact market names
 in `src/contracts.js` (13 Taichung public markets).
+The special `all_markets` value is always rejected for `get_market_quote`.
 No extra properties. Fixed HTTPS upstream POST `/v1/market-quote`.
 
 On HTTP 200 the verified Oracle **complete** envelope is returned as
@@ -83,6 +92,32 @@ or future date is denied; historical date only succeeds if Oracle returns
 validated source data. Strict extra-property rejection prohibits B mode,
 last-week price, private store, saving, arbitrary URL and shell.
 
+D49 adds the exact value `all_markets` to the forecast tool's market enum.
+When the user supplies no named market, or is at a roadside store, **do not ask
+which market**: send `market_id="all_markets"`. If a named supported market is
+given, keep using that precise market. The assistant must still obtain a
+supported crop ID, the observed current shop price and its comparably weighted
+unit before calling the tool. It must never substitute an official market
+average for a missing shop price.
+
+In `all_markets` responses the Worker verifies, without modifying numbers:
+
+- `valid_market_count` is an integer between 3 and 13 and equals the length
+  of `market_predictions`; markets are distinct members of the original 13.
+- Each market has exactly t+7 and t+14 relative changes and directions.
+  Each aggregate result's relative change is the median of the respective
+  market changes (allowing only four-decimal rounding), and its min/max,
+  classified direction and shop-price estimate agree with the inputs.
+- Complete A-mode envelope, `market_id`, `store_id=null`,
+  `mode_executed="without_last_week"`, dates, units and null probabilities
+  and intervals still pass the original strict checks.
+- `warnings`, `limits` and `fact_text` include:
+  「全臺中參考：13 個公有市場各自預測的中位數；這種用法沒有經過評估；不是任何市場或店家的真值。」
+
+Insufficient usable markets or altered figures are hard errors: no numeric
+response. This median is **unvalidated**, not a measured improvement; existing
+frozen model scores and point-estimate warnings remain unchanged.
+
 Fixed HTTPS upstream POST `/v1/forecast` with these validated fields.
 Oracle API owner creates canonical noon `observed_at` and
 `mode=without_last_week`, `store_id=null`; Worker cross-checks this
@@ -101,3 +136,29 @@ truncated/oversized JSON, invalid origin TLS or malformed result return
 MCP `isError:true`, no synthetic result. HTTPS redirects are rejected.
 The request and response JSON Schema and upstream error status codes are
 governed by the Oracle owner's document, not by this Workers README.
+
+## D49 deployment / rollback
+
+Deployed 2026-11-05 in this order: Oracle override first (healthy after 40 s), then
+Worker `db4c59d8`. On Oracle the 13-market run took 3.9–7.8 s for the 3 frozen crops
+and 0.3–1.2 s for pooled items (limit 15 s). Remote acceptance: original 6/6, D49 5/5.
+
+1. Independently review the D49 diff and run `npm ci && npm test` in
+   `deploy/cloudflare-workers-mcp`. Run both real-model D49 probes against
+   portable and repo sources and check the <15s requirement before deployment.
+2. Make the D49 Oracle override available on the host **first**, following
+   `deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md` and its exact compose
+   command. Check health and the existing named-market cases plus all_markets
+   before exposing the new Worker contract.
+3. Record the current `fresh-market-price-agent` deployment version in
+   Cloudflare's Worker Deployments page. From
+   `deploy/cloudflare-workers-mcp/`, after review, use `npm run check`
+   (the package's Wrangler dry run) and `npm run deploy` (the package's
+   production deploy). Recheck tools/list, named-market requests, and
+   no-market requests. No Wrangler command or live deploy was executed
+   as part of this candidate.
+
+To roll back, use the Cloudflare Worker Deployments page to restore the
+recorded previous production version, then remove Oracle's D49 compose override;
+D47/D48 continue serving the same original named-market values. Cloudflare
+credentials, model files, rolling-data versions and timers are not changed.
