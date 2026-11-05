@@ -1,8 +1,9 @@
 """FMPA new supervised models: exact-split/test labels, runtime and isolation.
 
-This file runs in a fresh pytest process from legacy oracle_web_site tests
-because the new ASGI overlay intentionally redirects ONLY expanded crop calls
-while keeping the same frozen /v1/* API object.
+The new ASGI overlay intentionally redirects ONLY expanded crop calls while
+keeping the same frozen /v1/* API object. Load it only inside the app fixture
+and restore its shared forecast hook after each test so legacy website tests
+can run in the same pytest process.
 """
 from __future__ import annotations
 
@@ -21,7 +22,6 @@ from fastapi.testclient import TestClient
 ROOT = Path(__file__).resolve().parents[2]
 OVERLAY = ROOT / "deploy/oracle-forecastengine"
 sys.path.insert(0, str(OVERLAY))
-os.environ.setdefault("FMPA_ORIGIN_API_TOKEN", "test_only_" + "r" * 48)
 os.environ["FMPA_RELEASE_DIR"] = str(ROOT / "models/releases/0.1.0")
 
 from pooled_ml_runtime import (
@@ -32,7 +32,6 @@ from pooled_ml_features import (
     FROZEN_CROPS, design_matrix, features_at, quotes_as_arrays,
 )
 from full_catalog_runtime import data_bundle
-from oracle_web_site_ml import app
 
 HEADERS = {
     "Origin": "https://161.33.19.220",
@@ -47,6 +46,22 @@ BASE = {
     "observed_at": "2026-10-14T12:00:00+08:00",
     "mode": "without_last_week",
 }
+
+
+@pytest.fixture
+def app(monkeypatch):
+    monkeypatch.setenv("FMPA_ORIGIN_API_TOKEN", "test_only_" + "r" * 48)
+    import oracle_web_site
+
+    # Register restoration before the import, which patches this shared hook.
+    monkeypatch.setattr(oracle_web_site, "_native_forecast",
+                        oracle_web_site._native_forecast)
+    import oracle_web_site_ml
+
+    # Cached imports do not reapply the overlay on subsequent tests.
+    monkeypatch.setattr(oracle_web_site, "_native_forecast",
+                        oracle_web_site_ml._web_forecast_with_trained_pooled_ml)
+    return oracle_web_site_ml.app
 
 
 def test_model_real_trained_artifacts_and_source_integrity():
@@ -73,7 +88,7 @@ def test_model_real_trained_artifacts_and_source_integrity():
         )
 
 
-def test_trained_ml_a_from_actual_original_market_snapshot():
+def test_trained_ml_a_from_actual_original_market_snapshot(app):
     with TestClient(app) as client:
         resp = client.post("/site/forecast", json=BASE, headers=HEADERS)
         assert resp.status_code == 200, resp.text
@@ -116,7 +131,7 @@ def test_trained_ml_matches_loaded_h7_and_h14_without_baseline_substitution():
         assert result["price_estimate"] == round(BASE["current_price"] * (1 + prediction), 1)
 
 
-def test_trained_ml_b_is_fixed_alpha_not_mislabeled_as_trained_b():
+def test_trained_ml_b_is_fixed_alpha_not_mislabeled_as_trained_b(app):
     body = {
         **BASE,
         "mode": "both",
@@ -137,7 +152,7 @@ def test_trained_ml_b_is_fixed_alpha_not_mislabeled_as_trained_b():
             assert any("α=0.3" in warning for warning in row["warnings"])
 
 
-def test_zero_only_crop_cannot_get_fake_model_prediction():
+def test_zero_only_crop_cannot_get_fake_model_prediction(app):
     with TestClient(app) as client:
         result = client.post("/site/forecast", json={
             **BASE, "crop_id": "taichung_25",
@@ -149,7 +164,7 @@ def test_zero_only_crop_cannot_get_fake_model_prediction():
         assert body["model_version"] == "multi-crop-ml/1.0.0"
 
 
-def test_invalid_old_date_and_invalid_extra_field():
+def test_invalid_old_date_and_invalid_extra_field(app):
     with TestClient(app) as client:
         obsolete = client.post("/site/forecast", json={
             **BASE, "observed_at": "2000-01-01T12:00:00+08:00"
@@ -164,7 +179,7 @@ def test_invalid_old_date_and_invalid_extra_field():
         assert extra.json()["error"]["code"] == "unsupported_field"
 
 
-def test_unchanged_mcp_origin_and_original_cabbage():
+def test_unchanged_mcp_origin_and_original_cabbage(app):
     with TestClient(app) as client:
         result = client.post("/site/forecast", json={
             **BASE, "crop_id": "cabbage",

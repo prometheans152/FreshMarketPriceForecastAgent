@@ -1,0 +1,16 @@
+{
+  "purpose": "Reproducible native 20-page V8 reconstruction without the COS staging tree",
+  "original_filename": "FMPA_Proposal_v8.pptx",
+  "original_sha256": "b0b362c99b079861bc0cc324d7ab6ed5a7f148671ddfff4debfe26597752ebdd",
+  "frozen_sha256": {
+    "narration.json": "b64ca84e5e9d8beb24224811cb91b2ce5a1050a959dcd0ef0f154ea0e3bc48aa",
+    "public_test_results.json": "2d28acd2f2c3e5ce566b9095c6a85477db8faf858d9ce29e974caaedc25674b8",
+    "stats_master.json": "d6940ab49d6b96c0b579b110096338df1f9de51595fc988037785f915b912fb1"
+  },
+  "sources": {
+    "narration.json": "Original verified inputs/verified_current/narration.json; all 20 spoken sections, no regeneration",
+    "public_test_results.json": "Frozen public results as of 2026-10-02, sourced from outputs/evaluation/public",
+    "stats_master.json": "Frozen original stats sourced from outputs/proposal_delivery/run3_20261004_01"
+  },
+  "limitations": "No training data, model artifacts or later rolling price history; not evidence of store-price validation"
+}

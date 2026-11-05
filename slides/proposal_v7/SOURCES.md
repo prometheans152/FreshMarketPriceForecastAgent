@@ -28,7 +28,10 @@ outputs/proposal_delivery/run3_20261004_01/stats_master.json: purge.segments。�
 src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。
 
 ## [DEP1]
-deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；2026-10-17 新Worker real-remote-acceptance 6/6 PASS。
+deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；docs/DECISIONS.md D47（2026-10-28，MCP 60品項，原6/6＋新品項5/5）；D48（2026-10-30，訓練凍結、推論行情每日更新）。
+
+## [TEAM1]
+使用者2026-11-05提供的桌面README.md、design.md與資訊圖表.png；組長王彥傑，組員鄭筑云、許嘉修、游雅婷；正式發表日期待填。本輪以這批新稿為基準，保留AI協作章及原始設計附錄。
 
 ## [U1]
 outputs/e2e/ui_ab_mobile_390x844.png，2026-10-03本機原型截圖。只裁出上方7天A/B結果區並明示裁切，未改內部數字、未偽造新查詢。

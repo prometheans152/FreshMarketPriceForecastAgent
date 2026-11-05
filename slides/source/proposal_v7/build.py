@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Midterm Proposal v7 (20 pages; v6 condensed, numbers unchanged): white-background research deck (23 main + 9 appendix).
+"""Midterm Proposal v7 (20 pages; v6 condensed, numbers unchanged): white-background research deck (19 main + 1 reference index).
 Adds Deep Research, Article Summary, Agent design (architecture/flowchart/pseudocode).
 No model or product changes; frozen sources only."""
 from __future__ import annotations
@@ -37,7 +37,8 @@ SOURCES={
  'M3':'outputs/training/training_results.json；models/releases/0.1.0/manifest.json；src/aiot_price/models/train.py。候選Ridge、RFRegressor、HGBRegressor、DummyMajority、HGBClassifier；12個數值特徵＋crop_id one-hot，無市場one-hot。',
  'S1':'outputs/proposal_delivery/run3_20261004_01/stats_master.json: purge.segments。成熟日=t+h+1；7天清除帶8日、14天15日。',
  'A1':'src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。',
- 'DEP1':'deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；2026-10-17 新Worker real-remote-acceptance 6/6 PASS。',
+ 'DEP1':'deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；docs/DECISIONS.md D47（2026-10-28，MCP 60品項，原6/6＋新品項5/5）；D48（2026-10-30，訓練凍結、推論行情每日更新）。',
+ 'TEAM1':'使用者2026-11-05提供的桌面README.md、design.md與資訊圖表.png；組長王彥傑，組員鄭筑云、許嘉修、游雅婷；正式發表日期待填。本輪以這批新稿為基準，保留AI協作章及原始設計附錄。',
  'U1':'outputs/e2e/ui_ab_mobile_390x844.png，2026-10-03本機原型截圖。只裁出上方7天A/B結果區並明示裁切，未改內部數字、未偽造新查詢。',
  'P1':'docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。',
  'R01':'陳泯宏（2024），《國產大宗蔬菜價格預測模型之比較》，臺灣大學統計碩士學位學程。DOI 10.6342/NTU202400875；https://tdr.lib.ntu.edu.tw/handle/123456789/92775 。沿用既有摘要全文查核，未讀全文。',
@@ -178,12 +179,12 @@ class Deck:
 
     # ---------- page builders ----------
     def p_cover(self):
-        s=self.page('','期中提案：研究提案與初步成果','Fresh Market Price Forecast Agent｜期中提案 v7｜版本日期 2026-10-17')
+        s=self.page('','期中提案：研究提案與初步成果','Fresh Market Price Forecast Agent｜期中提案 v7｜版本日期 2026-11-05')
         self.line(s,.72,1.87,.72,5.77,tint=ACCENT,width=3)
         self.text(s,1.07,2.02,11.35,1.6,'現場菜價7／14天\n預測與分析代理人',36,bold=True)
         self.text(s,1.10,4.05,10.9,1.0,'今天看見的單品價格，如何連到一、兩週後的變化？\nAgent 選工具、模型算價、程式驗證、證據說明。',22,tint=MUTED)
-        self.text(s,1.10,5.45,10.9,.60,'AIoT 應用與資料分析\n組員／組長、正式發表日期：待填',14,tint=MUTED)
-        self.note(s,'封面',20,'我們的題目是現場菜價七天與十四天預測。這一版提案補上深度研究、文獻摘要表與代理人設計三種表示。分工原則一句話：代理人選工具、預測引擎算菜價、程式驗證、代理人依證據解釋。既有公開測試結果與負向發現全部保留，同店效果仍待驗證。',['P1','STYLE'],'本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；r3 起第10–12、18–20頁改為目前實際運作的系統（雲端網頁＋MCP），不再列已封存或暫緩的語言模型後端。')
+        self.text(s,1.10,5.45,10.9,.90,'AIoT 應用與資料分析\n組長：王彥傑｜組員：鄭筑云、許嘉修、游雅婷\n正式發表日期：待填',14,tint=MUTED)
+        self.note(s,'封面',20,'我們的題目是現場菜價七天與十四天預測。這一版提案補上深度研究、文獻摘要表與代理人設計三種表示。分工原則一句話：代理人選工具、預測引擎算菜價、程式驗證、代理人依證據解釋。既有公開測試結果與負向發現全部保留，同店效果仍待驗證。',['P1','STYLE','TEAM1'],'封面團隊取自使用者2026-11-05提供的新稿；正式發表日期仍待填。本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；r3 起第10–12、18–20頁改為目前實際運作的系統（雲端網頁＋MCP），不再列已封存或暫緩的語言模型後端。')
 
     def p_motivation(self):
         s=self.page('研究動機：今天的標價，還不足以回答未來','研究背景','[D1–D2] 臺中公開市場歷史資料；[W1] 農業部官方分析；[N1] 2025颱風新聞（背景）')
@@ -299,9 +300,9 @@ class Deck:
         self.note(s,'Agent設計原則',30,'教授要的是Domain Agent，不是聊天機器人或模型包裝。目標設計的分工是：預測引擎是唯一的計算者；Agent理解需求、選白名單工具、依結構化真值卡組裝回答。要誠實報告現況：目前已實作的是規則式原型——parse_query確定性解析、get_market_quote與post_forecast兩個有限工具、單查詢計數上限三次、模板回答（驗證器目前只掛在Qwen路徑，規則模板直接由工具事實逐字組文），tests兩百二十七項通過；工具呼叫是固定序列、不是自主選擇；保存走/records API、還沒封裝成Agent工具；LLM Planner屬未來暫緩。安全上，沒有工具成功結果就不能出數字，失敗就明說，不補值不編造。',['AD1','C1','A1'],'LLM後端（GLM/Qwen/Hermes）依使用者指示暫緩，本輪只做設計；不把規則原型寫成LLM Agent已完成；save_record工具化屬Proposed；逾時常數TOOL_TIMEOUT_SECONDS=10未接線於工具路徑，統一逾時屬Proposed。')
 
     def p_architecture(self):
-        # Drawn from the deployed system (2026-10-17), not the 10/8 local prototype.
+        # Deployed system updated for D47/D48; frozen evaluation remains unchanged.
         s=self.page('系統架構：目前實際運作的系統','Agent設計 2/3','[DEP1][A1] 實線＝已上線並實測；虛線＝下一步（未上線）；數字為索引非順序')
-        for x,y,w,h,head,body in [(.75,1.78,2.60,1.12,'① 瀏覽器','雲端網頁（免登入）\n61品項・A／B・7／14天'),(.75,3.38,2.60,1.12,'① AI助理','ChatGPT／Gemini\n選工具＋解釋'),(4.30,3.38,3.05,1.12,'② MCP服務','Cloudflare Worker\nget_market_quote・post_forecast'),(8.00,1.78,1.95,2.72,'③ Oracle主機','Nginx（HTTPS・限流）\n＋Docker網頁'),(10.45,1.78,2.20,1.12,'④ ForecastEngine','原3品項RF／HGB\n＋57品項HGB'),(10.45,3.38,2.20,1.12,'⑤ 公開歷史','臺中市場均價\n唯讀・至2026-10-02')]:
+        for x,y,w,h,head,body in [(.75,1.78,2.60,1.12,'① 瀏覽器','雲端網頁（免登入）\n61品項・A／B・7／14天'),(.75,3.38,2.60,1.12,'① AI助理','ChatGPT／Gemini\n選工具＋解釋'),(4.30,3.38,3.05,1.12,'② MCP服務','Cloudflare Worker\nget_market_quote・post_forecast'),(8.00,1.78,1.95,2.72,'③ Oracle主機','Nginx（HTTPS・限流）\n＋Docker網頁'),(10.45,1.78,2.20,1.12,'④ ForecastEngine','RF／HGB v0.1.0\n＋57品項HGB'),(10.45,3.38,2.20,1.12,'⑤ 公開歷史','訓練至2026-10-02\n推論行情每日更新')]:
             self.box(s,x,y,w,h);self.text(s,x+.10,y+.10,w-.20,.36,head,15,bold=True,align='center');self.text(s,x+.10,y+.50,w-.20,.58,body,11.5,tint=MUTED,align='center',linespace=1.08)
         self.line(s,3.35,2.34,8.00,2.34,tint=ACCENT,width=1.6,arrow=True);self.text(s,4.90,1.98,1.6,.3,'HTTPS',12,align='center',tint=ACCENT)
         self.line(s,3.35,3.94,4.30,3.94,tint=ACCENT,width=1.6,arrow=True);self.text(s,3.30,3.58,1.05,.3,'MCP呼叫',11,align='center',tint=ACCENT)
@@ -309,11 +310,11 @@ class Deck:
         self.line(s,9.95,2.34,10.45,2.34,tint=ACCENT,width=1.6,arrow=True);self.text(s,9.90,1.98,.6,.3,'預測',11,align='center',tint=ACCENT)
         self.line(s,11.55,2.90,11.55,3.38,tint=ACCENT,width=1.6,arrow=True);self.text(s,10.50,2.98,.98,.3,'唯讀載入',11,align='right',tint=ACCENT)
         self.box(s,.75,4.72,11.90,.58,WHITE,ACCENT,dash=True)
-        self.text(s,.95,4.83,11.50,.36,'下一步（虛線，未上線）：每天更新行情・同店A／B到期驗證・唯讀分析工具（歷史走勢、跨市場比較）',13.5,tint=ACCENT)
-        self.text(s,.75,5.40,11.90,.58,'網頁：61品項、A／B，紀錄只存在使用者瀏覽器。MCP：只開放原3品項的匿名A模式，不支援B與保存；遠端實測6/6，AI助理介面內對話驗收待補。\n57品項HGB留出測試誤差未勝不變價（如實標示）。本機原型（規則式Agent＋/records）保留供開發，不在此圖。',11.5,tint=MUTED,linespace=1.12)
+        self.text(s,.95,4.83,11.50,.36,'下一步（虛線，未上線）：同店A／B到期驗證・AI助理對話驗收・唯讀分析工具（歷史走勢、跨市場比較）',13.5,tint=ACCENT)
+        self.text(s,.75,5.40,11.90,.58,'網頁：61品項、A／B，紀錄只存在使用者瀏覽器。MCP：60品項、13市場，只有匿名A模式，不支援B與保存；遠端實測6/6＋5/5，AI助理介面內對話驗收待補。\n57品項HGB留出測試誤差未勝不變價（如實標示）。本機原型（規則式Agent＋/records）保留供開發，不在此圖。',11.5,tint=MUTED,linespace=1.12)
         self.text(s,.75,6.02,11.90,.30,'圖例：實線＝已上線並實測，結果沿原路回傳；虛線＝下一步（未上線）。',11,tint=MUTED)
         self.text(s,.75,6.42,11.90,.40,'LLM只選工具與解釋，不算菜價；菜價一律由④ ForecastEngine計算。',16.5,bold=True,tint=ACCENT)
-        self.note(s,'系統架構（目前實際運作）',40,'請看目前實際運作的系統，有兩個入口。第一，一般使用者用瀏覽器打開雲端網頁，不用登入，可以查六十一個品項的七天與十四天預測，也能做A和B比較，紀錄只存在自己的瀏覽器。第二，ChatGPT或Gemini這類AI助理，透過Cloudflare上的MCP服務呼叫兩個工具：查行情和做預測；這條路只開放原本三個品項的A模式，參數格式不對就拒絕，也有流量限制。兩條路最後都進到Oracle主機上的ForecastEngine，用封存模型和唯讀的公開歷史算出結果。重點是：AI助理只負責選工具和解釋，菜價一律由ForecastEngine計算。虛線是下一步：每天更新行情、同店到期驗證和分析工具，目前都還沒上線。',['DEP1','A1','M2'],'遠端協定實測6/6（2026-10-17，新Worker fresh-market-price-agent）；ChatGPT／Gemini介面內對話驗收待補；57品項HGB留出測試MAE未勝不變價；本機原型（規則式Agent＋/records）保留但不在圖中。')
+        self.note(s,'系統架構（目前實際運作）',40,'請看目前實際運作的系統，有兩個入口。第一，一般使用者用瀏覽器打開雲端網頁，不用登入，可以查六十一個品項的七天與十四天預測，也能做A和B比較，紀錄只存在自己的瀏覽器。第二，ChatGPT或Gemini這類AI助理，透過Cloudflare上的MCP服務呼叫兩個工具：查行情和做預測；這條路提供六十個品項、十三個市場，只有A模式，不支援B與保存；參數格式不對就拒絕，也有流量限制。兩條路最後都進到Oracle主機上的ForecastEngine，用封存模型和唯讀的公開歷史算出結果；訓練資料至十月二日，預測用行情自十月三十日起每日自動更新。重點是：AI助理只負責選工具和解釋，菜價一律由ForecastEngine計算。虛線是下一步：同店到期驗證、AI助理對話驗收和分析工具；遠端協定已通過原六項加新品項五項實測，介面內對話仍未驗收。',['DEP1','A1','M2'],'遠端協定原6/6＋新品項5/5（2026-10-28，D47）；推論行情每日更新（2026-10-30起，D48）；ChatGPT／Gemini介面內對話驗收待補；57品項HGB留出測試MAE未勝不變價；本機原型（規則式Agent＋/records）保留但不在圖中。')
 
     def p_flowchart(self):
         s=self.page('查詢流程圖：十類決策分支（對應目前系統）','Agent設計 3/3','[AD1][DEP1] 節點標CURRENT／PARTIAL；未標注＝CURRENT；設計對照見AGENT_DESIGN.md §8')
@@ -450,9 +451,10 @@ class Deck:
 
     def p_conclusion(self):
         s=self.page('結論','結論','期中提案 v7｜主講結束；後附引用與實作索引；完整文獻表與計算見docs/proposal_v5/')
-        self.points(s,[('已完成','7／14天公開評估（含負向）；網頁與MCP已上線；Agent三種設計表示。'),('目前限制','方向未勝動量、誤差未勝不變價、上漲召回低；同店零證據；行情只到10月2日。'),('下一步','每天更新行情；取得同店到期真值回答B增益；補AI助理實際對話驗收。')],y=2.0,gap=1.4,size=23)
+        self.points(s,[('已完成','7／14天公開評估（含負向）；網頁與MCP已上線；Agent三種設計表示。'),('目前限制','方向未勝動量、誤差未勝不變價、上漲召回低；同店零證據。'),('資料與下一步','訓練資料至10/2；推論行情每日自動更新。\n待補同店到期真值、AI助理實際對話驗收。')],y=2.0,gap=1.4,size=23)
+        s.shapes[-1].height=Inches(.95)
         self.text(s,.75,6.3,11.8,.5,'交付的是誠實、可驗證的預測與增益評估框架——不是「很準的預測」。',19,bold=True,tint=ACCENT)
-        self.note(s,'結論',20,'總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估，把網頁與MCP服務部署上線，也完成符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據，行情資料也停在十月二日。下一步是每天更新行情、取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。',['P1','E1','DEP1'],'第10–12、18–20頁依目前實際運作的系統更新（2026-10-17）；其餘內容同 Proposal v5 r3；不更換題目或模型。')
+        self.note(s,'結論',20,'總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估，把網頁與MCP服務部署上線，也完成符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據。訓練資料至十月二日；預測用的公開行情已每日自動更新。下一步是取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。',['P1','E1','DEP1'],'第10、19、20頁依D47/D48更新（2026-11-05）；第11、12、18頁沿用2026-10-17版本；其餘內容同 Proposal v5 r3；不更換題目或模型。')
 
     # ---------- appendix ----------
     def _summary_rows(self,ids):
@@ -589,10 +591,10 @@ class Deck:
 
     def p_refs_impl(self):
         s=self.page('附錄｜引用、實作與交付索引','附錄','完整URL與讀取層級見docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md與docs/REFERENCES.md')
-        entries=[('[R01] 陳泯宏 2024｜[R02] 李岱鑫 2015｜[R03] 林沂臻 2017','學位論文（摘要實讀）；批發/市場層級預測與私有資料價值。'),('[R04] 大數據平台 2018｜[R05] 白菜即時｜[R06] 農產分析｜[R07] NCHU 2025','官方零售估計（報導）與產品/課程頁面查核；未安裝實測。'),('[R10] 農糧署2026徵件｜[W1] 王鎬杰2010｜[N1] 公視2025-08-13','政策動向；官方災後統計分析；消費端歷史背景新聞。'),('[H17] 同課程Team 17，2025','蔬果價格預測LightGBM採購指南；15頁PDF第一手閱讀11/15頁；僅作者簡報。'),('[Proposal v5 文件包]','PROPOSAL／DEEP_RESEARCH／ARTICLE_SUMMARY_TABLE／AGENT_DESIGN／DESIGN_DELTA（docs/proposal_v5/）。'),('[實作狀態]','雲端網頁（Oracle＋Docker，61品項）與MCP服務（Cloudflare Worker，2工具）＝已上線並實測；本機原型（/forecast、/records、規則式Agent）保留；每日行情更新、同店驗證、影片、公開發布＝待做。')]
+        entries=[('[R01] 陳泯宏 2024｜[R02] 李岱鑫 2015｜[R03] 林沂臻 2017','學位論文（摘要實讀）；批發/市場層級預測與私有資料價值。'),('[R04] 大數據平台 2018｜[R05] 白菜即時｜[R06] 農產分析｜[R07] NCHU 2025','官方零售估計（報導）與產品/課程頁面查核；未安裝實測。'),('[R10] 農糧署2026徵件｜[W1] 王鎬杰2010｜[N1] 公視2025-08-13','政策動向；官方災後統計分析；消費端歷史背景新聞。'),('[H17] 同課程Team 17，2025','蔬果價格預測LightGBM採購指南；15頁PDF第一手閱讀11/15頁；僅作者簡報。'),('[Proposal v5 文件包]','PROPOSAL／DEEP_RESEARCH／ARTICLE_SUMMARY_TABLE／AGENT_DESIGN／DESIGN_DELTA（docs/proposal_v5/）。'),('[實作狀態]','雲端網頁（Oracle＋Docker，61品項）與MCP服務（Cloudflare Worker，2工具）＝已上線並實測；本機原型（/forecast、/records、規則式Agent）保留；每日行情更新已上線（D48）；同店驗證、公開發布＝待做；影片另附。')]
         for i,(head,body) in enumerate(entries):
             y=1.75+i*.82;self.text(s,.82,y,11.68,.33,head,16,bold=True,tint=ACCENT);self.text(s,.82,y+.37,11.68,.52,body,14,tint=MUTED,linespace=1.1)
-        self.note(s,'附錄 引用與實作索引',0,'引用以已讀證據為限；摘要未載明的功能不視為不存在。實作與暫緩分列，不把文件完成寫成產品驗收。影片未錄、GitHub/YouTube/課程提交未發布。',['G1','AD1','DD1','P1'],'本版不覆寫README/TASKS/AGENTS/OpenSpec正式狀態；ChatGPT獨立複審另行記錄。')
+        self.note(s,'附錄 引用與實作索引',0,'引用以已讀證據為限；摘要未載明的功能不視為不存在。實作與暫緩分列，不把文件完成寫成產品驗收。影片另附；GitHub/YouTube/課程提交未發布。',['G1','AD1','DD1','P1'],'本版不覆寫README/TASKS/AGENTS/OpenSpec正式狀態；ChatGPT獨立複審另行記錄。')
 
     def build(self):
         # 20-page midterm limit: 19 main + 1 appendix (citation index). Dropped from v6:
@@ -617,14 +619,14 @@ class Deck:
         main=[r for r in self.notes if r['kind']=='主講'];total=sum(r['seconds'] for r in main)
         records={'version':VERSION,'title':self.prs.core_properties.title,'main_slides':len(main),'appendix_slides':len(self.notes)-len(main),'estimated_main_seconds':total,'time_note':'講解設計估時，不是實際配音或錄影長度。','slides':self.notes}
         (self.out/f'notes_{VERSION}.json').write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding='utf-8')
-        lines=['# 期中提案 v7 逐頁講稿','',f'配套：{NAME}.pptx；{len(main)}頁主講＋{len(self.notes)-len(main)}頁附錄。',f'主講設計估時：{total//60}分{total%60:02d}秒；尚未配音或錄製。','','PPT備註與本檔同源；詳細引用見每頁備註與SOURCES.md。','']
+        lines=['# 期中提案 v7 逐頁講稿','',f'配套：{NAME}.pptx；{len(main)}頁主講＋{len(self.notes)-len(main)}頁附錄。',f'主講設計估時：{total//60}分{total%60:02d}秒；此為講解設計估時。配音影片使用另行精簡旁白，實際片長見影片報告。','','PPT備註與本檔同源；詳細引用見每頁備註與SOURCES.md。','']
         for r in self.notes:
             lines.extend([f"## {r['kind']} 第{r['page']}頁｜{r['title']}",'',r['script'],'','**補充／證據邊界**：'+r['extra'],'','**來源**：'+'、'.join('['+x+']' for x in r['source_ids']),''])
         (self.out/f'SLIDE_NOTES_{VERSION}.md').write_text('\n'.join(lines),encoding='utf-8')
         (self.out/'SOURCES.md').write_text('# 期中提案 v7 來源定位\n\n'+'\n\n'.join(f'## [{k}]\n{v}' for k,v in SOURCES.items()),encoding='utf-8')
         (self.evidence/'layout_manifest.json').write_text(json.dumps(self.layout,ensure_ascii=False,indent=2),encoding='utf-8')
         inputs=['outputs/evaluation/public/public_test_results.json','outputs/proposal_delivery/run3_20261004_01/stats_master.json','outputs/e2e/ui_ab_mobile_390x844.png']
-        (self.evidence/'build_manifest.json').write_text(json.dumps({'version':VERSION,'pptx':str(ppt),'slides':33,'main':23,'appendix':10,'seconds_estimated_main':total,'source_sha256':{p:sha(self.root/p) for p in inputs},'pptx_sha256':sha(ppt),'style':'v4 white style extended: deep research, article summary, agent design (architecture/flowchart/pseudocode) with CURRENT/PARTIAL/PROPOSED boundary','limits':'No model inference/training, product code changes, animation, video, publishing or independent acceptance.'},ensure_ascii=False,indent=2),encoding='utf-8')
+        (self.evidence/'build_manifest.json').write_text(json.dumps({'version':VERSION,'pptx':str(ppt),'slides':len(self.prs.slides),'main':len(main),'appendix':len(self.notes)-len(main),'seconds_estimated_main':total,'source_sha256':{p:sha(self.root/p) for p in inputs},'pptx_sha256':sha(ppt),'style':'v4 white style extended: deep research, article summary, agent design (architecture/flowchart/pseudocode) with CURRENT/PARTIAL/PROPOSED boundary','limits':'No model inference/training, product code changes, animation, video, publishing or independent acceptance.'},ensure_ascii=False,indent=2),encoding='utf-8')
         return ppt
 
 def main():

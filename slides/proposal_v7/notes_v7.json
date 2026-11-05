@@ -12,12 +12,13 @@
       "title": "封面",
       "seconds": 20,
       "script": "我們的題目是現場菜價七天與十四天預測。這一版提案補上深度研究、文獻摘要表與代理人設計三種表示。分工原則一句話：代理人選工具、預測引擎算菜價、程式驗證、代理人依證據解釋。既有公開測試結果與負向發現全部保留，同店效果仍待驗證。",
-      "extra": "本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；r3 起第10–12、18–20頁改為目前實際運作的系統（雲端網頁＋MCP），不再列已封存或暫緩的語言模型後端。",
+      "extra": "封面團隊取自使用者2026-11-05提供的新稿；正式發表日期仍待填。本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；r3 起第10–12、18–20頁改為目前實際運作的系統（雲端網頁＋MCP），不再列已封存或暫緩的語言模型後端。",
       "source_ids": [
         "P1",
-        "STYLE"
+        "STYLE",
+        "TEAM1"
       ],
-      "notes_text": "主講 第1頁｜封面\n\n我們的題目是現場菜價七天與十四天預測。這一版提案補上深度研究、文獻摘要表與代理人設計三種表示。分工原則一句話：代理人選工具、預測引擎算菜價、程式驗證、代理人依證據解釋。既有公開測試結果與負向發現全部保留，同店效果仍待驗證。\n\n補充／證據邊界\n本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；r3 起第10–12、18–20頁改為目前實際運作的系統（雲端網頁＋MCP），不再列已封存或暫緩的語言模型後端。\n\n來源\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n[STYLE] 沿用v4簡潔白底風格（simple_v4），參考Team17第7–10頁資料與結果安排、GUARD總覽與局部說明、LSTM簡潔視覺、蜜蜂健康Related Work論述。不複製他組數據、圖片、成果或新功能。\n\n預估講解時間：20秒（非實測配音長度）"
+      "notes_text": "主講 第1頁｜封面\n\n我們的題目是現場菜價七天與十四天預測。這一版提案補上深度研究、文獻摘要表與代理人設計三種表示。分工原則一句話：代理人選工具、預測引擎算菜價、程式驗證、代理人依證據解釋。既有公開測試結果與負向發現全部保留，同店效果仍待驗證。\n\n補充／證據邊界\n封面團隊取自使用者2026-11-05提供的新稿；正式發表日期仍待填。本版為期中提案 v7（20頁）：由 v6（內容同 Proposal v5 r3）濃縮——刪除重複頁、合併資料／評估頁與兩頁結果，附錄只留引用索引，數字不變；r3 起第10–12、18–20頁改為目前實際運作的系統（雲端網頁＋MCP），不再列已封存或暫緩的語言模型後端。\n\n來源\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n[STYLE] 沿用v4簡潔白底風格（simple_v4），參考Team17第7–10頁資料與結果安排、GUARD總覽與局部說明、LSTM簡潔視覺、蜜蜂健康Related Work論述。不複製他組數據、圖片、成果或新功能。\n[TEAM1] 使用者2026-11-05提供的桌面README.md、design.md與資訊圖表.png；組長王彥傑，組員鄭筑云、許嘉修、游雅婷；正式發表日期待填。本輪以這批新稿為基準，保留AI協作章及原始設計附錄。\n\n預估講解時間：20秒（非實測配音長度）"
     },
     {
       "page": 2,
@@ -142,14 +143,14 @@
       "kind": "主講",
       "title": "系統架構（目前實際運作）",
       "seconds": 40,
-      "script": "請看目前實際運作的系統，有兩個入口。第一，一般使用者用瀏覽器打開雲端網頁，不用登入，可以查六十一個品項的七天與十四天預測，也能做A和B比較，紀錄只存在自己的瀏覽器。第二，ChatGPT或Gemini這類AI助理，透過Cloudflare上的MCP服務呼叫兩個工具：查行情和做預測；這條路只開放原本三個品項的A模式，參數格式不對就拒絕，也有流量限制。兩條路最後都進到Oracle主機上的ForecastEngine，用封存模型和唯讀的公開歷史算出結果。重點是：AI助理只負責選工具和解釋，菜價一律由ForecastEngine計算。虛線是下一步：每天更新行情、同店到期驗證和分析工具，目前都還沒上線。",
-      "extra": "遠端協定實測6/6（2026-10-17，新Worker fresh-market-price-agent）；ChatGPT／Gemini介面內對話驗收待補；57品項HGB留出測試MAE未勝不變價；本機原型（規則式Agent＋/records）保留但不在圖中。",
+      "script": "請看目前實際運作的系統，有兩個入口。第一，一般使用者用瀏覽器打開雲端網頁，不用登入，可以查六十一個品項的七天與十四天預測，也能做A和B比較，紀錄只存在自己的瀏覽器。第二，ChatGPT或Gemini這類AI助理，透過Cloudflare上的MCP服務呼叫兩個工具：查行情和做預測；這條路提供六十個品項、十三個市場，只有A模式，不支援B與保存；參數格式不對就拒絕，也有流量限制。兩條路最後都進到Oracle主機上的ForecastEngine，用封存模型和唯讀的公開歷史算出結果；訓練資料至十月二日，預測用行情自十月三十日起每日自動更新。重點是：AI助理只負責選工具和解釋，菜價一律由ForecastEngine計算。虛線是下一步：同店到期驗證、AI助理對話驗收和分析工具；遠端協定已通過原六項加新品項五項實測，介面內對話仍未驗收。",
+      "extra": "遠端協定原6/6＋新品項5/5（2026-10-28，D47）；推論行情每日更新（2026-10-30起，D48）；ChatGPT／Gemini介面內對話驗收待補；57品項HGB留出測試MAE未勝不變價；本機原型（規則式Agent＋/records）保留但不在圖中。",
       "source_ids": [
         "DEP1",
         "A1",
         "M2"
       ],
-      "notes_text": "主講 第10頁｜系統架構（目前實際運作）\n\n請看目前實際運作的系統，有兩個入口。第一，一般使用者用瀏覽器打開雲端網頁，不用登入，可以查六十一個品項的七天與十四天預測，也能做A和B比較，紀錄只存在自己的瀏覽器。第二，ChatGPT或Gemini這類AI助理，透過Cloudflare上的MCP服務呼叫兩個工具：查行情和做預測；這條路只開放原本三個品項的A模式，參數格式不對就拒絕，也有流量限制。兩條路最後都進到Oracle主機上的ForecastEngine，用封存模型和唯讀的公開歷史算出結果。重點是：AI助理只負責選工具和解釋，菜價一律由ForecastEngine計算。虛線是下一步：每天更新行情、同店到期驗證和分析工具，目前都還沒上線。\n\n補充／證據邊界\n遠端協定實測6/6（2026-10-17，新Worker fresh-market-price-agent）；ChatGPT／Gemini介面內對話驗收待補；57品項HGB留出測試MAE未勝不變價；本機原型（規則式Agent＋/records）保留但不在圖中。\n\n來源\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；2026-10-17 新Worker real-remote-acceptance 6/6 PASS。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[M2] src/aiot_price/models/store_adapter.py: ALPHA_EXPERIMENTAL=0.3；docs/STORE_DATA_PROTOCOL.md。A為乘法錨定；B為固定規則，不是學得的增益。\n\n預估講解時間：40秒（非實測配音長度）"
+      "notes_text": "主講 第10頁｜系統架構（目前實際運作）\n\n請看目前實際運作的系統，有兩個入口。第一，一般使用者用瀏覽器打開雲端網頁，不用登入，可以查六十一個品項的七天與十四天預測，也能做A和B比較，紀錄只存在自己的瀏覽器。第二，ChatGPT或Gemini這類AI助理，透過Cloudflare上的MCP服務呼叫兩個工具：查行情和做預測；這條路提供六十個品項、十三個市場，只有A模式，不支援B與保存；參數格式不對就拒絕，也有流量限制。兩條路最後都進到Oracle主機上的ForecastEngine，用封存模型和唯讀的公開歷史算出結果；訓練資料至十月二日，預測用行情自十月三十日起每日自動更新。重點是：AI助理只負責選工具和解釋，菜價一律由ForecastEngine計算。虛線是下一步：同店到期驗證、AI助理對話驗收和分析工具；遠端協定已通過原六項加新品項五項實測，介面內對話仍未驗收。\n\n補充／證據邊界\n遠端協定原6/6＋新品項5/5（2026-10-28，D47）；推論行情每日更新（2026-10-30起，D48）；ChatGPT／Gemini介面內對話驗收待補；57品項HGB留出測試MAE未勝不變價；本機原型（規則式Agent＋/records）保留但不在圖中。\n\n來源\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；docs/DECISIONS.md D47（2026-10-28，MCP 60品項，原6/6＋新品項5/5）；D48（2026-10-30，訓練凍結、推論行情每日更新）。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[M2] src/aiot_price/models/store_adapter.py: ALPHA_EXPERIMENTAL=0.3；docs/STORE_DATA_PROTOCOL.md。A為乘法錨定；B為固定規則，不是學得的增益。\n\n預估講解時間：40秒（非實測配音長度）"
     },
     {
       "page": 11,
@@ -163,7 +164,7 @@
         "A1",
         "DEP1"
       ],
-      "notes_text": "主講 第11頁｜查詢流程圖\n\n這張流程圖是代理人的決策流程，節點標注目前系統的現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以今天預填；在雲端的MCP路徑，這兩步由工具的格式檢查強制，格式不對直接拒絕。單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A——B模式目前只在網頁提供。公開資料過期目前只會警告，該品項該市場沒有可用特徵才明確拒絕；然後呼叫post_forecast，失敗就報錯不補值。Worker會核對預測服務的回傳是否與參數一致；雲端的回答由ChatGPT或Gemini依工具結果組成，這段解釋的忠實度還沒驗證。最後三個節點是PARTIAL：網頁的紀錄只存在瀏覽器，同店到期真值還沒收集。\n\n補充／證據邊界\n節點標注依實際程式與部署核對（AGENT_DESIGN §7；Worker contracts.js、Oracle /v1 API）；嚴格資料過期hard gate屬Proposed。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；2026-10-17 新Worker real-remote-acceptance 6/6 PASS。\n\n預估講解時間：30秒（非實測配音長度）"
+      "notes_text": "主講 第11頁｜查詢流程圖\n\n這張流程圖是代理人的決策流程，節點標注目前系統的現況。主流程：先檢查必要資訊——品項、價格、單位缺了就追問，日期沒提供則以今天預填；在雲端的MCP路徑，這兩步由工具的格式檢查強制，格式不對直接拒絕。單位不能換算就拒絕並說明；有上週價才做可比性檢查，不可比就降級只剩A——B模式目前只在網頁提供。公開資料過期目前只會警告，該品項該市場沒有可用特徵才明確拒絕；然後呼叫post_forecast，失敗就報錯不補值。Worker會核對預測服務的回傳是否與參數一致；雲端的回答由ChatGPT或Gemini依工具結果組成，這段解釋的忠實度還沒驗證。最後三個節點是PARTIAL：網頁的紀錄只存在瀏覽器，同店到期真值還沒收集。\n\n補充／證據邊界\n節點標注依實際程式與部署核對（AGENT_DESIGN §7；Worker contracts.js、Oracle /v1 API）；嚴格資料過期hard gate屬Proposed。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；docs/DECISIONS.md D47（2026-10-28，MCP 60品項，原6/6＋新品項5/5）；D48（2026-10-30，訓練凍結、推論行情每日更新）。\n\n預估講解時間：30秒（非實測配音長度）"
     },
     {
       "page": 12,
@@ -177,7 +178,7 @@
         "A1",
         "DEP1"
       ],
-      "notes_text": "主講 第12頁｜演算法一（主講10步）\n\n主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。對應目前運作的系統：雲端由ChatGPT或Gemini理解請求，經MCP在兩個白名單工具中選擇；工具參數由格式檢查把關，Worker再核對預測服務的回傳。PARTIAL有三項：AI助理解釋的忠實度還沒驗證、保存只在網頁的瀏覽器裡、同店到期真值還沒收集。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。\n\n補充／證據邊界\nα=0.3為固定實驗規則（未訓練）；B只在網頁；完整版41行與實作映射見AGENT_DESIGN.md §8（以本機原型撰寫）。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；2026-10-17 新Worker real-remote-acceptance 6/6 PASS。\n\n預估講解時間：20秒（非實測配音長度）"
+      "notes_text": "主講 第12頁｜演算法一（主講10步）\n\n主講版把演算法壓成十步：理解、驗證、選工具、取公開資料、呼叫預測引擎、套領域規則、驗證結果、忠實解釋、自願保存、到期核對。對應目前運作的系統：雲端由ChatGPT或Gemini理解請求，經MCP在兩個白名單工具中選擇；工具參數由格式檢查把關，Worker再核對預測服務的回傳。PARTIAL有三項：AI助理解釋的忠實度還沒驗證、保存只在網頁的瀏覽器裡、同店到期真值還沒收集。完整四十一行逐行版在AGENT_DESIGN.md。重點不變：語言模型不算菜價，數字一律出自預測引擎與驗證後的工具輸出。\n\n補充／證據邊界\nα=0.3為固定實驗規則（未訓練）；B只在網頁；完整版41行與實作映射見AGENT_DESIGN.md §8（以本機原型撰寫）。\n\n來源\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；docs/DECISIONS.md D47（2026-10-28，MCP 60品項，原6/6＋新品項5/5）；D48（2026-10-30，訓練凍結、推論行情每日更新）。\n\n預估講解時間：20秒（非實測配音長度）"
     },
     {
       "page": 13,
@@ -257,28 +258,28 @@
         "P1",
         "DEP1"
       ],
-      "notes_text": "主講 第18頁｜介面示例\n\n這是十月三日本機原型的截圖，不是今天重新查詢；同一套介面現在已擴充部署成雲端網頁，支援六十一個品項。為了讓字看清楚，這頁放大上方七天的A與B。讀畫面先看期限，再看有無使用上週資訊的差異，最後看來源與實驗性提醒。畫面中的B與前面教學例數值不同，來自另一個歷史查詢，不能混成同一筆。\n\n補充／證據邊界\n圖片只裁切放大7天比較；原圖390×844保留原位，不改數值或日期；雲端網頁的紀錄只存在使用者瀏覽器。\n\n來源\n[U1] outputs/e2e/ui_ab_mobile_390x844.png，2026-10-03本機原型截圖。只裁出上方7天A/B結果區並明示裁切，未改內部數字、未偽造新查詢。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；2026-10-17 新Worker real-remote-acceptance 6/6 PASS。\n\n預估講解時間：25秒（非實測配音長度）"
+      "notes_text": "主講 第18頁｜介面示例\n\n這是十月三日本機原型的截圖，不是今天重新查詢；同一套介面現在已擴充部署成雲端網頁，支援六十一個品項。為了讓字看清楚，這頁放大上方七天的A與B。讀畫面先看期限，再看有無使用上週資訊的差異，最後看來源與實驗性提醒。畫面中的B與前面教學例數值不同，來自另一個歷史查詢，不能混成同一筆。\n\n補充／證據邊界\n圖片只裁切放大7天比較；原圖390×844保留原位，不改數值或日期；雲端網頁的紀錄只存在使用者瀏覽器。\n\n來源\n[U1] outputs/e2e/ui_ab_mobile_390x844.png，2026-10-03本機原型截圖。只裁出上方7天A/B結果區並明示裁切，未改內部數字、未偽造新查詢。\n[A1] src/aiot_price/api/app.py: /forecast, /agent/query, /records；src/aiot_price/agent/tools.py: AgentTools（get_market_quote、post_forecast 兩工具）＋ToolCallLimiter＋parse_query；src/aiot_price/models/predict.py: ForecastEngine；prediction_records: private/predictions。依既有原型整理；save_record 尚未封裝為 AgentTool（/records 由 Web 另呼）。\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；docs/DECISIONS.md D47（2026-10-28，MCP 60品項，原6/6＋新品項5/5）；D48（2026-10-30，訓練凍結、推論行情每日更新）。\n\n預估講解時間：25秒（非實測配音長度）"
     },
     {
       "page": 19,
       "kind": "主講",
       "title": "結論",
       "seconds": 20,
-      "script": "總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估，把網頁與MCP服務部署上線，也完成符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據，行情資料也停在十月二日。下一步是每天更新行情、取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。",
-      "extra": "第10–12、18–20頁依目前實際運作的系統更新（2026-10-17）；其餘內容同 Proposal v5 r3；不更換題目或模型。",
+      "script": "總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估，把網頁與MCP服務部署上線，也完成符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據。訓練資料至十月二日；預測用的公開行情已每日自動更新。下一步是取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。",
+      "extra": "第10、19、20頁依D47/D48更新（2026-11-05）；第11、12、18頁沿用2026-10-17版本；其餘內容同 Proposal v5 r3；不更換題目或模型。",
       "source_ids": [
         "P1",
         "E1",
         "DEP1"
       ],
-      "notes_text": "主講 第19頁｜結論\n\n總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估，把網頁與MCP服務部署上線，也完成符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據，行情資料也停在十月二日。下一步是每天更新行情、取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。\n\n補充／證據邊界\n第10–12、18–20頁依目前實際運作的系統更新（2026-10-17）；其餘內容同 Proposal v5 r3；不更換題目或模型。\n\n來源\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n[E1] outputs/evaluation/public/public_test_results.json: horizons.h=7 / h=14；SHA256 2d28acd2f2c3e5ce566b9095c6a85477db8faf858d9ce29e974caaedc25674b8。固定測試列，未重算模型輸出、未重訓。\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；2026-10-17 新Worker real-remote-acceptance 6/6 PASS。\n\n預估講解時間：20秒（非實測配音長度）"
+      "notes_text": "主講 第19頁｜結論\n\n總結：我們把現場報價連到固定七天十四天的預測任務，完成公開評估，把網頁與MCP服務部署上線，也完成符合Domain Agent要求的架構、流程圖與虛擬碼設計。限制同樣清楚：方向未勝動量、誤差未勝不變價、同店效果還沒有證據。訓練資料至十月二日；預測用的公開行情已每日自動更新。下一步是取得同店到期真值，回答多一筆上週價有沒有幫助。謝謝，最後一頁是引用與實作索引。\n\n補充／證據邊界\n第10、19、20頁依D47/D48更新（2026-11-05）；第11、12、18頁沿用2026-10-17版本；其餘內容同 Proposal v5 r3；不更換題目或模型。\n\n來源\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。\n[E1] outputs/evaluation/public/public_test_results.json: horizons.h=7 / h=14；SHA256 2d28acd2f2c3e5ce566b9095c6a85477db8faf858d9ce29e974caaedc25674b8。固定測試列，未重算模型輸出、未重訓。\n[DEP1] deploy/docker/oracle/ORACLE_DOCKER_OPERATIONS.md（Oracle Docker：網頁＋ForecastEngine，61品項）；deploy/cloudflare-workers-mcp/MCP_TOOL_CONTRACT.md 與 src/contracts.js（2工具、格式檢查、限流、回傳核對）；docs/deployment/POOLED_ML_MODEL_CARD_V1.md（57品項HGB，測試MAE未勝不變價）；docs/DECISIONS.md D47（2026-10-28，MCP 60品項，原6/6＋新品項5/5）；D48（2026-10-30，訓練凍結、推論行情每日更新）。\n\n預估講解時間：20秒（非實測配音長度）"
     },
     {
       "page": 20,
       "kind": "附錄",
       "title": "附錄 引用與實作索引",
       "seconds": 0,
-      "script": "引用以已讀證據為限；摘要未載明的功能不視為不存在。實作與暫緩分列，不把文件完成寫成產品驗收。影片未錄、GitHub/YouTube/課程提交未發布。",
+      "script": "引用以已讀證據為限；摘要未載明的功能不視為不存在。實作與暫緩分列，不把文件完成寫成產品驗收。影片另附；GitHub/YouTube/課程提交未發布。",
       "extra": "本版不覆寫README/TASKS/AGENTS/OpenSpec正式狀態；ChatGPT獨立複審另行記錄。",
       "source_ids": [
         "G1",
@@ -286,7 +287,7 @@
         "DD1",
         "P1"
       ],
-      "notes_text": "附錄 第20頁｜附錄 引用與實作索引\n\n引用以已讀證據為限；摘要未載明的功能不視為不存在。實作與暫緩分列，不把文件完成寫成產品驗收。影片未錄、GitHub/YouTube/課程提交未發布。\n\n補充／證據邊界\n本版不覆寫README/TASKS/AGENTS/OpenSpec正式狀態；ChatGPT獨立複審另行記錄。\n\n來源\n[G1] docs/proposal_v5/DEEP_RESEARCH.md（五思維／三爭論／十問題，含證據與推理）；docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md（八欄表10件＋來源層級）。\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[DD1] docs/proposal_v5/DESIGN_DELTA.md：v5與根目錄design.md之沿用／新增／待同步／未來分界；本輪不覆寫正式design.md。\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。"
+      "notes_text": "附錄 第20頁｜附錄 引用與實作索引\n\n引用以已讀證據為限；摘要未載明的功能不視為不存在。實作與暫緩分列，不把文件完成寫成產品驗收。影片另附；GitHub/YouTube/課程提交未發布。\n\n補充／證據邊界\n本版不覆寫README/TASKS/AGENTS/OpenSpec正式狀態；ChatGPT獨立複審另行記錄。\n\n來源\n[G1] docs/proposal_v5/DEEP_RESEARCH.md（五思維／三爭論／十問題，含證據與推理）；docs/proposal_v5/ARTICLE_SUMMARY_TABLE.md（八欄表10件＋來源層級）。\n[AD1] docs/proposal_v5/AGENT_DESIGN.md：架構五群組①–⑤、工具層CURRENT／PROPOSED對照（get_market_quote/post_forecast現況；save_record工具化屬Proposed）、安全約束11條、D1–D9流程圖（節點標狀態）、Algorithm 1（主講10步＋完整41行）與Pseudocode↔實作映射。\n[DD1] docs/proposal_v5/DESIGN_DELTA.md：v5與根目錄design.md之沿用／新增／待同步／未來分界；本輪不覆寫正式design.md。\n[P1] docs/proposal_v5/PROPOSAL.md；docs/CONTRIBUTIONS.md；TASKS.md。使用者2026-10-04指示產品代理人整合與SERVER暫緩；2026-10-08指示Proposal v5第一階段（文件與簡報，不改產品程式）。"
     }
   ]
 }

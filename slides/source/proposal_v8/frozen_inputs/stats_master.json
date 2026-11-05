@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "built_by": "slides/source/build_stats_master.py",
+    "built_date": "2026-10-04",
+    "population": "公開市場×品項×起算日×期限歷史觀測（含各 split，排除 insufficient_data）；描述統計，非未來機率",
+    "threshold": "±5% 含邊界（|r|<=5% flat），epsilon=1e-9；直接採 parquet 既有 direction 欄",
+    "sources_sha256": {
+      "features_labels.parquet": "961e8873bdd168834dede4a58ef83c8a80d7b8dc84f46dc0f2a019e3393f69e1",
+      "public_test_results.json": "2d28acd2f2c3e5ce566b9095c6a85477db8faf858d9ce29e974caaedc25674b8",
+      "prepare_summary.json": "d1e717f734a90d07ea0c8e207962a9635df5efbf59ff382c1ed752ef21478a3f"
+    },
+    "crosscheck_vs_resume_audit": "passed (8 data rows: nonflat/n/display all match)"
+  },
+  "descriptive": {
+    "h7|ALL": {
+      "n": 10952,
+      "up": 541,
+      "down": 608,
+      "flat": 9803,
+      "nonflat": 1149,
+      "percent_exact": 10.491234477720965,
+      "percent_display": "10.5%",
+      "same_price_share_display": "89.0%",
+      "n_markets": 13,
+      "origin_t_max": "2026-09-25"
+    },
+    "h7|cabbage": {
+      "n": 3357,
+      "up": 115,
+      "down": 112,
+      "flat": 3130,
+      "nonflat": 227,
+      "percent_exact": 6.761989871909443,
+      "percent_display": "6.8%",
+      "same_price_share_display": "92.8%",
+      "n_markets": 12,
+      "origin_t_max": "2026-09-25"
+    },
+    "h7|bok_choy": {
+      "n": 3826,
+      "up": 209,
+      "down": 234,
+      "flat": 3383,
+      "nonflat": 443,
+      "percent_exact": 11.578672242550967,
+      "percent_display": "11.6%",
+      "same_price_share_display": "88.0%",
+      "n_markets": 13,
+      "origin_t_max": "2026-09-25"
+    },
+    "h7|sponge_gourd": {
+      "n": 3769,
+      "up": 217,
+      "down": 262,
+      "flat": 3290,
+      "nonflat": 479,
+      "percent_exact": 12.708941363756965,
+      "percent_display": "12.7%",
+      "same_price_share_display": "86.7%",
+      "n_markets": 13,
+      "origin_t_max": "2026-09-25"
+    },
+    "h14|ALL": {
+      "n": 10680,
+      "up": 871,
+      "down": 902,
+      "flat": 8907,
+      "nonflat": 1773,
+      "percent_exact": 16.60112359550562,
+      "percent_display": "16.6%",
+      "same_price_share_display": "82.4%",
+      "n_markets": 13,
+      "origin_t_max": "2026-09-18"
+    },
+    "h14|cabbage": {
+      "n": 3274,
+      "up": 211,
+      "down": 209,
+      "flat": 2854,
+      "nonflat": 420,
+      "percent_exact": 12.828344532681735,
+      "percent_display": "12.8%",
+      "same_price_share_display": "86.3%",
+      "n_markets": 12,
+      "origin_t_max": "2026-09-18"
+    },
+    "h14|bok_choy": {
+      "n": 3735,
+      "up": 339,
+      "down": 343,
+      "flat": 3053,
+      "nonflat": 682,
+      "percent_exact": 18.25970548862115,
+      "percent_display": "18.3%",
+      "same_price_share_display": "80.9%",
+      "n_markets": 13,
+      "origin_t_max": "2026-09-18"
+    },
+    "h14|sponge_gourd": {
+      "n": 3671,
+      "up": 321,
+      "down": 350,
+      "flat": 3000,
+      "nonflat": 671,
+      "percent_exact": 18.27839825660583,
+      "percent_display": "18.3%",
+      "same_price_share_display": "80.4%",
+      "n_markets": 13,
+      "origin_t_max": "2026-09-18"
+    }
+  },
+  "float_boundary_note": {
+    "h7": {
+      "raw_abs_gt_005": 1156,
+      "minus_label": 7
+    },
+    "h14": {
+      "raw_abs_gt_005": 1787,
+      "minus_label": 14
+    },
+    "note": "直接 abs(r)>0.05 會比正式標籤多算 h7 7 列、h14 14 列（皆絲瓜、恰在 1e-9 容差邊界、正式為 flat）；正式口徑採已存 direction"
+  },
+  "eval": {
+    "h=7": {
+      "n": 2085,
+      "selected_direction_macro_f1": 0.4218118587145294,
+      "baseline_flat": 0.30915637860082307,
+      "baseline_momentum": 0.4226276518678705
+    },
+    "h=14": {
+      "n": 1859,
+      "selected_direction_macro_f1": 0.41690950674210486,
+      "baseline_flat": 0.2953864589574596,
+      "baseline_momentum": 0.4306335875894856
+    }
+  },
+  "train_direction_counts": {
+    "flat": 11413,
+    "down": 804,
+    "insufficient_data": 431,
+    "up": 361
+  },
+  "purge": {
+    "rows": 1386,
+    "distinct_t": 30,
+    "reasons": {
+      "train_label_not_mature_before_val": 695,
+      "val_label_not_mature_before_test": 691
+    },
+    "per_horizon": {
+      "7": 485,
+      "14": 901
+    },
+    "segments": {
+      "train_to_val": {
+        "h7": {
+          "t_min": "2026-05-02",
+          "t_max": "2026-05-09",
+          "dates": 8,
+          "rows": 242
+        },
+        "h14": {
+          "t_min": "2026-04-25",
+          "t_max": "2026-05-09",
+          "dates": 15,
+          "rows": 453
+        }
+      },
+      "val_to_test": {
+        "h7": {
+          "t_min": "2026-07-14",
+          "t_max": "2026-07-21",
+          "dates": 8,
+          "rows": 243
+        },
+        "h14": {
+          "t_min": "2026-07-07",
+          "t_max": "2026-07-21",
+          "dates": 15,
+          "rows": 448
+        }
+      }
+    },
+    "maturity_rule": "標籤成熟日 = t+h+1（7天目標 t+8、14天目標 t+15）",
+    "t_min": "2026-04-25",
+    "t_max": "2026-07-21"
+  },
+  "splits": {
+    "purged": {
+      "t_min": "2026-04-25",
+      "t_max": "2026-07-21",
+      "rows": 1386
+    },
+    "test": {
+      "t_min": "2026-07-22",
+      "t_max": "2026-10-02",
+      "rows": 4680
+    },
+    "train": {
+      "t_min": "2025-10-04",
+      "t_max": "2026-05-08",
+      "rows": 13009
+    },
+    "validation": {
+      "t_min": "2026-05-10",
+      "t_max": "2026-07-21",
+      "rows": 3855
+    }
+  }
+}
