@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1920" height="1080" viewBox="0 0 1920 1080"
+     role="img" aria-labelledby="figure-title figure-desc">
+  <title id="figure-title">現場菜價7／14天預測與分析代理人｜研究總覽</title>
+  <desc id="figure-desc">研究問題與資料、方法與系統、時間切分與封存測試結果、研究限制與下一步。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#52747A"/>
+    </marker>
+    <style>
+      text { font-family: "Microsoft JhengHei", "Microsoft JhengHei UI", sans-serif; fill: #18343A; font-kerning: normal; text-rendering: geometricPrecision; }
+      .title { font-size: 42px; font-weight: 700; letter-spacing: .3px; }
+      .subtitle { font-size: 20px; fill: #536B70; }
+      .team { font-size: 20px; font-weight: 600; }
+      .date { font-size: 18px; fill: #60777C; }
+      .panel-title { font-size: 28px; font-weight: 700; fill: #153A40; }
+      .body { font-size: 20px; }
+      .body-bold { font-size: 20px; font-weight: 700; }
+      .small { font-size: 18px; fill: #52696E; }
+      .small-dark { font-size: 18px; fill: #29484E; }
+      .card { fill: #FFFFFF; stroke: #D8E4E8; stroke-width: 2; }
+      .soft { fill: #F2F7F8; stroke: #D9E6E9; stroke-width: 1.5; }
+      .teal-soft { fill: #E6F3F2; stroke: #C6E2DF; stroke-width: 1.5; }
+      .blue-soft { fill: #EDF3FC; stroke: #D5E2F5; stroke-width: 1.5; }
+      .orange-soft { fill: #FFF3E9; stroke: #F4DDC9; stroke-width: 1.5; }
+      .dark-box { fill: #0B6269; stroke: #0B6269; stroke-width: 1.5; }
+      .dark-text { fill: #FFFFFF; }
+      .muted-line { stroke: #DCE7EA; stroke-width: 1.5; }
+      .flow-line { stroke: #52747A; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .bar-flat { fill: #1A9B8E; }
+      .bar-model { fill: #3D7ED5; }
+      .bar-momentum { fill: #E88949; }
+      .number { font-size: 34px; font-weight: 700; fill: #0B6970; }
+      .accent-orange { fill: #C96C2D; }
+      .accent-blue { fill: #2F69B5; }
+      .accent-teal { fill: #087A70; }
+      .panel-bg { }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1920" height="1080" fill="#F3F7F9"/>
+
+  <g data-panel="header">
+    <rect class="panel-bg" x="40" y="0" width="1840" height="178" fill="none" stroke="none"/>
+    <text class="title" data-audit="true" x="64" y="72">現場菜價7／14天預測與分析代理人</text>
+    <text class="subtitle" data-audit="true" x="66" y="108">Fresh Market Price Forecast Agent（FMPA）｜研究總覽</text>
+    <text class="team" data-audit="true" x="1840" y="68" text-anchor="end">組長：王彥傑｜組員：鄭筑云、許嘉修、游雅婷</text>
+    <text class="date" data-audit="true" x="1840" y="102" text-anchor="end">整理日期：2026-11-06</text>
+    <path d="M64 132 H1856" stroke="#0B6269" stroke-width="3"/>
+    <text class="small-dark" data-audit="true" x="64" y="162">研究目標：以臺中公有市場日均價評估方向模型；今天單店價格用於錨定輸出，單店預測效益仍待驗證。</text>
+  </g>
+
+  <g data-panel="problem-data">
+    <rect class="panel-bg card" x="64" y="190" width="870" height="350" rx="22"/>
+    <rect x="92" y="210" width="46" height="34" rx="10" fill="#0B6269"/>
+    <text class="dark-text" data-audit="true" x="115" y="234" text-anchor="middle" font-size="18" font-weight="700">01</text>
+    <text class="panel-title" data-audit="true" x="152" y="236">問題與資料</text>
+    <text class="body-bold" data-audit="true" x="92" y="276">今天同店單品價 p → 預測 t+7／t+14 漲・平・跌</text>
+    <text class="body" data-audit="true" x="92" y="314">資料：data.gov.tw 84539｜臺中 13 個公有零售市場每日均價</text>
+    <text class="body" data-audit="true" x="92" y="346">研究品項：甘藍・青江白菜・絲瓜｜元／台斤｜0＝無報價（缺測）</text>
+    <text class="body" data-audit="true" x="92" y="378">訓練／評估凍結：2025-10-04 ～ 2026-10-02｜推論行情自 2026-10-30 起每日更新</text>
+
+    <rect class="teal-soft" x="92" y="398" width="398" height="105" rx="14"/>
+    <rect class="orange-soft" x="508" y="398" width="398" height="105" rx="14"/>
+    <text class="number" data-audit="true" x="116" y="442">10.5%</text>
+    <text class="body-bold" data-audit="true" x="116" y="476">7天歷史配對超出 ±5%</text>
+    <text class="small" data-audit="true" x="116" y="499">1,149／10,952 筆</text>
+    <text class="number accent-orange" data-audit="true" x="532" y="442">16.6%</text>
+    <text class="body-bold" data-audit="true" x="532" y="476">14天歷史配對超出 ±5%</text>
+    <text class="small" data-audit="true" x="532" y="499">1,773／10,680 筆</text>
+    <text class="small" data-audit="true" x="92" y="525">歷史配對比例，並非未來漲價機率；±5%（含邊界）定義為持平。</text>
+  </g>
+
+  <g data-panel="method-system">
+    <rect class="panel-bg card" x="986" y="190" width="870" height="350" rx="22"/>
+    <rect x="1014" y="210" width="46" height="34" rx="10" fill="#0B6269"/>
+    <text class="dark-text" data-audit="true" x="1037" y="234" text-anchor="middle" font-size="18" font-weight="700">02</text>
+    <text class="panel-title" data-audit="true" x="1074" y="236">方法與系統</text>
+
+    <rect class="soft" x="1014" y="260" width="200" height="62" rx="12"/>
+    <text class="body-bold" data-audit="true" x="1032" y="286">網頁表單</text>
+    <text class="small-dark" data-audit="true" x="1032" y="311">A／B 比較</text>
+    <rect class="soft" x="1014" y="340" width="200" height="62" rx="12"/>
+    <text class="body-bold" data-audit="true" x="1032" y="366">AI 助理・MCP</text>
+    <text class="small-dark" data-audit="true" x="1032" y="391">匿名 A 模式</text>
+    <path class="flow-line" d="M1214 291 H1250"/>
+    <path class="flow-line" d="M1214 371 H1250"/>
+    <rect class="dark-box" x="1260" y="274" width="270" height="118" rx="14"/>
+    <text class="dark-text" data-audit="true" x="1280" y="306" font-size="24" font-weight="700">ForecastEngine</text>
+    <text class="dark-text" data-audit="true" x="1280" y="338" font-size="20">7天：RandomForest</text>
+    <text class="dark-text" data-audit="true" x="1280" y="369" font-size="18">14天：HistGradientBoosting</text>
+    <path class="flow-line" d="M1530 333 H1564"/>
+    <rect class="blue-soft" x="1575" y="287" width="245" height="96" rx="12"/>
+    <text class="body-bold" data-audit="true" x="1595" y="323">漲／平／跌・相對變化</text>
+    <text class="small-dark" data-audit="true" x="1595" y="353">現價錨定店價估計</text>
+    <text class="small" data-audit="true" x="1595" y="376">語言模型只選工具／解釋</text>
+
+    <rect class="teal-soft" x="1014" y="414" width="390" height="104" rx="13"/>
+    <rect class="orange-soft" x="1420" y="414" width="400" height="104" rx="13"/>
+    <text class="body-bold" data-audit="true" x="1034" y="444">A｜今天單店價錨定</text>
+    <text class="body" data-audit="true" x="1034" y="475">p̂ = p × (1 + r̂)</text>
+    <text class="small-dark" data-audit="true" x="1034" y="501">方向沿用市場模型，只改金額尺度</text>
+    <text class="body-bold" data-audit="true" x="1440" y="444">B｜加上週同店可比價</text>
+    <text class="body" data-audit="true" x="1440" y="475">rB = rA + 0.3 ×（Δ店 − Δ公）</text>
+    <text class="small-dark" data-audit="true" x="1440" y="501">α=0.3 固定規則、未訓練；增益待驗</text>
+  </g>
+
+  <g data-panel="evaluation">
+    <rect class="panel-bg card" x="64" y="560" width="870" height="440" rx="22"/>
+    <rect x="92" y="580" width="46" height="34" rx="10" fill="#0B6269"/>
+    <text class="dark-text" data-audit="true" x="115" y="604" text-anchor="middle" font-size="18" font-weight="700">03</text>
+    <text class="panel-title" data-audit="true" x="152" y="606">時間驗證與封存測試</text>
+
+    <rect class="soft" x="92" y="624" width="245" height="76" rx="11"/>
+    <rect class="soft" x="350" y="624" width="245" height="76" rx="11"/>
+    <rect class="blue-soft" x="608" y="624" width="298" height="76" rx="11"/>
+    <text class="body-bold" data-audit="true" x="112" y="653">訓練</text>
+    <text class="small-dark" data-audit="true" x="112" y="681">2025-10-04 ～ 2026-05-08</text>
+    <text class="body-bold" data-audit="true" x="370" y="653">驗證</text>
+    <text class="small-dark" data-audit="true" x="370" y="681">2026-05-10 ～ 2026-07-21</text>
+    <text class="body-bold" data-audit="true" x="628" y="653">封存測試（73日）</text>
+    <text class="small-dark" data-audit="true" x="628" y="681">2026-07-22 ～ 2026-10-02</text>
+    <text class="small" data-audit="true" x="92" y="728">時間切分｜12數值特徵＋品項 one-hot｜成熟清除 1,386 列｜驗證選型、測試一次</text>
+
+    <text class="body-bold" data-audit="true" x="92" y="756">方向 macro-F1（越高越好）</text>
+    <text class="small" data-audit="true" x="92" y="784">7天</text>
+    <text class="small-dark" data-audit="true" x="150" y="807">全持平</text>
+    <rect class="bar-flat" x="240" y="795" width="117.5" height="13" rx="6"/>
+    <text class="small-dark" data-audit="true" x="445" y="807">0.3092</text>
+    <text class="small-dark" data-audit="true" x="150" y="831">模型</text>
+    <rect class="bar-model" x="240" y="819" width="160.3" height="13" rx="6"/>
+    <text class="small-dark" data-audit="true" x="445" y="831">0.4218</text>
+    <text class="small-dark" data-audit="true" x="150" y="855">動量</text>
+    <rect class="bar-momentum" x="240" y="843" width="160.6" height="13" rx="6"/>
+    <text class="small-dark" data-audit="true" x="445" y="855">0.4226</text>
+
+    <text class="small" data-audit="true" x="92" y="889">14天</text>
+    <text class="small-dark" data-audit="true" x="150" y="912">全持平</text>
+    <rect class="bar-flat" x="240" y="900" width="112.3" height="13" rx="6"/>
+    <text class="small-dark" data-audit="true" x="445" y="912">0.2954</text>
+    <text class="small-dark" data-audit="true" x="150" y="936">模型</text>
+    <rect class="bar-model" x="240" y="924" width="158.4" height="13" rx="6"/>
+    <text class="small-dark" data-audit="true" x="445" y="936">0.4169</text>
+    <text class="small-dark" data-audit="true" x="150" y="960">動量</text>
+    <rect class="bar-momentum" x="240" y="948" width="163.6" height="13" rx="6"/>
+    <text class="small-dark" data-audit="true" x="445" y="960">0.4306</text>
+
+    <path class="muted-line" d="M530 768 V955"/>
+    <text class="body-bold" data-audit="true" x="552" y="756">相對變化 MAE（越低越好）</text>
+    <text class="small" data-audit="true" x="552" y="789">期限</text>
+    <text class="small" data-audit="true" x="684" y="789">模型</text>
+    <text class="small" data-audit="true" x="796" y="789">不變價</text>
+    <text class="body" data-audit="true" x="552" y="823">7天</text>
+    <text class="body-bold accent-blue" data-audit="true" x="684" y="823">0.0664</text>
+    <text class="body-bold accent-teal" data-audit="true" x="796" y="823">0.0436</text>
+    <text class="body" data-audit="true" x="552" y="858">14天</text>
+    <text class="body-bold accent-blue" data-audit="true" x="684" y="858">0.0983</text>
+    <text class="body-bold accent-teal" data-audit="true" x="796" y="858">0.0748</text>
+    <path class="muted-line" d="M552 875 H902"/>
+    <text class="small-dark" data-audit="true" x="552" y="906">上漲召回（7天／14天）</text>
+    <text class="number accent-orange" data-audit="true" x="552" y="946" font-size="30">10.1% ／ 8.6%</text>
+    <text class="small" data-audit="true" x="92" y="985">模型勝全持平、未勝動量；點估計 MAE 未勝不變價。樣本：n=2,085／1,859。</text>
+  </g>
+
+  <g data-panel="limits-next">
+    <rect class="panel-bg card" x="986" y="560" width="870" height="440" rx="22"/>
+    <rect x="1014" y="580" width="46" height="34" rx="10" fill="#0B6269"/>
+    <text class="dark-text" data-audit="true" x="1037" y="604" text-anchor="middle" font-size="18" font-weight="700">04</text>
+    <text class="panel-title" data-audit="true" x="1074" y="606">研究貢獻、限制與下一步</text>
+
+    <rect class="orange-soft" x="1014" y="620" width="814" height="60" rx="12"/>
+    <text class="body-bold" data-audit="true" x="1036" y="657">評估目標是臺中公有市場均價，不是單店真實價格。</text>
+
+    <rect class="teal-soft" x="1014" y="698" width="255" height="125" rx="12"/>
+    <rect class="orange-soft" x="1288" y="698" width="255" height="125" rx="12"/>
+    <rect class="blue-soft" x="1562" y="698" width="258" height="125" rx="12"/>
+    <text class="body-bold" data-audit="true" x="1032" y="730">C1｜方向預測評估</text>
+    <text class="small-dark" data-audit="true" x="1032" y="760">固定 7／14 天</text>
+    <text class="small-dark" data-audit="true" x="1032" y="790">強基線對照、含負向結果</text>
+    <text class="body-bold accent-teal" data-audit="true" x="1306" y="730">C2｜A／B 真店增益</text>
+    <text class="small-dark" data-audit="true" x="1306" y="760">B 為 α=0.3 固定規則</text>
+    <text class="small-dark" data-audit="true" x="1306" y="790">未訓練；同店到期價待收</text>
+    <text class="body-bold accent-blue" data-audit="true" x="1580" y="730">C3｜消費者研究流程</text>
+    <text class="small-dark" data-audit="true" x="1580" y="760">可追溯原型已建立</text>
+    <text class="small-dark" data-audit="true" x="1580" y="790">使用者效益／人因未測</text>
+
+    <text class="small-dark" data-audit="true" x="1014" y="858">全臺中參考：7／14 天各取有效市場「預測相對變化率」的中位數；</text>
+    <text class="small-dark" data-audit="true" x="1014" y="884">每期限至少 3 個有效市場；準確率未驗（並非取價格或價差中位數）。</text>
+    <text class="small-dark" data-audit="true" x="1014" y="909">資料約一年；發布延遲假設 1 日未實測；跨年度、颱風及其他城市泛化未知。</text>
+    <text class="body-bold" data-audit="true" x="1014" y="945">下一步</text>
+    <text class="body" data-audit="true" x="1014" y="977">收集同店 t+7／t+14 真價 → 配對比較 A／B → 評估解釋與使用者效益</text>
+  </g>
+
+  <g data-panel="footer">
+    <rect class="panel-bg" x="48" y="1016" width="1824" height="48" fill="none" stroke="none"/>
+    <text class="small" data-audit="true" x="64" y="1048">來源：data.gov.tw/84539｜PUBLIC_MODEL_EVALUATION.md｜封存 public_test_results.json、stats_master.json（評估資料截至 2026-10-02）</text>
+  </g>
+
+</svg>
+
