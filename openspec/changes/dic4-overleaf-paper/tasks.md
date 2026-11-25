@@ -15,8 +15,8 @@
 ## 3. 工作流程
 - [x] 3.1 建立 DIC4 OpenSpec proposal、design、specs、tasks
 - [x] 3.2 CLI 嚴格驗證通過、保留原始測試輸出（4/4 artifacts；validate --strict exit 0）
-- [ ] 3.3 GitHub 依使用者授權後才建立提交與推送，防止混入舊 dirty 變更
-- [ ] 3.4 連接可驗證的 Overleaf MCP；若未可用，誠實保留為待辦，不把瀏覽器操作當作 MCP
+- [x] 3.3 使用隔離 worktree 與精確檔案範圍完成 GitHub commit/push；已開 PR #2，未合併 `main`，原主樹 dirty changes 保留
+- [x] 3.4 使用者允許省略非必要 Overleaf MCP；COS Browser 已完成真正匯入／編譯，沒有虛報 MCP 連線
 
 ## 4. 交付
 - [x] 4.1 Overleaf 專案已建立、可見並能產出 PDF（`https://www.overleaf.com/project/6b06bd77157dbfcfac3cf914`）

@@ -20,8 +20,8 @@
 3. OpenSpec spec-driven change，CLI strict validate。
 4. 核對數值、編譯／Overleaf 目視及檔案驗收。
 5. 登入本人 Overleaf 後匯入 v2，確認雲端可見與 PDF。
-6. 若要 GitHub 留痕，僅對本輪新增的路徑做範圍內 commit/push；未取得使用者明確推送授權前保留本機。
-7. Agent／Overleaf MCP 需使用可驗證的授權整合；無官方 MCP 時不可假稱已接通第三方工具。
+6. GitHub 已以隔離 worktree 對本輪 DIC4 17 個檔案進行 scoped commit/push；PR #2 為獨立審核入口，`main` 沒有因此被合併或改寫。
+7. Overleaf MCP 已依使用者意願省略；實際使用 COS Browser 操作，並已驗證 Overleaf 匯入與 PDF 編譯。
 
 ## 連結
-OpenSpec: `openspec/changes/dic4-overleaf-paper/`；成品位置：`paper/dic4/`。不把帳號、token 或 Overleaf session 儲存在 GitHub 文件。
+GitHub PR：`https://github.com/prometheans152/FreshMarketPriceForecastAgent/pull/2`；分支：`dic4/overleaf-paper-20261125`；OpenSpec：`openspec/changes/dic4-overleaf-paper/`；成品：`paper/dic4/`。不把帳號、token 或 Overleaf session 儲存在 GitHub 文件。
