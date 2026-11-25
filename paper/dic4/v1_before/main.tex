@@ -1,0 +1,40 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,booktabs,hyperref}
+\title{A Preliminary Design for a Fresh-Market Price Forecasting Assistant}
+\author{Fresh Market Price Forecast Agent (FMPA) Project Team}
+\date{DIC4 working baseline --- 25 November 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+This draft describes an assistant for users who know the price of a vegetable at a shop today but do not know its likely price seven or fourteen calendar days later. It combines public retail-market price history with user-supplied store prices. Existing held-out tests show that the original machine-learning models do not beat simple baselines on all target metrics. Claims about the accuracy of future prices at an individual shop are not yet supported.
+\end{abstract}
+
+\section{Introduction}
+Vegetable prices are affected by supply, demand, seasonality, product quality and the retail channel. A consumer can observe one shop's current price, whereas public datasets usually describe aggregates across markets. These are not interchangeable measurements. We study how a public-market trend might be converted into a carefully labelled shop-price scenario.
+
+\section{Related Work}
+Taiwanese vegetable-price forecasting has been studied using time-series and neural methods in wholesale contexts \cite{chen2024,lee2015}. Those results do not establish accuracy for a specific retail shop. The Taichung municipal public-market dataset provides retail market averages \cite{taichung84539}; zero values represent missing quotes rather than free produce.
+
+\section{Preliminary Method}
+Let \(p_s(t)\) be the price reported by a user at a shop on calendar day \(t\). A frozen forecasting model estimates the proportional public-market change \(\widehat r_h\) for horizon \(h\in\{7,14\}\) days. A simple anchor constructs
+\begin{equation}
+\widehat p_{A}(t+h)=p_s(t)(1+\widehat r_h).
+\end{equation}
+If a comparable previous-week shop price is supplied, an experimental B-mode adjustment may be computed. Its coefficient is fixed by design, not trained or validated against real shop outcomes.
+
+\section{Existing Results}
+A frozen three-crop test evaluated Random Forest at seven days (\(n=2085\)) and histogram gradient boosting at fourteen days (\(n=1859\)). Three-class macro-F1 was \(0.4218\) and \(0.4169\), respectively, compared with momentum baselines of \(0.4226\) and \(0.4306\). Public-market return MAE was \(0.0664\) and \(0.0983\), worse than a no-change return baseline of \(0.0436\) and \(0.0748\). These are public-market results, not accuracy of shop-price predictions.
+
+\section{Limitations and Next Steps}
+Individual shop-price trajectories are not yet available for paired validation. The effect of including an earlier shop observation, the usefulness of market aggregation, and robust autonomous-agent behaviour remain open questions. A prospective study should freeze all forecasts at prediction time and compare them against the \emph{same shop and product} at each deadline.
+
+\section{Conclusion}
+The current contribution is a traceable prototype and an explicitly testable validation plan; superiority over simple baselines and practical savings are not established.
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

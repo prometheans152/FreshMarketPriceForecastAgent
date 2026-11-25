@@ -1,0 +1,125 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=24mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,booktabs,array,graphicx,hyperref,microtype}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+\title{From Public Market Averages to Shop-Price Scenarios:\\ A Reproducible 7- and 14-Day Forecasting-Agent Prototype}
+\author{Fresh Market Price Forecast Agent (FMPA) Project Team\\\small AIoT and Data Analytics Course Project}
+\date{DIC4 revised manuscript draft --- 25 November 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+Public vegetable-price datasets provide historical signals but do not directly describe the price paid by a consumer at one shop. We present the design, evidence boundaries and frozen public-market evaluation of a domain-agent prototype that accepts today's shop price and returns qualified seven- and fourteen-calendar-day scenarios. A trained engine estimates relative changes of public-market averages; deterministic rules anchor those changes to an observed shop price, with an optional experimental adjustment from a comparable previous-week shop observation. On the original three-crop held-out public-market test, the seven-day and fourteen-day models attained direction macro-F1 of 0.4218 and 0.4169, below momentum baselines of 0.4226 and 0.4306. Their relative-return mean absolute errors, 0.0664 and 0.0983, also exceeded no-change baselines, 0.0436 and 0.0748. These results do not establish shop-price accuracy, improvement over simple rules or monetary benefits. We specify a prospective matched-shop evaluation and explicit failure semantics for the agent interface. The contribution is a traceable prototype and a falsifiable validation plan, not a verified saving recommendation.
+\end{abstract}
+\noindent\textbf{Keywords:} vegetable prices; retail; domain agents; time-series evaluation; reproducibility; AIoT.
+
+\section{Introduction}
+Consumers observe a product's price at a specific seller, but public data more often describe averages across markets. The Taichung municipal dataset reports public retail-market prices; it does not provide the identity and future selling prices of a private stall \cite{taichung84539}. Treating public-market and individual-shop prices as equal would overstate what a forecast measures. Unit differences, item quality, promotions and publication delays further complicate comparison.
+
+This study asks three distinct questions. \textbf{RQ1}: Under a time-aware public-market split, can a trained 7- or 14-day model beat relevant simple baselines? \textbf{RQ2}: Does transferring a predicted market return to an individual shop's current price, with or without a comparable prior-week shop observation, improve its future same-shop estimates? \textbf{RQ3}: Can an agent-assisted entry point preserve units, provenance, scope, dates, missing-input checks and tool failures? RQ1 has frozen results, including negative findings. RQ2 remains untested with future shop observations. RQ3 has working API and MCP-tool components but lacks comprehensive autonomous-agent reliability validation.
+
+Rather than calling a tree-based regression model novel, we emphasize a measurable distinction between public data and private targets, transparent negative outcomes, and a prospective validation protocol.
+
+\section{Related Work and Domain Constraints}
+Prior Taiwanese vegetable-price studies compared statistical forecasting with neural approaches in wholesale settings \cite{chen2024}. Work on weekly cabbage forecasts considered the informational value of private supply-chain records \cite{lee2015}; a separate indexed study addressed nonstationary retail price behaviour \cite{lin2017}. Our literature notes accessed abstracts or bibliographic records for these theses, not verified full experimental reproductions. Different markets, outcomes, horizons and evaluation metrics prohibit direct cross-study performance rankings.
+
+A public market average is a distribution-level observation, not an individual transaction. Conversion between prices per Taiwanese \emph{jin} and per kilogram is possible because one jin equals $0.6$ kilograms; per-head and per-bunch amounts cannot be converted without product weight. In the original dataset contract, a quoted zero indicates a missing quotation, not free produce. Comparing a user's present price with stale public observations requires preserving each observation's real date, rather than moving the user's deadline to the data date.
+
+\section{Architecture and Methods}
+\subsection{Workflow and system boundary}
+The required input consists of a product, a positive shop price $p_s(t)$, a valid price unit and an observation date $t$ in Taiwan. A previous observation from the same seller and product specification is optional. Both output dates must be exactly $t+7$ and $t+14$ calendar days. Results include their source dates and limitations.
+
+\begin{figure}[ht]
+\centering
+\fbox{\begin{minipage}{0.91\linewidth}\centering
+User price / product / unit / observation day\\
+$\downarrow$\\
+Validation and comparability check\\
+$\downarrow$\\
+Point-in-time public history $\longrightarrow$ historical features\\
+$\downarrow$\\
+Frozen public-market forecasting engine (7 / 14 days)\\
+$\downarrow$\\
+A: present-price anchor; optional Web B: weekly adjustment\\
+$\downarrow$\\
+Structured output: dates, price scenarios, source, warnings\\
+$\downarrow$\\
+Web display / restricted MCP-tool explanation
+\end{minipage}}
+\caption{Logical forecasting path. A direct public quote lookup is a separate tool that does not run a model.}
+\label{fig:architecture}
+\end{figure}
+
+The current MCP-facing interface exposes \texttt{get\_market\_quote} for a named public market and \texttt{post\_forecast} for anonymous A-mode forecasting. The Web path supports A and, where comparable data exist, B. The agent layer is intended to choose permitted tools, clarify input and explain \emph{structured} results, never to invent numerical estimates. The existence of tools alone does not establish reliable autonomous planning.
+
+\subsection{Forecast targets and leakage control}
+For a positive public-market quotation $m(t)$ and $h\in\{7,14\}$, define the relative change
+\begin{equation}
+r_h(t)=\frac{m(t+h)}{m(t)}-1.
+\end{equation}
+The direction is down if $r_h<-0.05$, flat if $-0.05\leq r_h\leq0.05$, and up if $r_h>0.05$. This five-percent rule was fixed in the prior protocol; it is not a probability estimate. Historical features exclude information from prediction day and later. Dataset splitting is grouped by date across markets and labels mature conservatively at $t+h+1$ to avoid future leakage across boundaries.
+
+The frozen first-version model chose Random Forest regression for seven-day returns and histogram gradient boosting regression for fourteen-day returns. We report its existing test without retraining, changing thresholds, or using test outcomes to select a new model \cite{fmpafrozen}.
+
+\subsection{From a market return to a shop scenario}
+Let $\widehat r_h(t)$ denote the engine's estimated public-market relative change. Mode A calculates a \emph{scenario}, not a validated prediction of a shop's true price:
+\begin{equation}
+\widehat p_A(t+h)=p_s(t)\left[1+\widehat r_h(t)\right].
+\label{eq:a}
+\end{equation}
+Anchoring the level to a current shop price does not improve the public-market classification score. For a comparable weekly shop history, mode B additionally uses a fixed rule
+\begin{align}
+\Delta_s&=\frac{p_s(t)}{p_s(t')}-1, \qquad \Delta_m=\frac{m(t)}{m(t')}-1,\\
+\widehat r_{B,h}&=\widehat r_h+0.3(\Delta_s-\Delta_m),\\
+\widehat p_B(t+h)&=p_s(t)(1+\widehat r_{B,h}),
+\end{align}
+where $t'$ is the actual previous shop observation, nominally seven days earlier with an allowed $7\pm2$-day interval. The public comparison must use the matching observed interval, the same market and positive quotes. Seller, product specification and unit must be comparable. Otherwise, the application must fall back to A with a reason. The coefficient $0.3$ is \emph{fixed and untrained}; the added value of B remains an untested hypothesis.
+
+\subsection{Failure and agent contract}
+Requests with missing product, nonpositive price or missing/incompatible unit cannot yield a numerical scenario until corrected. Data- or model-layer failure must remain an explicit error, not be filled by a language model. Outputs need the market scope, source date, exact forecast dates, stale-data warning where applicable and acknowledgement that public means differ from private prices. The interface cannot safely invent confidence intervals, monetary savings or weather causation when these are absent from the trained pipeline.
+
+\section{Frozen Public-Market Evaluation}
+\subsection{Experiment scope}
+The original three-crop experiment concerns cabbage, bok choy and sponge gourd using historical public retail-market observations. For a valid test example, positive market quotes are required at both the origin and target endpoint. Consequently the horizons have different test sample sizes. The recorded results come from the local frozen JSON, not a new experiment \cite{fmpafrozen}.
+
+\begin{table}[ht]
+\centering
+\caption{Same-sample held-out public-market comparison.}
+\label{tab:results}
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Metric & 7-day RF & 14-day HGB\\
+\midrule
+Test $n$ & 2,085 & 1,859\\
+Model direction macro-F1 & 0.4218 & 0.4169\\
+Momentum macro-F1 & \textbf{0.4226} & \textbf{0.4306}\\
+Model relative-return MAE & 0.0664 & 0.0983\\
+No-change relative-return MAE & \textbf{0.0436} & \textbf{0.0748}\\
+Up-class recall & 16/158 (10.1\%) & 23/268 (8.6\%)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At both horizons the selected model is worse than the simple momentum comparator in macro-F1, and worse than the unchanged-return comparator in MAE. The low up-class recall is particularly unsuitable for an unqualified rising-price warning. These MAEs measure \emph{relative public-market return}, not New Taiwan dollar error on shop transactions. The results neither demonstrate store-price accuracy nor justify claims of user savings. Using multiple markets to aggregate predicted returns would also need separate evaluation on an appropriate held-out scope.
+
+\section{Prospective Validation Plan}
+To answer RQ2, the next study must \emph{freeze} both A/B forecasts at day $t$ with the exact data snapshot, model version, market scope, shop identifier, item specification, unit and source timestamps. Real observations of that same shop and product on $t+7$ and $t+14$ must be collected subsequently. Missing or noncomparable items should be marked unavailable rather than replaced with a market average.
+
+Comparisons should be paired on the \emph{same valid cases}: A versus B versus store-price persistence versus a simple momentum baseline. Report price MAE, directional errors, class-specific recall, successful-pair coverage and confidence intervals only after a suitable statistical procedure is specified. The fixed B coefficient must not be treated as a learned optimum. If shop evidence remains unavailable, RQ2 remains unresolved.
+
+For RQ3, construct tool-call tests with a missing price, missing unit, unsupported per-head unit, invalid date, stale public quote, empty model output, tool timeout and prompt to fabricate a price. Test both the structured tool result and the assistant's explanation. Selected functioning calls are not substitutes for a measured failure rate across these cases.
+
+\section{Threats to Validity and Discussion}
+The dataset measures public retail markets, not specific stores; seller quality and promotions are unobserved. Forecasting models may underreact to rare changes, as suggested by the low rising-price recall. Publication delays, changing item coverage, future distribution shifts and market pooling introduce separate uncertainties. Strong baselines must remain visible even if future work reports new models. An agent may improve accessibility without improving predictive skill; these claims must be evaluated separately.
+
+\section{Conclusion}
+We present a source-traceable domain-agent prototype for 7-/14-day shop-price \emph{scenarios} and its frozen public-market evidence. The selected regressors fail to beat relevant simple baselines on the reported public metrics, while individual-shop accuracy and B-mode utility have not yet been measured. The main next step is a preregistered matched-shop prospective test, together with robust tool-failure evaluation. This document is a \emph{working paper}, not an accepted publication or a claim of established consumer benefit.
+
+\section*{Data and Reproducibility Statement}
+The original frozen results are stored in \texttt{docs/midterm/public\_test\_results.json} and discussed in \texttt{docs/dic3/DIC3\_PROPOSAL\_REFACTOR.md}. The system design is in \texttt{design.md}. This manuscript was prepared from those records without running a new training experiment. Raw personal store-price samples and credentials are not part of the publication package.
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
